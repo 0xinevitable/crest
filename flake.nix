@@ -17,6 +17,7 @@
             # Node.js ecosystem
             nodejs
             yarn
+            prisma-engines
             
             # Development tools
             git
@@ -38,6 +39,11 @@
           ];
 
           shellHook = ''
+            export PRISMA_QUERY_ENGINE_BINARY="${pkgs.prisma-engines}/bin/query-engine"
+            export PRISMA_QUERY_ENGINE_LIBRARY="${pkgs.prisma-engines}/lib/libquery_engine.node"
+            export PRISMA_FMT_BINARY="${pkgs.prisma-engines}/bin/prisma-fmt"
+            export PATH="$PWD/node_modules/.bin/:$PATH"
+
             echo "🚀 Crest development environment loaded!"
             echo "Node.js: $(node --version)"
             echo "Yarn: $(yarn --version)"

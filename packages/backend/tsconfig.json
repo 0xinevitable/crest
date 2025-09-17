@@ -19,13 +19,6 @@
     "emitDecoratorMetadata": true,
     "types": ["node"]
   },
-  "include": [
-    "app/**/*",
-    "modules/**/*"
-  ],
-  "exclude": [
-    "node_modules",
-    "dist",
-    "logs"
-  ]
+  "include": ["app/**/*", "modules/**/*"],
+  "exclude": ["node_modules", "dist", "logs"]
 }

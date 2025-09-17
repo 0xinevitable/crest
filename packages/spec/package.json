@@ -1,0 +1,15 @@
+{
+  "name": "@crest/spec",
+  "version": "0.0.0",
+  "main": "./index.ts",
+  "types": "./index.ts",
+  "scripts": {
+    "generate": "openapi-typescript openapi.yaml -o src/generated/types.ts",
+    "build": "yarn generate",
+    "watch": "openapi-typescript openapi.yaml -o src/generated/types.ts --watch"
+  },
+  "devDependencies": {
+    "openapi-typescript": "^7.4.2",
+    "typescript": "^5.3.3"
+  }
+}

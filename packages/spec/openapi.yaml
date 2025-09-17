@@ -1,0 +1,184 @@
+openapi: 3.0.3
+info:
+  title: Crest API
+  description: Hyperliquid funding rates API
+  version: 1.0.0
+  contact:
+    name: Crest Team
+servers:
+  - url: http://localhost:3000
+    description: Development server
+  - url: https://api.crest.example.com
+    description: Production server
+
+paths:
+  /funding-rates:
+    get:
+      summary: Get funding rates
+      description: Retrieve funding rates for various tickers
+      operationId: getFundingRates
+      tags:
+        - Funding Rates
+      parameters:
+        - name: ticker
+          in: query
+          description: Filter by ticker symbol
+          required: false
+          schema:
+            type: string
+            example: "BTC-USD"
+        - name: limit
+          in: query
+          description: Maximum number of records to return
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 1000
+            default: 100
+        - name: offset
+          in: query
+          description: Number of records to skip
+          required: false
+          schema:
+            type: integer
+            minimum: 0
+            default: 0
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/FundingRate'
+                  pagination:
+                    $ref: '#/components/schemas/Pagination'
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /funding-rates/{id}:
+    get:
+      summary: Get funding rate by ID
+      description: Retrieve a specific funding rate by its ID
+      operationId: getFundingRateById
+      tags:
+        - Funding Rates
+      parameters:
+        - name: id
+          in: path
+          description: Funding rate ID
+          required: true
+          schema:
+            type: integer
+            example: 123
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FundingRate'
+        '404':
+          description: Funding rate not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+components:
+  schemas:
+    FundingRate:
+      type: object
+      required:
+        - id
+        - ticker
+        - fundingRate
+        - readingTime
+        - createdAt
+      properties:
+        id:
+          type: integer
+          description: Unique identifier for the funding rate record
+          example: 123
+        ticker:
+          type: string
+          description: Trading pair symbol
+          example: "BTC-USD"
+        fundingRate:
+          type: string
+          description: Funding rate as a string to preserve precision
+          example: "0.0001"
+        readingTime:
+          type: string
+          format: date-time
+          description: Timestamp when the funding rate was recorded
+          example: "2024-01-15T10:30:00Z"
+        createdAt:
+          type: string
+          format: date-time
+          description: Timestamp when the record was created in the database
+          example: "2024-01-15T10:30:05Z"
+
+    Pagination:
+      type: object
+      properties:
+        total:
+          type: integer
+          description: Total number of records
+          example: 1000
+        limit:
+          type: integer
+          description: Maximum number of records returned
+          example: 100
+        offset:
+          type: integer
+          description: Number of records skipped
+          example: 0
+        hasNext:
+          type: boolean
+          description: Whether there are more records available
+          example: true
+
+    Error:
+      type: object
+      required:
+        - error
+        - message
+      properties:
+        error:
+          type: string
+          description: Error type
+          example: "ValidationError"
+        message:
+          type: string
+          description: Human-readable error message
+          example: "Invalid ticker parameter"
+        details:
+          type: object
+          description: Additional error details
+          additionalProperties: true
+
+tags:
+  - name: Funding Rates
+    description: Operations related to funding rates data

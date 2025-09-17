@@ -5,7 +5,19 @@ module.exports = {
   trailingComma: 'all',
   semi: true,
 
-  // @trivago/prettier-plugin-sort-imports
+  plugins: [
+    'prettier-plugin-solidity',
+    '@trivago/prettier-plugin-sort-imports',
+  ],
+
+  overrides: [
+    {
+      files: '*.sol',
+      options: {
+        tabWidth: 4,
+      },
+    },
+  ],
   importOrder: ['<THIRD_PARTY_MODULES>', '@/(.*)$', '^[./](.*)$'],
   importOrderSeparation: true,
   importOrderSortSpecifiers: true,

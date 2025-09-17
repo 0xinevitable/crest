@@ -1,0 +1,26 @@
+{
+  "name": "crest-backend",
+  "version": "1.0.0",
+  "description": "TypeScript project to process funding rate logs and save to SQL",
+  "main": "dist/app/log-processor/index.js",
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/app/log-processor/index.js",
+    "dev": "ts-node app/log-processor/index.ts",
+    "fetch": "ts-node app/log-fetcher/index.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "sqlite3": "^5.1.6",
+    "pg": "^8.11.3"
+  },
+  "devDependencies": {
+    "@types/node": "^20.10.0",
+    "@types/pg": "^8.10.9",
+    "typescript": "^5.3.3",
+    "ts-node": "^10.9.2"
+  },
+  "keywords": ["typescript", "sql", "log-processing", "funding-rates"],
+  "author": "",
+  "license": "MIT"
+}

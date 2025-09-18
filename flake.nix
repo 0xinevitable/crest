@@ -23,6 +23,7 @@
             git
             podman
             podman-compose
+            iptables
             
             # Database tools
             postgresql

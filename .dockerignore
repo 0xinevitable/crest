@@ -1,0 +1,63 @@
+# Dependencies
+node_modules
+*/node_modules
+.npm
+.yarn
+yarn-error.log
+npm-debug.log*
+
+# Build outputs
+*/dist
+*/coverage
+.next
+*.tsbuildinfo
+
+# Environment files
+.env*
+!.env.example
+
+# IDE files
+.vscode
+.idea
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Git
+.git
+.gitignore
+
+# Docker
+Dockerfile
+.dockerignore
+
+# Documentation
+README.md
+*.md
+
+# Test files
+**/test
+**/*.spec.ts
+**/*.test.ts
+**/jest.config.*
+**/jest-e2e.json
+
+# Logs
+logs
+*.log
+
+# Development files
+.claude
+compose.yaml
+flake.nix
+flake.lock
+
+# Package manager artifacts
+.yarn/cache
+.yarn/unplugged
+.yarn/build-state.yml
+.yarn/install-state.gz
+.pnp.*

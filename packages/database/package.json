@@ -4,13 +4,14 @@
   "main": "./index.ts",
   "types": "./index.ts",
   "scripts": {
-    "db:generate": "prisma generate",
-    "db:push": "prisma db push --skip-generate"
+    "generate": "prisma generate",
+    "push": "prisma db push --skip-generate",
+    "studio": "prisma studio"
   },
   "dependencies": {
-    "@prisma/client": "^5.9.1"
+    "@prisma/client": "^6.16.2"
   },
   "devDependencies": {
-    "prisma": "^5.10.1"
+    "prisma": "^6.16.2"
   }
 }

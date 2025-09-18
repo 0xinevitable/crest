@@ -9,8 +9,9 @@ datasource db {
 
 model FundingRates {
   id          Int      @id @default(autoincrement())
-  ticker      String
+  ticker      String 
   fundingRate String
+  readingTime DateTime
   createdAt   DateTime @default(now())
 
   @@index([ticker])

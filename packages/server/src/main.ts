@@ -1,5 +1,7 @@
 import { NestFactory } from '@nestjs/core';
+
 import { AppModule } from '@/app';
+
 import { EnvService } from '@/common/env';
 
 (async () => {

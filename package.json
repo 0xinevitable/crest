@@ -2,7 +2,7 @@
   "name": "crest",
   "private": true,
   "version": "1.0.0",
-  "repository": "https://github.com/0xinevitable/crest-backend",
+  "repository": "https://github.com/0xinevitable/crest",
   "scripts": {
     "format": "prettier --write **/*"
   },

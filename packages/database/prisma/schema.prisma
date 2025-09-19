@@ -1,0 +1,20 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model FundingRates {
+  id          Int      @id @default(autoincrement())
+  ticker      String 
+  fundingRate String
+  readingTime DateTime
+  createdAt   DateTime @default(now())
+
+  @@index([ticker])
+  @@index([createdAt])
+  @@map("funding_rates")
+}

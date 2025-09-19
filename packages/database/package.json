@@ -6,6 +6,9 @@
   "scripts": {
     "generate": "prisma generate",
     "push": "prisma db push --skip-generate",
+    "migrate": "prisma migrate dev --create-only",
+    "migrate:deploy": "prisma migrate deploy",
+    "migrate:reset": "prisma migrate reset",
     "studio": "prisma studio"
   },
   "dependencies": {

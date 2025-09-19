@@ -1,16 +1,11 @@
 import { Module } from '@nestjs/common';
-import { HttpModule } from '@nestjs/axios';
 import { ScheduleModule } from '@nestjs/schedule';
 
 import { DatabaseModule } from '@/common/database';
 import { ObjectStorageModule } from '@/common/object-storage';
 import { HyperliquidModule } from '@/common/hyperliquid';
 
-import {
-  FundingRatesJob,
-  MainnetFundingRatesJob,
-  TestnetFundingRatesJob,
-} from './jobs';
+import { MainnetFundingRatesJob, TestnetFundingRatesJob } from './jobs';
 import {
   FundingDataProcessorService,
   FundingDataStorageService,
@@ -28,7 +23,6 @@ import { TasksController } from './controller';
     FundingDataProcessorService,
     FundingDataStorageService,
 
-    FundingRatesJob,
     MainnetFundingRatesJob,
     TestnetFundingRatesJob,
   ],

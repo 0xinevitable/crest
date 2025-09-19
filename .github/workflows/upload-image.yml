@@ -9,7 +9,7 @@ on:
   pull_request:
 
 env:
-  IMAGE_NAME: crest
+  IMAGE_NAME: crest-server
 
 jobs:
   push:

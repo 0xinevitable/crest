@@ -471,7 +471,21 @@ contract CrestVaultTest is Test {
         vm.prank(curator);
         manager.rebalance(BERA_SPOT_INDEX, BERA_PERP_INDEX);
 
-        // 6. Alice withdraws with profit
+        // Process the rebalance orders
+        CoreSimulatorLib.nextBlock();
+
+        // 6. Close positions to get USDC back to vault before withdrawals
+        vm.prank(curator);
+        manager.closeAllPositions();
+
+        // Process the close orders
+        CoreSimulatorLib.nextBlock();
+
+        // Simulate funds returning from Hyperliquid (since closeAllPositions uses placeholder amounts)
+        // In production, the actual amounts would be bridged back
+        usdc.mint(address(vault), 15 * MILLION_USDC + 500_000 * ONE_USDC);
+
+        // 7. Alice withdraws with profit
         uint256 aliceShares = vault.balanceOf(alice);
         vm.prank(alice);
         uint256 withdrawn = teller.withdraw(aliceShares, alice);
@@ -498,11 +512,24 @@ contract CrestVaultTest is Test {
         teller.deposit(THOUSAND_USDC, bob);
         vm.stopPrank();
 
-        // But withdrawals still work (important for user safety)
+        // And withdrawals are also blocked during pause for safety
         vm.warp(block.timestamp + 1 days + 1);
         vm.startPrank(alice);
-        teller.withdraw(vault.balanceOf(alice), alice);
+        uint256 aliceShares = vault.balanceOf(alice);
+        vm.expectRevert(CrestTeller.CrestTeller__Paused.selector);
+        teller.withdraw(aliceShares, alice);
         vm.stopPrank();
+
+        // After unpause, withdrawals work again
+        vm.prank(owner);
+        teller.unpause();
+
+        vm.startPrank(alice);
+        uint256 shares = vault.balanceOf(alice);
+        teller.withdraw(shares, alice);
+        vm.stopPrank();
+
+        assertEq(vault.balanceOf(alice), 0, "Alice withdrew all shares");
     }
 
     // ==================== HELPER FUNCTIONS ====================

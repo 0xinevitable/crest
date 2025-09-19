@@ -234,19 +234,31 @@ contract CrestManager is Auth, ReentrancyGuard {
         whenNotPaused
         nonReentrant
     {
-        // Close existing positions
+        // Check if there are any positions to rebalance
+        if (currentSpotPosition.index == 0 && currentPerpPosition.index == 0) {
+            revert CrestManager__NoPositionToClose();
+        }
+
+        uint32 oldSpotIndex = currentSpotPosition.index;
+        uint32 oldPerpIndex = currentPerpPosition.index;
+
+        // Close existing positions if they have size
         if (currentSpotPosition.size > 0 || currentPerpPosition.size > 0) {
             _closeAllPositions();
         }
 
-        // Allocate to new positions - would be done via separate transaction
-        // allocate(newSpotIndex, newPerpIndex);
-
+        // Update vault state
         vault.rebalance(newSpotIndex, newPerpIndex);
 
+        // Update manager's position tracking to new indexes
+        currentSpotPosition.index = newSpotIndex;
+        currentPerpPosition.index = newPerpIndex;
+        currentSpotPosition.size = 0; // Will be set when orders fill
+        currentPerpPosition.size = 0; // Will be set when orders fill
+
         emit Rebalanced(
-            currentSpotPosition.index,
-            currentPerpPosition.index,
+            oldSpotIndex,
+            oldPerpIndex,
             newSpotIndex,
             newPerpIndex
         );

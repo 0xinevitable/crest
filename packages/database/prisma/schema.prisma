@@ -7,8 +7,15 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+enum Network {
+  Testnet
+  Mainnet
+}
+
 model FundingRates {
   id          Int      @id @default(autoincrement())
+  network     Network  @default(Mainnet)
+
   ticker      String 
   fundingRate String
   readingTime DateTime
@@ -16,5 +23,6 @@ model FundingRates {
 
   @@index([ticker])
   @@index([createdAt])
+  @@index([network])
   @@map("funding_rates")
 }

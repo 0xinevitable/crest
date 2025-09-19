@@ -4,3 +4,6 @@
 [submodule "packages/core/lib/hyper-evm-lib"]
 	path = packages/core/lib/hyper-evm-lib
 	url = https://github.com/hyperliquid-dev/hyper-evm-lib
+[submodule "packages/core/lib/boring-vault"]
+	path = packages/core/lib/boring-vault
+	url = https://github.com/Se7en-Seas/boring-vault

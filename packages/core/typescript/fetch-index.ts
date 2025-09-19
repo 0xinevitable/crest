@@ -8,7 +8,7 @@ class HyperliquidAPI {
     return response.json();
   }
 
-  async getSpotIndex(symbol: string) {
+  async _getSpotIndex(symbol: string) {
     const { tokens, universe } = await this._requestInfo<{
       tokens: { name: string; index: number }[];
       universe: {
@@ -32,7 +32,7 @@ class HyperliquidAPI {
     };
   }
 
-  async getPerpIndex(symbol: string) {
+  async _getPerpIndex(symbol: string) {
     const { universe } = await this._requestInfo<{
       universe: {
         szDecimals: number;
@@ -45,15 +45,36 @@ class HyperliquidAPI {
     const perpIndex = universe.findIndex((asset) => asset.name === symbol);
     return { perpIndex, meta: universe[perpIndex] };
   }
+
+  async getIndexesBySymbol(symbol: string) {
+    const spot = await this._getSpotIndex(symbol);
+    const perp = await this._getPerpIndex(symbol);
+    return {
+      symbol,
+      tokenIndex: spot.tokenIndex,
+      spotIndex: spot.spotIndex,
+      perpIndex: perp.perpIndex,
+    };
+  }
 }
 
 const main = async () => {
   const hl = new HyperliquidAPI();
 
-  const spot = await hl.getSpotIndex('HYPE');
-  console.log(spot);
-  const perp = await hl.getPerpIndex('HYPE');
-  console.log(perp);
+  {
+    const indexes = await hl.getIndexesBySymbol('HYPE');
+    console.log(indexes);
+  }
+
+  {
+    const indexes = await hl.getIndexesBySymbol('PURR');
+    console.log(indexes);
+  }
+
+  {
+    const indexes = await hl.getIndexesBySymbol('BERA');
+    console.log(indexes);
+  }
 };
 
 main();

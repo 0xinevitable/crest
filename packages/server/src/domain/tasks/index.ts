@@ -4,6 +4,7 @@ import { ScheduleModule } from '@nestjs/schedule';
 
 import { DatabaseModule } from '@/common/database';
 import { ObjectStorageModule } from '@/common/object-storage';
+import { HyperliquidModule } from '@/common/hyperliquid';
 
 import { FundingRatesJob } from './jobs';
 import { TasksController } from './controller';
@@ -14,6 +15,7 @@ import { TasksController } from './controller';
     ScheduleModule.forRoot(),
     DatabaseModule,
     ObjectStorageModule,
+    HyperliquidModule,
   ],
   providers: [FundingRatesJob],
   controllers: [TasksController],

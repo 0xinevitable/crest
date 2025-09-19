@@ -4,18 +4,34 @@ import { ScheduleModule } from '@nestjs/schedule';
 
 import { DatabaseModule } from '@/common/database';
 import { ObjectStorageModule } from '@/common/object-storage';
+import { HyperliquidModule } from '@/common/hyperliquid';
 
-import { FundingRatesJob } from './jobs';
+import {
+  FundingRatesJob,
+  MainnetFundingRatesJob,
+  TestnetFundingRatesJob,
+} from './jobs';
+import {
+  FundingDataProcessorService,
+  FundingDataStorageService,
+} from './services';
 import { TasksController } from './controller';
 
 @Module({
   imports: [
-    HttpModule,
-    ScheduleModule.forRoot(),
     DatabaseModule,
     ObjectStorageModule,
+    ScheduleModule.forRoot(),
+    HyperliquidModule,
   ],
-  providers: [FundingRatesJob],
+  providers: [
+    FundingDataProcessorService,
+    FundingDataStorageService,
+
+    FundingRatesJob,
+    MainnetFundingRatesJob,
+    TestnetFundingRatesJob,
+  ],
   controllers: [TasksController],
 })
 class TasksModule {}

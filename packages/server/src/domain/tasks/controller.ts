@@ -1,14 +1,30 @@
-import { Controller, Post } from '@nestjs/common';
+import { Controller, Post, Body } from '@nestjs/common';
 
-import { FundingRatesJob } from './jobs';
+import { MainnetFundingRatesJob, TestnetFundingRatesJob } from './jobs';
+
+interface TriggerJobDto {
+  network?: 'mainnet' | 'testnet';
+}
 
 @Controller('tasks')
 export class TasksController {
-  constructor(private readonly fundingRatesJob: FundingRatesJob) {}
+  constructor(
+    private readonly mainnetFundingRatesJob: MainnetFundingRatesJob,
+    private readonly testnetFundingRatesJob: TestnetFundingRatesJob,
+  ) {}
 
   @Post('funding-rates')
-  async triggerFundingRatesJob() {
-    await this.fundingRatesJob.fetchAndSaveFundingData();
-    return { message: 'Funding rates job executed successfully' };
+  async triggerFundingRatesJob(@Body() body: TriggerJobDto) {
+    const selectedNetwork = body.network || 'mainnet';
+
+    if (selectedNetwork === 'testnet') {
+      await this.testnetFundingRatesJob.scheduledFetch();
+    } else {
+      await this.mainnetFundingRatesJob.scheduledFetch();
+    }
+
+    return {
+      message: `${selectedNetwork} funding rates job executed successfully`,
+    };
   }
 }

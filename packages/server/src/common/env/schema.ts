@@ -10,7 +10,12 @@ export const envSchema = z.object({
 
   CORS_ORIGIN: z.string().default('*'),
 
-  HYPERLIQUID_API_URL: z.url().default('https://api-ui.hyperliquid.xyz'),
+  HYPERLIQUID_MAINNET_API_URL: z
+    .url()
+    .default('https://api-ui.hyperliquid.xyz'),
+  HYPERLIQUID_TESTNET_API_URL: z
+    .url()
+    .default('https://api-ui.hyperliquid-testnet.xyz'),
 
   S3_ENDPOINT: z.url(),
   S3_ACCESS_KEY: z.string(),

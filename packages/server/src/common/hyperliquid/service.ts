@@ -2,6 +2,10 @@ import { Injectable, Logger } from '@nestjs/common';
 import { HttpService } from '@nestjs/axios';
 import { firstValueFrom } from 'rxjs';
 
+import { Network } from '@crest/database';
+
+import { EnvService } from '@/common/env';
+
 import type {
   SpotMetaResponse,
   MetaResponse,
@@ -12,28 +16,54 @@ import type {
 @Injectable()
 export class HyperliquidService {
   private readonly logger = new Logger(HyperliquidService.name);
-  private readonly baseUrl = 'https://api.hyperliquid.xyz';
 
-  constructor(private readonly httpService: HttpService) {}
+  constructor(
+    private readonly httpService: HttpService,
+    private readonly envService: EnvService,
+  ) {}
 
-  private async requestInfo<T extends object>(request: { type: string }): Promise<T> {
+  private getBaseUrl(network: Network): string {
+    const { HYPERLIQUID_MAINNET_API_URL, HYPERLIQUID_TESTNET_API_URL } =
+      this.envService.get();
+    return network === Network.Mainnet
+      ? HYPERLIQUID_MAINNET_API_URL
+      : HYPERLIQUID_TESTNET_API_URL;
+  }
+
+  private async requestInfo<T extends object>(
+    request: { type: string },
+    network: Network,
+  ): Promise<T> {
+    const baseUrl = this.getBaseUrl(network);
     try {
       const response = await firstValueFrom(
-        this.httpService.post(`${this.baseUrl}/info`, request, {
+        this.httpService.post(`${baseUrl}/info`, request, {
           headers: { 'Content-Type': 'application/json' },
         }),
       );
       return response.data;
     } catch (error) {
-      this.logger.error(`Failed to request info for type: ${request.type}`, error);
+      this.logger.error(
+        `Failed to request info for type: ${request.type}`,
+        error,
+      );
       throw error;
     }
   }
 
-  async getSpotIndex(symbol: string) {
-    const { tokens, universe } = await this.requestInfo<SpotMetaResponse>({
-      type: 'spotMeta',
-    });
+  async getSpotIndex({
+    symbol,
+    network = Network.Mainnet,
+  }: {
+    symbol: string;
+    network?: Network;
+  }) {
+    const { tokens, universe } = await this.requestInfo<SpotMetaResponse>(
+      {
+        type: 'spotMeta',
+      },
+      network,
+    );
 
     const token = tokens.find((token) => token.name === symbol);
     if (token?.index === undefined) {
@@ -52,10 +82,19 @@ export class HyperliquidService {
     };
   }
 
-  async getPerpIndex(symbol: string) {
-    const { universe } = await this.requestInfo<MetaResponse>({
-      type: 'meta',
-    });
+  async getPerpIndex({
+    symbol,
+    network = Network.Mainnet,
+  }: {
+    symbol: string;
+    network?: Network;
+  }) {
+    const { universe } = await this.requestInfo<MetaResponse>(
+      {
+        type: 'meta',
+      },
+      network,
+    );
 
     const perpIndex = universe.findIndex((asset) => asset.name === symbol);
     if (perpIndex === -1) {
@@ -65,10 +104,16 @@ export class HyperliquidService {
     return { perpIndex, meta: universe[perpIndex] };
   }
 
-  async getIndexesBySymbol(symbol: string) {
+  async getIndexesBySymbol({
+    symbol,
+    network = Network.Mainnet,
+  }: {
+    symbol: string;
+    network?: Network;
+  }) {
     const [spot, perp] = await Promise.all([
-      this.getSpotIndex(symbol),
-      this.getPerpIndex(symbol),
+      this.getSpotIndex({ symbol, network }),
+      this.getPerpIndex({ symbol, network }),
     ]);
 
     return {
@@ -79,14 +124,19 @@ export class HyperliquidService {
     };
   }
 
-  async fetchPredictedFundings(): Promise<{
+  async fetchPredictedFundings({
+    network = Network.Mainnet,
+  }: { network?: Network } = {}): Promise<{
     rawData: PredictedFundingData[];
     hlPerpData: HlPerpData[];
   }> {
     try {
-      const rawData = await this.requestInfo<PredictedFundingData[]>({
-        type: 'predictedFundings',
-      });
+      const rawData = await this.requestInfo<PredictedFundingData[]>(
+        {
+          type: 'predictedFundings',
+        },
+        network,
+      );
 
       const hlPerpData: HlPerpData[] = rawData.reduce<HlPerpData[]>(
         (acc, [ticker, exchanges]) => {

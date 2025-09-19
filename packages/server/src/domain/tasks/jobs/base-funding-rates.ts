@@ -26,7 +26,7 @@ export abstract class BaseFundingRatesJob {
       this.logger.log(`Starting scheduled ${network} funding data fetch`);
 
       const { rawData, hlPerpData } =
-        await this.hyperliquidService.fetchPredictedFundings();
+        await this.hyperliquidService.fetchPredictedFundings({ network });
 
       await Promise.all([
         this.dataStorage.saveRawData(rawData, network),

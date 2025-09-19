@@ -1,5 +1,6 @@
 import fs from 'fs';
 import path from 'path';
+
 import { RawLogData } from '../data-processor/types/funding-rate';
 
 export class FileUtils {
@@ -7,7 +8,9 @@ export class FileUtils {
     try {
       await fs.promises.mkdir(dirPath, { recursive: true });
     } catch (error) {
-      throw new Error(`Failed to create directory ${dirPath}: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      throw new Error(
+        `Failed to create directory ${dirPath}: ${error instanceof Error ? error.message : 'Unknown error'}`,
+      );
     }
   }
 
@@ -16,7 +19,9 @@ export class FileUtils {
       const jsonString = JSON.stringify(data, null, 2);
       await fs.promises.writeFile(filePath, jsonString, 'utf8');
     } catch (error) {
-      throw new Error(`Failed to write JSON to ${filePath}: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      throw new Error(
+        `Failed to write JSON to ${filePath}: ${error instanceof Error ? error.message : 'Unknown error'}`,
+      );
     }
   }
   static async readJsonFile<T = any>(filePath: string): Promise<T> {
@@ -24,7 +29,9 @@ export class FileUtils {
       const fileContent = await fs.promises.readFile(filePath, 'utf8');
       return JSON.parse(fileContent) as T;
     } catch (error) {
-      throw new Error(`Failed to read or parse JSON file ${filePath}: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      throw new Error(
+        `Failed to read or parse JSON file ${filePath}: ${error instanceof Error ? error.message : 'Unknown error'}`,
+      );
     }
   }
 
@@ -32,11 +39,13 @@ export class FileUtils {
     try {
       const files = await fs.promises.readdir(logsDirectory);
       return files
-        .filter(file => file.endsWith('.json'))
-        .map(file => path.join(logsDirectory, file))
+        .filter((file) => file.endsWith('.json'))
+        .map((file) => path.join(logsDirectory, file))
         .sort();
     } catch (error) {
-      throw new Error(`Failed to read logs directory ${logsDirectory}: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      throw new Error(
+        `Failed to read logs directory ${logsDirectory}: ${error instanceof Error ? error.message : 'Unknown error'}`,
+      );
     }
   }
 
@@ -53,7 +62,9 @@ export class FileUtils {
     try {
       await fs.promises.mkdir(dirPath, { recursive: true });
     } catch (error) {
-      throw new Error(`Failed to create directory ${dirPath}: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      throw new Error(
+        `Failed to create directory ${dirPath}: ${error instanceof Error ? error.message : 'Unknown error'}`,
+      );
     }
   }
 
@@ -65,13 +76,15 @@ export class FileUtils {
     try {
       return await fs.promises.stat(filePath);
     } catch (error) {
-      throw new Error(`Failed to get file stats for ${filePath}: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      throw new Error(
+        `Failed to get file stats for ${filePath}: ${error instanceof Error ? error.message : 'Unknown error'}`,
+      );
     }
   }
 
   static async loadLogData(filePath: string): Promise<RawLogData> {
     const data = await this.readJsonFile<RawLogData>(filePath);
-    
+
     if (!Array.isArray(data)) {
       throw new Error(`Invalid log data format in ${filePath}: expected array`);
     }
@@ -82,9 +95,9 @@ export class FileUtils {
   static formatFileSize(bytes: number): string {
     const sizes = ['Bytes', 'KB', 'MB', 'GB'];
     if (bytes === 0) return '0 Bytes';
-    
+
     const i = Math.floor(Math.log(bytes) / Math.log(1024));
-    return Math.round(bytes / Math.pow(1024, i) * 100) / 100 + ' ' + sizes[i];
+    return Math.round((bytes / Math.pow(1024, i)) * 100) / 100 + ' ' + sizes[i];
   }
 }
 

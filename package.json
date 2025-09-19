@@ -3,6 +3,9 @@
   "private": true,
   "version": "1.0.0",
   "repository": "https://github.com/0xinevitable/crest-backend",
+  "scripts": {
+    "format": "prettier --write **/*"
+  },
   "workspaces": [
     "packages/*"
   ],

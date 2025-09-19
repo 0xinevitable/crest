@@ -1,8 +1,9 @@
-import sqlite3 from 'sqlite3';
-import { Client } from 'pg';
 import fs from 'fs';
 import path from 'path';
-import { ProcessedFundingRate, LogProcessingResult } from '../data-processor';
+import { Client } from 'pg';
+import sqlite3 from 'sqlite3';
+
+import { LogProcessingResult, ProcessedFundingRate } from '../data-processor';
 
 export interface DatabaseConfig {
   type: 'sqlite' | 'postgres';
@@ -33,7 +34,7 @@ export class DatabaseManager {
     } else if (this.config.type === 'postgres') {
       await this.connectPostgres();
     }
-    
+
     await this.initializeSchema();
   }
 
@@ -42,7 +43,9 @@ export class DatabaseManager {
       const dbPath = this.config.sqlite?.filename || 'funding_rates.db';
       this.sqliteDb = new sqlite3.Database(dbPath, (err) => {
         if (err) {
-          reject(new Error(`Failed to connect to SQLite database: ${err.message}`));
+          reject(
+            new Error(`Failed to connect to SQLite database: ${err.message}`),
+          );
         } else {
           console.log('Connected to SQLite database');
           resolve();
@@ -71,7 +74,7 @@ export class DatabaseManager {
   private async initializeSchema(): Promise<void> {
     const schemaPath = path.join(__dirname, 'schema.sql');
     const schema = fs.readFileSync(schemaPath, 'utf8');
-    
+
     if (this.config.type === 'sqlite' && this.sqliteDb) {
       await this.executeSQLite(schema);
     } else if (this.config.type === 'postgres' && this.pgClient) {
@@ -86,7 +89,7 @@ export class DatabaseManager {
         return;
       }
 
-      this.sqliteDb.run(sql, params, function(err) {
+      this.sqliteDb.run(sql, params, function (err) {
         if (err) {
           reject(err);
         } else {
@@ -112,12 +115,12 @@ export class DatabaseManager {
           record.nextFundingTime.toISOString(),
           record.fundingIntervalHours,
           record.processedAt.toISOString(),
-          record.logFile
+          record.logFile,
         ]);
       }
     } else if (this.config.type === 'postgres' && this.pgClient) {
       const pgSql = sql.replace(/\?/g, ($, index) => `$${index + 1}`);
-      
+
       for (const record of records) {
         await this.pgClient.query(pgSql, [
           record.symbol,
@@ -126,13 +129,16 @@ export class DatabaseManager {
           record.nextFundingTime,
           record.fundingIntervalHours,
           record.processedAt,
-          record.logFile
+          record.logFile,
         ]);
       }
     }
   }
 
-  async recordProcessingHistory(logFile: string, result: LogProcessingResult): Promise<void> {
+  async recordProcessingHistory(
+    logFile: string,
+    result: LogProcessingResult,
+  ): Promise<void> {
     const sql = `
       INSERT OR REPLACE INTO log_processing_history 
       (log_file, total_records, successful_records, error_count, errors)
@@ -144,7 +150,7 @@ export class DatabaseManager {
       result.totalRecords,
       result.successfulRecords,
       result.errors.length,
-      JSON.stringify(result.errors)
+      JSON.stringify(result.errors),
     ];
 
     if (this.config.type === 'sqlite') {
@@ -156,7 +162,8 @@ export class DatabaseManager {
   }
 
   async isFileProcessed(logFile: string): Promise<boolean> {
-    const sql = 'SELECT 1 FROM log_processing_history WHERE log_file = ? LIMIT 1';
+    const sql =
+      'SELECT 1 FROM log_processing_history WHERE log_file = ? LIMIT 1';
 
     if (this.config.type === 'sqlite' && this.sqliteDb) {
       return new Promise((resolve, reject) => {

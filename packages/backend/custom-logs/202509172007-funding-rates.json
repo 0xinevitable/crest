@@ -668,10 +668,7 @@
   [
     "BLAST",
     [
-      [
-        "BinPerp",
-        null
-      ],
+      ["BinPerp", null],
       [
         "HlPerp",
         {
@@ -737,10 +734,7 @@
           "fundingIntervalHours": 1
         }
       ],
-      [
-        "BybitPerp",
-        null
-      ]
+      ["BybitPerp", null]
     ]
   ],
   [
@@ -949,10 +943,7 @@
   [
     "CANTO",
     [
-      [
-        "BinPerp",
-        null
-      ],
+      ["BinPerp", null],
       [
         "HlPerp",
         {
@@ -961,10 +952,7 @@
           "fundingIntervalHours": 1
         }
       ],
-      [
-        "BybitPerp",
-        null
-      ]
+      ["BybitPerp", null]
     ]
   ],
   [
@@ -1537,10 +1525,7 @@
           "fundingIntervalHours": 1
         }
       ],
-      [
-        "BybitPerp",
-        null
-      ]
+      ["BybitPerp", null]
     ]
   ],
   [
@@ -1575,10 +1560,7 @@
   [
     "FRIEND",
     [
-      [
-        "BinPerp",
-        null
-      ],
+      ["BinPerp", null],
       [
         "HlPerp",
         {
@@ -1587,10 +1569,7 @@
           "fundingIntervalHours": 1
         }
       ],
-      [
-        "BybitPerp",
-        null
-      ]
+      ["BybitPerp", null]
     ]
   ],
   [
@@ -1611,10 +1590,7 @@
           "fundingIntervalHours": 1
         }
       ],
-      [
-        "BybitPerp",
-        null
-      ]
+      ["BybitPerp", null]
     ]
   ],
   [
@@ -1635,10 +1611,7 @@
           "fundingIntervalHours": 1
         }
       ],
-      [
-        "BybitPerp",
-        null
-      ]
+      ["BybitPerp", null]
     ]
   ],
   [
@@ -1934,10 +1907,7 @@
   [
     "HPOS",
     [
-      [
-        "BinPerp",
-        null
-      ],
+      ["BinPerp", null],
       [
         "HlPerp",
         {
@@ -1946,19 +1916,13 @@
           "fundingIntervalHours": 1
         }
       ],
-      [
-        "BybitPerp",
-        null
-      ]
+      ["BybitPerp", null]
     ]
   ],
   [
     "HYPE",
     [
-      [
-        "BinPerp",
-        null
-      ],
+      ["BinPerp", null],
       [
         "HlPerp",
         {
@@ -1967,10 +1931,7 @@
           "fundingIntervalHours": 1
         }
       ],
-      [
-        "BybitPerp",
-        null
-      ]
+      ["BybitPerp", null]
     ]
   ],
   [
@@ -2353,10 +2314,7 @@
   [
     "LAUNCHCOIN",
     [
-      [
-        "BinPerp",
-        null
-      ],
+      ["BinPerp", null],
       [
         "HlPerp",
         {
@@ -2394,10 +2352,7 @@
           "fundingIntervalHours": 1
         }
       ],
-      [
-        "BybitPerp",
-        null
-      ]
+      ["BybitPerp", null]
     ]
   ],
   [
@@ -2519,10 +2474,7 @@
   [
     "LOOM",
     [
-      [
-        "BinPerp",
-        null
-      ],
+      ["BinPerp", null],
       [
         "HlPerp",
         {
@@ -2531,10 +2483,7 @@
           "fundingIntervalHours": 1
         }
       ],
-      [
-        "BybitPerp",
-        null
-      ]
+      ["BybitPerp", null]
     ]
   ],
   [
@@ -2613,10 +2562,7 @@
           "fundingIntervalHours": 1
         }
       ],
-      [
-        "BybitPerp",
-        null
-      ]
+      ["BybitPerp", null]
     ]
   ],
   [
@@ -2651,10 +2597,7 @@
   [
     "MAVIA",
     [
-      [
-        "BinPerp",
-        null
-      ],
+      ["BinPerp", null],
       [
         "HlPerp",
         {
@@ -2865,19 +2808,13 @@
           "fundingIntervalHours": 1
         }
       ],
-      [
-        "BybitPerp",
-        null
-      ]
+      ["BybitPerp", null]
     ]
   ],
   [
     "MNT",
     [
-      [
-        "BinPerp",
-        null
-      ],
+      ["BinPerp", null],
       [
         "HlPerp",
         {
@@ -3060,10 +2997,7 @@
           "fundingIntervalHours": 1
         }
       ],
-      [
-        "BybitPerp",
-        null
-      ]
+      ["BybitPerp", null]
     ]
   ],
   [
@@ -3098,10 +3032,7 @@
   [
     "NFTI",
     [
-      [
-        "BinPerp",
-        null
-      ],
+      ["BinPerp", null],
       [
         "HlPerp",
         {
@@ -3110,10 +3041,7 @@
           "fundingIntervalHours": 1
         }
       ],
-      [
-        "BybitPerp",
-        null
-      ]
+      ["BybitPerp", null]
     ]
   ],
   [
@@ -3380,10 +3308,7 @@
   [
     "ORBS",
     [
-      [
-        "BinPerp",
-        null
-      ],
+      ["BinPerp", null],
       [
         "HlPerp",
         {
@@ -3434,10 +3359,7 @@
   [
     "OX",
     [
-      [
-        "BinPerp",
-        null
-      ],
+      ["BinPerp", null],
       [
         "HlPerp",
         {
@@ -3446,19 +3368,13 @@
           "fundingIntervalHours": 1
         }
       ],
-      [
-        "BybitPerp",
-        null
-      ]
+      ["BybitPerp", null]
     ]
   ],
   [
     "PANDORA",
     [
-      [
-        "BinPerp",
-        null
-      ],
+      ["BinPerp", null],
       [
         "HlPerp",
         {
@@ -3467,10 +3383,7 @@
           "fundingIntervalHours": 1
         }
       ],
-      [
-        "BybitPerp",
-        null
-      ]
+      ["BybitPerp", null]
     ]
   ],
   [
@@ -3811,19 +3724,13 @@
           "fundingIntervalHours": 1
         }
       ],
-      [
-        "BybitPerp",
-        null
-      ]
+      ["BybitPerp", null]
     ]
   ],
   [
     "PURR",
     [
-      [
-        "BinPerp",
-        null
-      ],
+      ["BinPerp", null],
       [
         "HlPerp",
         {
@@ -3832,10 +3739,7 @@
           "fundingIntervalHours": 1
         }
       ],
-      [
-        "BybitPerp",
-        null
-      ]
+      ["BybitPerp", null]
     ]
   ],
   [
@@ -3928,10 +3832,7 @@
   [
     "REQ",
     [
-      [
-        "BinPerp",
-        null
-      ],
+      ["BinPerp", null],
       [
         "HlPerp",
         {
@@ -4011,10 +3912,7 @@
   [
     "RLB",
     [
-      [
-        "BinPerp",
-        null
-      ],
+      ["BinPerp", null],
       [
         "HlPerp",
         {
@@ -4023,19 +3921,13 @@
           "fundingIntervalHours": 1
         }
       ],
-      [
-        "BybitPerp",
-        null
-      ]
+      ["BybitPerp", null]
     ]
   ],
   [
     "RNDR",
     [
-      [
-        "BinPerp",
-        null
-      ],
+      ["BinPerp", null],
       [
         "HlPerp",
         {
@@ -4044,10 +3936,7 @@
           "fundingIntervalHours": 1
         }
       ],
-      [
-        "BybitPerp",
-        null
-      ]
+      ["BybitPerp", null]
     ]
   ],
   [
@@ -4256,10 +4145,7 @@
   [
     "SHIA",
     [
-      [
-        "BinPerp",
-        null
-      ],
+      ["BinPerp", null],
       [
         "HlPerp",
         {
@@ -4268,10 +4154,7 @@
           "fundingIntervalHours": 1
         }
       ],
-      [
-        "BybitPerp",
-        null
-      ]
+      ["BybitPerp", null]
     ]
   ],
   [
@@ -4466,10 +4349,7 @@
           "fundingIntervalHours": 1
         }
       ],
-      [
-        "BybitPerp",
-        null
-      ]
+      ["BybitPerp", null]
     ]
   ],
   [
@@ -4868,10 +4748,7 @@
           "fundingIntervalHours": 1
         }
       ],
-      [
-        "BybitPerp",
-        null
-      ]
+      ["BybitPerp", null]
     ]
   ],
   [
@@ -4893,10 +4770,7 @@
           "fundingIntervalHours": 1
         }
       ],
-      [
-        "BybitPerp",
-        null
-      ]
+      ["BybitPerp", null]
     ]
   ],
   [
@@ -4960,10 +4834,7 @@
   [
     "UNIBOT",
     [
-      [
-        "BinPerp",
-        null
-      ],
+      ["BinPerp", null],
       [
         "HlPerp",
         {
@@ -4972,10 +4843,7 @@
           "fundingIntervalHours": 1
         }
       ],
-      [
-        "BybitPerp",
-        null
-      ]
+      ["BybitPerp", null]
     ]
   ],
   [
@@ -5415,10 +5283,7 @@
   [
     "YZY",
     [
-      [
-        "BinPerp",
-        null
-      ],
+      ["BinPerp", null],
       [
         "HlPerp",
         {
@@ -5643,10 +5508,7 @@
   [
     "kDOGS",
     [
-      [
-        "BinPerp",
-        null
-      ],
+      ["BinPerp", null],
       [
         "HlPerp",
         {
@@ -5655,10 +5517,7 @@
           "fundingIntervalHours": 1
         }
       ],
-      [
-        "BybitPerp",
-        null
-      ]
+      ["BybitPerp", null]
     ]
   ],
   [
@@ -5722,10 +5581,7 @@
   [
     "kNEIRO",
     [
-      [
-        "BinPerp",
-        null
-      ],
+      ["BinPerp", null],
       [
         "HlPerp",
         {
@@ -5792,10 +5648,7 @@
           "fundingIntervalHours": 1
         }
       ],
-      [
-        "BybitPerp",
-        null
-      ]
+      ["BybitPerp", null]
     ]
   ]
 ]

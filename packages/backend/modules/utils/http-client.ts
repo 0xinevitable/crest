@@ -15,12 +15,15 @@ interface HttpResponse<T = any> {
 export class HttpClient {
   private defaultTimeout = 30000; // 30 seconds
 
-  async request<T = any>(url: string, options: HttpRequestOptions = {}): Promise<HttpResponse<T>> {
+  async request<T = any>(
+    url: string,
+    options: HttpRequestOptions = {},
+  ): Promise<HttpResponse<T>> {
     const {
       method = 'GET',
       headers = {},
       body,
-      timeout = this.defaultTimeout
+      timeout = this.defaultTimeout,
     } = options;
 
     const controller = new AbortController();
@@ -31,10 +34,10 @@ export class HttpClient {
         method,
         headers: {
           'Content-Type': 'application/json',
-          ...headers
+          ...headers,
         },
         body,
-        signal: controller.signal
+        signal: controller.signal,
       });
 
       clearTimeout(timeoutId);
@@ -43,7 +46,7 @@ export class HttpClient {
         throw new Error(`HTTP ${response.status}: ${response.statusText}`);
       }
 
-      const data = await response.json() as T;
+      const data = (await response.json()) as T;
       const responseHeaders: Record<string, string> = {};
       response.headers.forEach((value, key) => {
         responseHeaders[key] = value;
@@ -53,7 +56,7 @@ export class HttpClient {
         data,
         status: response.status,
         statusText: response.statusText,
-        headers: responseHeaders
+        headers: responseHeaders,
       };
     } catch (error) {
       clearTimeout(timeoutId);
@@ -64,15 +67,22 @@ export class HttpClient {
     }
   }
 
-  async get<T = any>(url: string, headers?: Record<string, string>): Promise<HttpResponse<T>> {
+  async get<T = any>(
+    url: string,
+    headers?: Record<string, string>,
+  ): Promise<HttpResponse<T>> {
     return this.request<T>(url, { method: 'GET', headers });
   }
 
-  async post<T = any>(url: string, data?: any, headers?: Record<string, string>): Promise<HttpResponse<T>> {
+  async post<T = any>(
+    url: string,
+    data?: any,
+    headers?: Record<string, string>,
+  ): Promise<HttpResponse<T>> {
     return this.request<T>(url, {
       method: 'POST',
       headers,
-      body: data ? JSON.stringify(data) : undefined
+      body: data ? JSON.stringify(data) : undefined,
     });
   }
 }

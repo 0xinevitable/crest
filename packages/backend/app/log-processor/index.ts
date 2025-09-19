@@ -1,6 +1,7 @@
 import path from 'path';
+
 import { LogParser, ProcessedFundingRate } from '../../modules/data-processor';
-import { DatabaseManager, DatabaseConfig } from '../../modules/database';
+import { DatabaseConfig, DatabaseManager } from '../../modules/database';
 import { FileUtils } from '../../modules/utils';
 
 class LogProcessor {
@@ -22,7 +23,7 @@ class LogProcessor {
     try {
       console.log(`Scanning for log files in: ${this.logsDirectory}`);
       const logFiles = await FileUtils.getLogFiles(this.logsDirectory);
-      
+
       if (logFiles.length === 0) {
         console.log('No log files found');
         return;
@@ -43,7 +44,7 @@ class LogProcessor {
 
   private async processLogFile(logFilePath: string): Promise<void> {
     const fileName = FileUtils.getFileName(logFilePath);
-    
+
     console.log(`\nProcessing: ${fileName}`);
 
     try {
@@ -60,34 +61,41 @@ class LogProcessor {
       console.log(`  📊 Loaded raw data`);
 
       const result = LogParser.parseLogFile(logData, fileName);
-      console.log(`  ✅ Parsed: ${result.successfulRecords}/${result.totalRecords} records`);
+      console.log(
+        `  ✅ Parsed: ${result.successfulRecords}/${result.totalRecords} records`,
+      );
 
       if (result.errors.length > 0) {
         console.log(`  ⚠️  Errors: ${result.errors.length}`);
-        result.errors.forEach(error => console.log(`     ${error}`));
+        result.errors.forEach((error) => console.log(`     ${error}`));
       }
 
       if (result.successfulRecords > 0) {
-        const processedRecords = this.extractProcessedRecords(logData, fileName);
+        const processedRecords = this.extractProcessedRecords(
+          logData,
+          fileName,
+        );
         await this.dbManager.insertFundingRates(processedRecords);
         console.log(`  💾 Saved to database`);
       }
 
       await this.dbManager.recordProcessingHistory(fileName, result);
       console.log(`  📝 Recorded processing history`);
-
     } catch (error) {
       console.error(`  ❌ Failed to process ${fileName}:`, error.message);
-      
+
       await this.dbManager.recordProcessingHistory(fileName, {
         totalRecords: 0,
         successfulRecords: 0,
-        errors: [error.message]
+        errors: [error.message],
       });
     }
   }
 
-  private extractProcessedRecords(logData: any, fileName: string): ProcessedFundingRate[] {
+  private extractProcessedRecords(
+    logData: any,
+    fileName: string,
+  ): ProcessedFundingRate[] {
     const result = LogParser.parseLogFile(logData, fileName);
     const processedRecords: ProcessedFundingRate[] = [];
 
@@ -109,10 +117,9 @@ class LogProcessor {
             nextFundingTime,
             fundingIntervalHours: fundingData.fundingIntervalHours || null,
             processedAt: new Date(),
-            logFile: fileName
+            logFile: fileName,
           });
-        } catch (error) {
-        }
+        } catch (error) {}
       }
     }
 
@@ -130,8 +137,8 @@ async function main() {
   const dbConfig: DatabaseConfig = {
     type: 'sqlite',
     sqlite: {
-      filename: 'funding_rates.db'
-    }
+      filename: 'funding_rates.db',
+    },
   };
 
   const processor = new LogProcessor(dbConfig);

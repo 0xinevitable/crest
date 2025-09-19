@@ -1,5 +1,4 @@
 #!/usr/bin/env node
-
 import { logFetcher } from '../../modules/data-processor/log-fetcher';
 import { fundingRateScheduler } from '../../modules/data-processor/scheduler';
 import { fileUtils } from '../../modules/utils/file-utils';
@@ -47,18 +46,25 @@ class FundingRateFetcher {
         await this.runScheduled();
       }
     } catch (error) {
-      console.error('💥 Application error:', error instanceof Error ? error.message : 'Unknown error');
+      console.error(
+        '💥 Application error:',
+        error instanceof Error ? error.message : 'Unknown error',
+      );
       process.exit(1);
     }
   }
 
   private async runOnce(): Promise<void> {
     console.log('\n📥 Fetching funding rates (one-time)...');
-    
-    const result = await logFetcher.fetchAndSave(this.config.outputDir || './logs');
-    
+
+    const result = await logFetcher.fetchAndSave(
+      this.config.outputDir || './logs',
+    );
+
     if (result.success) {
-      console.log(`✅ Success! Saved ${result.recordCount} records to ${result.filename}`);
+      console.log(
+        `✅ Success! Saved ${result.recordCount} records to ${result.filename}`,
+      );
     } else {
       console.log(`❌ Failed: ${result.error}`);
       process.exit(1);
@@ -66,18 +72,22 @@ class FundingRateFetcher {
   }
 
   private async runScheduled(): Promise<void> {
-    console.log(`\n⏰ Starting scheduled fetching (every ${this.config.intervalMinutes} minutes)...`);
-    
+    console.log(
+      `\n⏰ Starting scheduled fetching (every ${this.config.intervalMinutes} minutes)...`,
+    );
+
     // Configure scheduler
     fundingRateScheduler.updateConfig({
       intervalMinutes: this.config.intervalMinutes || 60,
       baseDir: this.config.outputDir || './logs',
       onFetchComplete: (result) => {
-        console.log(`✅ Scheduled fetch completed: ${result.filename} (${result.recordCount} records)`);
+        console.log(
+          `✅ Scheduled fetch completed: ${result.filename} (${result.recordCount} records)`,
+        );
       },
       onError: (error) => {
         console.error(`❌ Scheduled fetch error: ${error.message}`);
-      }
+      },
     });
 
     // Start scheduler
@@ -102,46 +112,50 @@ class FundingRateFetcher {
   private parseArguments(): AppConfig {
     const args = process.argv.slice(2);
     const config: AppConfig = {
-      mode: 'once' // default mode
+      mode: 'once', // default mode
     };
 
     for (let i = 0; i < args.length; i++) {
       const arg = args[i];
-      
+
       switch (arg) {
         case '--schedule':
         case '-s':
           config.mode = 'schedule';
           break;
-          
+
         case '--interval':
         case '-i':
           const interval = parseInt(args[++i]);
           if (isNaN(interval) || interval <= 0) {
-            throw new Error('Invalid interval value. Must be a positive number.');
+            throw new Error(
+              'Invalid interval value. Must be a positive number.',
+            );
           }
           config.intervalMinutes = interval;
           break;
-          
+
         case '--output':
         case '-o':
           config.outputDir = args[++i];
           if (!config.outputDir) {
-            throw new Error('Output directory is required when using --output flag.');
+            throw new Error(
+              'Output directory is required when using --output flag.',
+            );
           }
           break;
-          
+
         case '--test':
         case '-t':
           config.testConnection = true;
           break;
-          
+
         case '--help':
         case '-h':
           this.showHelp();
           process.exit(0);
           break;
-          
+
         default:
           if (arg.startsWith('-')) {
             throw new Error(`Unknown option: ${arg}`);

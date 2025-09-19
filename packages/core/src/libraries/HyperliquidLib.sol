@@ -1,16 +1,18 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.21;
 
-import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import { IERC20 } from '@openzeppelin/contracts/token/ERC20/IERC20.sol';
+import { SafeERC20 } from '@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol';
 
 interface ICoreWriter {
     function sendRawAction(bytes calldata data) external payable;
 }
 
 library HLConstants {
-    address internal constant HYPE_SYSTEM_ADDRESS = 0x2222222222222222222222222222222222222222;
-    uint160 internal constant BASE_SYSTEM_ADDRESS = uint160(0x4444444444444444444444444444444444444444);
+    address internal constant HYPE_SYSTEM_ADDRESS =
+        0x2222222222222222222222222222222222222222;
+    uint160 internal constant BASE_SYSTEM_ADDRESS =
+        uint160(0x4444444444444444444444444444444444444444);
 
     uint8 internal constant SPOT_SEND_ACTION = 1;
     uint8 internal constant TOKEN_DELEGATE_ACTION = 2;
@@ -30,17 +32,25 @@ library HLConstants {
 }
 
 library HLConversions {
-    function evmToWei(uint64 token, uint256 evmAmount) internal pure returns (uint64) {
+    function evmToWei(
+        uint64 token,
+        uint256 evmAmount
+    ) internal pure returns (uint64) {
         // Simplified conversion - assumes 6 decimals for USDC
-        if (token == 0) { // USDC
+        if (token == 0) {
+            // USDC
             return uint64(evmAmount / 1e12); // Convert from 18 to 6 decimals
         }
         return uint64(evmAmount);
     }
 
-    function weiToEvm(uint64 token, uint64 weiAmount) internal pure returns (uint256) {
+    function weiToEvm(
+        uint64 token,
+        uint64 weiAmount
+    ) internal pure returns (uint256) {
         // Simplified conversion - assumes 6 decimals for USDC
-        if (token == 0) { // USDC
+        if (token == 0) {
+            // USDC
             return uint256(weiAmount) * 1e12; // Convert from 6 to 18 decimals
         }
         return uint256(weiAmount);
@@ -54,9 +64,12 @@ library HLConversions {
 library HyperliquidLib {
     using SafeERC20 for IERC20;
 
-    ICoreWriter constant coreWriter = ICoreWriter(0x3333333333333333333333333333333333333333);
+    ICoreWriter constant coreWriter =
+        ICoreWriter(0x3333333333333333333333333333333333333333);
 
-    error HyperliquidLib__StillLockedUntilTimestamp(uint64 lockedUntilTimestamp);
+    error HyperliquidLib__StillLockedUntilTimestamp(
+        uint64 lockedUntilTimestamp
+    );
     error HyperliquidLib__CannotSelfTransfer();
     error HyperliquidLib__HypeTransferFailed();
     error HyperliquidLib__CoreAmountTooLarge(uint256 amount);
@@ -66,34 +79,42 @@ library HyperliquidLib {
         uint64 tokenIndex = 0; // Simplified - assumes USDC
         address systemAddress = getSystemAddress(tokenIndex);
         uint64 coreAmount = HLConversions.evmToWei(tokenIndex, evmAmount);
-        if (coreAmount == 0) revert HyperliquidLib__EvmAmountTooSmall(evmAmount);
+        if (coreAmount == 0)
+            revert HyperliquidLib__EvmAmountTooSmall(evmAmount);
         // For USDC
         IERC20(tokenAddress).safeTransfer(systemAddress, evmAmount);
     }
 
     function bridgeToCore(uint64 token, uint256 evmAmount) internal {
         uint64 coreAmount = HLConversions.evmToWei(token, evmAmount);
-        if (coreAmount == 0) revert HyperliquidLib__EvmAmountTooSmall(evmAmount);
+        if (coreAmount == 0)
+            revert HyperliquidLib__EvmAmountTooSmall(evmAmount);
         address systemAddress = getSystemAddress(token);
         if (isHype(token)) {
-            (bool success,) = systemAddress.call{value: evmAmount}("");
+            (bool success, ) = systemAddress.call{ value: evmAmount }('');
             if (!success) revert HyperliquidLib__HypeTransferFailed();
         } else {
             // For USDC - assuming token address would be looked up
             // In production, this would need proper token registry
-            revert("Token bridging not fully implemented");
+            revert('Token bridging not fully implemented');
         }
     }
 
-    function bridgeToEvm(uint64 token, uint256 amount, bool isEvmAmount) internal {
+    function bridgeToEvm(
+        uint64 token,
+        uint256 amount,
+        bool isEvmAmount
+    ) internal {
         address systemAddress = getSystemAddress(token);
 
         uint64 coreAmount;
         if (isEvmAmount) {
             coreAmount = HLConversions.evmToWei(token, amount);
-            if (coreAmount == 0) revert HyperliquidLib__EvmAmountTooSmall(amount);
+            if (coreAmount == 0)
+                revert HyperliquidLib__EvmAmountTooSmall(amount);
         } else {
-            if (amount > type(uint64).max) revert HyperliquidLib__CoreAmountTooLarge(amount);
+            if (amount > type(uint64).max)
+                revert HyperliquidLib__CoreAmountTooLarge(amount);
             coreAmount = uint64(amount);
         }
 
@@ -104,13 +125,21 @@ library HyperliquidLib {
         if (to == address(this)) revert HyperliquidLib__CannotSelfTransfer();
 
         coreWriter.sendRawAction(
-            abi.encodePacked(uint8(1), HLConstants.SPOT_SEND_ACTION, abi.encode(to, token, amountWei))
+            abi.encodePacked(
+                uint8(1),
+                HLConstants.SPOT_SEND_ACTION,
+                abi.encode(to, token, amountWei)
+            )
         );
     }
 
     function transferUsdClass(uint64 ntl, bool toPerp) internal {
         coreWriter.sendRawAction(
-            abi.encodePacked(uint8(1), HLConstants.USD_CLASS_TRANSFER_ACTION, abi.encode(ntl, toPerp))
+            abi.encodePacked(
+                uint8(1),
+                HLConstants.USD_CLASS_TRANSFER_ACTION,
+                abi.encode(ntl, toPerp)
+            )
         );
     }
 
@@ -127,14 +156,26 @@ library HyperliquidLib {
             abi.encodePacked(
                 uint8(1),
                 HLConstants.LIMIT_ORDER_ACTION,
-                abi.encode(asset, isBuy, limitPx, sz, reduceOnly, encodedTif, cloid)
+                abi.encode(
+                    asset,
+                    isBuy,
+                    limitPx,
+                    sz,
+                    reduceOnly,
+                    encodedTif,
+                    cloid
+                )
             )
         );
     }
 
     function cancelOrderByCloid(uint32 asset, uint128 cloid) internal {
         coreWriter.sendRawAction(
-            abi.encodePacked(uint8(1), HLConstants.CANCEL_ORDER_BY_CLOID_ACTION, abi.encode(asset, cloid))
+            abi.encodePacked(
+                uint8(1),
+                HLConstants.CANCEL_ORDER_BY_CLOID_ACTION,
+                abi.encode(asset, cloid)
+            )
         );
     }
 

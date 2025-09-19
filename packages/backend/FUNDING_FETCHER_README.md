@@ -15,16 +15,19 @@ A TypeScript application for fetching cryptocurrency funding rates from the Hype
 ## Quick Start
 
 ### Install Dependencies
+
 ```bash
 npm install
 ```
 
 ### Fetch Once
+
 ```bash
 npm run fetch
 ```
 
 ### Scheduled Fetching
+
 ```bash
 # Fetch every hour (default)
 npm run fetch -- --schedule
@@ -34,6 +37,7 @@ npm run fetch -- --schedule --interval 15
 ```
 
 ### Test Connection
+
 ```bash
 npm run fetch -- --test
 ```
@@ -59,13 +63,13 @@ npm run fetch -- --schedule --interval 60 --output ./custom-logs --test
 
 ## Command Line Options
 
-| Option | Alias | Description | Default |
-|--------|-------|-------------|---------|
-| `--schedule` | `-s` | Run in scheduled mode | One-time |
-| `--interval <minutes>` | `-i` | Fetch interval in minutes | 60 |
-| `--output <directory>` | `-o` | Output directory | `./logs` |
-| `--test` | `-t` | Test connection before start | false |
-| `--help` | `-h` | Show help message | - |
+| Option                 | Alias | Description                  | Default  |
+| ---------------------- | ----- | ---------------------------- | -------- |
+| `--schedule`           | `-s`  | Run in scheduled mode        | One-time |
+| `--interval <minutes>` | `-i`  | Fetch interval in minutes    | 60       |
+| `--output <directory>` | `-o`  | Output directory             | `./logs` |
+| `--test`               | `-t`  | Test connection before start | false    |
+| `--help`               | `-h`  | Show help message            | -        |
 
 ## File Structure
 
@@ -98,9 +102,30 @@ The fetched data contains funding rates for multiple exchanges:
   [
     "BTC",
     [
-      ["BinPerp", {"fundingRate": "0.00007652", "nextFundingTime": 1758124800000, "fundingIntervalHours": 8}],
-      ["HlPerp", {"fundingRate": "0.0000125", "nextFundingTime": 1758103200000, "fundingIntervalHours": 1}],
-      ["BybitPerp", {"fundingRate": "0.0001", "nextFundingTime": 1758124800000, "fundingIntervalHours": 8}]
+      [
+        "BinPerp",
+        {
+          "fundingRate": "0.00007652",
+          "nextFundingTime": 1758124800000,
+          "fundingIntervalHours": 8
+        }
+      ],
+      [
+        "HlPerp",
+        {
+          "fundingRate": "0.0000125",
+          "nextFundingTime": 1758103200000,
+          "fundingIntervalHours": 1
+        }
+      ],
+      [
+        "BybitPerp",
+        {
+          "fundingRate": "0.0001",
+          "nextFundingTime": 1758124800000,
+          "fundingIntervalHours": 8
+        }
+      ]
     ]
   ]
 ]
@@ -124,7 +149,7 @@ const result = await logFetcher.fetchAndSave('./logs');
 // Scheduled fetching
 fundingRateScheduler.updateConfig({
   intervalMinutes: 30,
-  baseDir: './logs'
+  baseDir: './logs',
 });
 fundingRateScheduler.start();
 ```

@@ -1,7 +1,15 @@
-import { RawLogData, ProcessedFundingRate, LogProcessingResult, ExchangeFundingData } from '../types/funding-rate';
+import {
+  ExchangeFundingData,
+  LogProcessingResult,
+  ProcessedFundingRate,
+  RawLogData,
+} from '../types/funding-rate';
 
 export class LogParser {
-  static parseLogFile(rawData: RawLogData, logFileName: string): LogProcessingResult {
+  static parseLogFile(
+    rawData: RawLogData,
+    logFileName: string,
+  ): LogProcessingResult {
     const processedRecords: ProcessedFundingRate[] = [];
     const errors: string[] = [];
     let totalRecords = 0;
@@ -10,7 +18,7 @@ export class LogParser {
       for (const [symbol, exchanges] of rawData) {
         for (const [exchangeName, fundingData] of exchanges) {
           totalRecords++;
-          
+
           try {
             if (fundingData === null) {
               continue;
@@ -20,14 +28,16 @@ export class LogParser {
               symbol,
               exchangeName,
               fundingData,
-              logFileName
+              logFileName,
             );
-            
+
             if (processedRecord) {
               processedRecords.push(processedRecord);
             }
           } catch (error) {
-            errors.push(`Error processing ${symbol}-${exchangeName}: ${error.message}`);
+            errors.push(
+              `Error processing ${symbol}-${exchangeName}: ${error.message}`,
+            );
           }
         }
       }
@@ -38,7 +48,7 @@ export class LogParser {
     return {
       totalRecords,
       successfulRecords: processedRecords.length,
-      errors
+      errors,
     };
   }
 
@@ -46,16 +56,16 @@ export class LogParser {
     symbol: string,
     exchange: string,
     data: ExchangeFundingData,
-    logFileName: string
+    logFileName: string,
   ): ProcessedFundingRate | null {
     const fundingRate = parseFloat(data.fundingRate);
-    
+
     if (isNaN(fundingRate)) {
       throw new Error(`Invalid funding rate: ${data.fundingRate}`);
     }
 
     const nextFundingTime = new Date(data.nextFundingTime);
-    
+
     if (isNaN(nextFundingTime.getTime())) {
       throw new Error(`Invalid next funding time: ${data.nextFundingTime}`);
     }
@@ -67,21 +77,21 @@ export class LogParser {
       nextFundingTime,
       fundingIntervalHours: data.fundingIntervalHours || null,
       processedAt: new Date(),
-      logFile: logFileName
+      logFile: logFileName,
     };
   }
 
   static extractTimestampFromFileName(fileName: string): Date | null {
     const match = fileName.match(/(\d{12})/);
     if (!match) return null;
-    
+
     const timestamp = match[1];
     const year = parseInt(timestamp.substring(0, 4));
     const month = parseInt(timestamp.substring(4, 6)) - 1;
     const day = parseInt(timestamp.substring(6, 8));
     const hour = parseInt(timestamp.substring(8, 10));
     const minute = parseInt(timestamp.substring(10, 12));
-    
+
     return new Date(year, month, day, hour, minute);
   }
 }

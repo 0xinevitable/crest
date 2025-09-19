@@ -1,4 +1,4 @@
-import { logFetcher, FetchResult } from './log-fetcher';
+import { FetchResult, logFetcher } from './log-fetcher';
 
 export interface SchedulerConfig {
   intervalMinutes: number;
@@ -18,7 +18,7 @@ export class FundingRateScheduler {
       intervalMinutes: 60, // Default: fetch every hour
       baseDir: './logs',
       autoStart: false,
-      ...config
+      ...config,
     };
   }
 
@@ -31,11 +31,13 @@ export class FundingRateScheduler {
       return;
     }
 
-    console.log(`Starting funding rate scheduler - fetching every ${this.config.intervalMinutes} minutes`);
-    
+    console.log(
+      `Starting funding rate scheduler - fetching every ${this.config.intervalMinutes} minutes`,
+    );
+
     // Fetch immediately on start
     this.executeFetch();
-    
+
     // Set up recurring fetch
     const intervalMs = this.config.intervalMinutes * 60 * 1000;
     this.intervalId = setInterval(() => {
@@ -71,18 +73,28 @@ export class FundingRateScheduler {
     try {
       console.log(`[${new Date().toISOString()}] Starting scheduled fetch...`);
       const result = await logFetcher.fetchAndSave(this.config.baseDir);
-      
+
       if (result.success) {
-        console.log(`[${new Date().toISOString()}] Fetch completed successfully: ${result.filename}`);
+        console.log(
+          `[${new Date().toISOString()}] Fetch completed successfully: ${result.filename}`,
+        );
         this.config.onFetchComplete?.(result);
       } else {
-        console.error(`[${new Date().toISOString()}] Fetch failed: ${result.error}`);
+        console.error(
+          `[${new Date().toISOString()}] Fetch failed: ${result.error}`,
+        );
         this.config.onError?.(new Error(result.error || 'Unknown fetch error'));
       }
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      console.error(`[${new Date().toISOString()}] Unexpected error during fetch:`, errorMessage);
-      this.config.onError?.(error instanceof Error ? error : new Error(errorMessage));
+      const errorMessage =
+        error instanceof Error ? error.message : 'Unknown error';
+      console.error(
+        `[${new Date().toISOString()}] Unexpected error during fetch:`,
+        errorMessage,
+      );
+      this.config.onError?.(
+        error instanceof Error ? error : new Error(errorMessage),
+      );
     }
   }
 
@@ -103,15 +115,16 @@ export class FundingRateScheduler {
     baseDir: string;
     nextFetchTime?: Date;
   } {
-    const nextFetchTime = this.isRunning && this.intervalId 
-      ? new Date(Date.now() + this.config.intervalMinutes * 60 * 1000)
-      : undefined;
+    const nextFetchTime =
+      this.isRunning && this.intervalId
+        ? new Date(Date.now() + this.config.intervalMinutes * 60 * 1000)
+        : undefined;
 
     return {
       isRunning: this.isRunning,
       intervalMinutes: this.config.intervalMinutes,
       baseDir: this.config.baseDir,
-      nextFetchTime
+      nextFetchTime,
     };
   }
 
@@ -120,17 +133,17 @@ export class FundingRateScheduler {
    */
   updateConfig(newConfig: Partial<SchedulerConfig>): void {
     const wasRunning = this.isRunning;
-    
+
     if (wasRunning) {
       this.stop();
     }
-    
+
     this.config = { ...this.config, ...newConfig };
-    
+
     if (wasRunning) {
       this.start();
     }
-    
+
     console.log('Scheduler configuration updated');
   }
 

@@ -1,15 +1,19 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.21;
 
-import {ERC20} from "@solmate/tokens/ERC20.sol";
-import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import {SafeTransferLib} from "@solmate/utils/SafeTransferLib.sol";
-import {FixedPointMathLib} from "@solmate/utils/FixedPointMathLib.sol";
-import {Auth, Authority} from "@solmate/auth/Auth.sol";
-import {ReentrancyGuard} from "@solmate/utils/ReentrancyGuard.sol";
-import {CrestVault} from "./CrestVault.sol";
-import {HyperliquidLib, HLConstants, HLConversions} from "./libraries/HyperliquidLib.sol";
-import {PrecompileLib} from "@hyper-evm-lib/src/PrecompileLib.sol";
+import { ERC20 } from '@solmate/tokens/ERC20.sol';
+import { IERC20 } from '@openzeppelin/contracts/token/ERC20/IERC20.sol';
+import { SafeTransferLib } from '@solmate/utils/SafeTransferLib.sol';
+import { FixedPointMathLib } from '@solmate/utils/FixedPointMathLib.sol';
+import { Auth, Authority } from '@solmate/auth/Auth.sol';
+import { ReentrancyGuard } from '@solmate/utils/ReentrancyGuard.sol';
+import { CrestVault } from './CrestVault.sol';
+import {
+    HyperliquidLib,
+    HLConstants,
+    HLConversions
+} from './libraries/HyperliquidLib.sol';
+import { PrecompileLib } from '@hyper-evm-lib/src/PrecompileLib.sol';
 
 contract CrestManager is Auth, ReentrancyGuard {
     using SafeTransferLib for ERC20;
@@ -78,8 +82,20 @@ contract CrestManager is Auth, ReentrancyGuard {
 
     //============================== EVENTS ===============================
 
-    event Allocated(uint32 spotIndex, uint32 perpIndex, uint256 totalAmount, uint256 marginAmount, uint256 spotAmount, uint256 perpAmount);
-    event Rebalanced(uint32 oldSpotIndex, uint32 oldPerpIndex, uint32 newSpotIndex, uint32 newPerpIndex);
+    event Allocated(
+        uint32 spotIndex,
+        uint32 perpIndex,
+        uint256 totalAmount,
+        uint256 marginAmount,
+        uint256 spotAmount,
+        uint256 perpAmount
+    );
+    event Rebalanced(
+        uint32 oldSpotIndex,
+        uint32 oldPerpIndex,
+        uint32 newSpotIndex,
+        uint32 newPerpIndex
+    );
     event PositionClosed(bool isSpot, uint32 index, uint256 realizedPnL);
     event CuratorUpdated(address indexed curator);
     event MaxSlippageUpdated(uint16 bps);
@@ -104,7 +120,8 @@ contract CrestManager is Auth, ReentrancyGuard {
     }
 
     modifier onlyCurator() {
-        if (msg.sender != curator && msg.sender != owner) revert CrestManager__Unauthorized();
+        if (msg.sender != curator && msg.sender != owner)
+            revert CrestManager__Unauthorized();
         _;
     }
 
@@ -128,12 +145,10 @@ contract CrestManager is Auth, ReentrancyGuard {
      * @param spotIndex The spot market index to buy
      * @param perpIndex The perp market index to short
      */
-    function allocate(uint32 spotIndex, uint32 perpIndex)
-        external
-        onlyCurator
-        whenNotPaused
-        nonReentrant
-    {
+    function allocate(
+        uint32 spotIndex,
+        uint32 perpIndex
+    ) external onlyCurator whenNotPaused nonReentrant {
         // Check if positions are already open
         if (currentSpotPosition.size > 0 || currentPerpPosition.size > 0) {
             revert CrestManager__PositionAlreadyOpen();
@@ -161,16 +176,30 @@ contract CrestManager is Auth, ReentrancyGuard {
         vault.manage(address(usdc), transferData, 0);
 
         // Bridge USDC to Hyperliquid core
-        HyperliquidLib.bridgeToCore(address(usdc), marginAmount + spotAmount + perpAmount);
+        HyperliquidLib.bridgeToCore(
+            address(usdc),
+            marginAmount + spotAmount + perpAmount
+        );
 
         // Transfer margin to perp account
-        uint64 marginCoreAmount = HLConversions.evmToWei(USDC_TOKEN_ID, marginAmount);
+        uint64 marginCoreAmount = HLConversions.evmToWei(
+            USDC_TOKEN_ID,
+            marginAmount
+        );
         // Transfer margin to perp account
-        HyperliquidLib.transferUsdClass(HLConversions.weiToPerp(marginCoreAmount), true);
+        HyperliquidLib.transferUsdClass(
+            HLConversions.weiToPerp(marginCoreAmount),
+            true
+        );
 
         // Place spot buy order
-        uint64 spotSizeCoreAmount = HLConversions.evmToWei(USDC_TOKEN_ID, spotAmount);
-        uint64 spotSizeInAsset = uint64((uint256(spotSizeCoreAmount) * 1e8) / spotPrice);
+        uint64 spotSizeCoreAmount = HLConversions.evmToWei(
+            USDC_TOKEN_ID,
+            spotAmount
+        );
+        uint64 spotSizeInAsset = uint64(
+            (uint256(spotSizeCoreAmount) * 1e8) / spotPrice
+        );
 
         // Place spot buy order
         HyperliquidLib.placeLimitOrder(
@@ -184,8 +213,13 @@ contract CrestManager is Auth, ReentrancyGuard {
         );
 
         // Place perp short order
-        uint64 perpSizeCoreAmount = HLConversions.evmToWei(USDC_TOKEN_ID, perpAmount);
-        uint64 perpSizeInAsset = uint64((uint256(perpSizeCoreAmount) * 1e6) / perpPrice);
+        uint64 perpSizeCoreAmount = HLConversions.evmToWei(
+            USDC_TOKEN_ID,
+            perpAmount
+        );
+        uint64 perpSizeInAsset = uint64(
+            (uint256(perpSizeCoreAmount) * 1e6) / perpPrice
+        );
 
         // Place perp short order
         HyperliquidLib.placeLimitOrder(
@@ -220,7 +254,14 @@ contract CrestManager is Auth, ReentrancyGuard {
         // Update vault indexes
         vault.allocate(spotIndex, perpIndex);
 
-        emit Allocated(spotIndex, perpIndex, totalAllocated, marginAmount, spotAmount, perpAmount);
+        emit Allocated(
+            spotIndex,
+            perpIndex,
+            totalAllocated,
+            marginAmount,
+            spotAmount,
+            perpAmount
+        );
     }
 
     /**
@@ -228,12 +269,10 @@ contract CrestManager is Auth, ReentrancyGuard {
      * @param newSpotIndex The new spot market index
      * @param newPerpIndex The new perp market index
      */
-    function rebalance(uint32 newSpotIndex, uint32 newPerpIndex)
-        external
-        onlyCurator
-        whenNotPaused
-        nonReentrant
-    {
+    function rebalance(
+        uint32 newSpotIndex,
+        uint32 newPerpIndex
+    ) external onlyCurator whenNotPaused nonReentrant {
         // Check if there are any positions to rebalance
         if (currentSpotPosition.index == 0 && currentPerpPosition.index == 0) {
             revert CrestManager__NoPositionToClose();
@@ -256,18 +295,18 @@ contract CrestManager is Auth, ReentrancyGuard {
         currentSpotPosition.size = 0; // Will be set when orders fill
         currentPerpPosition.size = 0; // Will be set when orders fill
 
-        emit Rebalanced(
-            oldSpotIndex,
-            oldPerpIndex,
-            newSpotIndex,
-            newPerpIndex
-        );
+        emit Rebalanced(oldSpotIndex, oldPerpIndex, newSpotIndex, newPerpIndex);
     }
 
     /**
      * @notice Closes all positions and withdraws funds back to vault
      */
-    function closeAllPositions() external onlyCurator whenNotPaused nonReentrant {
+    function closeAllPositions()
+        external
+        onlyCurator
+        whenNotPaused
+        nonReentrant
+    {
         _closeAllPositions();
     }
 
@@ -275,7 +314,9 @@ contract CrestManager is Auth, ReentrancyGuard {
         // Close spot position
         if (currentSpotPosition.size > 0) {
             // Get current spot price from precompile
-            uint64 currentSpotPrice = PrecompileLib.spotPx(uint64(currentSpotPosition.index));
+            uint64 currentSpotPrice = PrecompileLib.spotPx(
+                uint64(currentSpotPosition.index)
+            );
 
             HyperliquidLib.placeLimitOrder(
                 currentSpotPosition.index,
@@ -290,12 +331,26 @@ contract CrestManager is Auth, ReentrancyGuard {
             // Calculate PnL
             int256 spotPnL;
             if (currentSpotPrice >= currentSpotPosition.entryPrice) {
-                spotPnL = int256(uint256(currentSpotPrice - currentSpotPosition.entryPrice)) * int256(uint256(currentSpotPosition.size)) / 1e8;
+                spotPnL =
+                    (int256(
+                        uint256(
+                            currentSpotPrice - currentSpotPosition.entryPrice
+                        )
+                    ) * int256(uint256(currentSpotPosition.size))) / 1e8;
             } else {
-                spotPnL = -int256(uint256(currentSpotPosition.entryPrice - currentSpotPrice)) * int256(uint256(currentSpotPosition.size)) / 1e8;
+                spotPnL =
+                    (-int256(
+                        uint256(
+                            currentSpotPosition.entryPrice - currentSpotPrice
+                        )
+                    ) * int256(uint256(currentSpotPosition.size))) / 1e8;
             }
 
-            emit PositionClosed(true, currentSpotPosition.index, uint256(spotPnL > 0 ? spotPnL : -spotPnL));
+            emit PositionClosed(
+                true,
+                currentSpotPosition.index,
+                uint256(spotPnL > 0 ? spotPnL : -spotPnL)
+            );
 
             delete currentSpotPosition;
         }
@@ -303,7 +358,9 @@ contract CrestManager is Auth, ReentrancyGuard {
         // Close perp position
         if (currentPerpPosition.size > 0) {
             // Get current perp mark price from precompile
-            uint64 currentPerpPrice = PrecompileLib.markPx(currentPerpPosition.index);
+            uint64 currentPerpPrice = PrecompileLib.markPx(
+                currentPerpPosition.index
+            );
 
             HyperliquidLib.placeLimitOrder(
                 currentPerpPosition.index,
@@ -318,20 +375,36 @@ contract CrestManager is Auth, ReentrancyGuard {
             // Calculate PnL (inverted for short)
             int256 perpPnL;
             if (currentPerpPosition.entryPrice >= currentPerpPrice) {
-                perpPnL = int256(uint256(currentPerpPosition.entryPrice - currentPerpPrice)) * int256(uint256(currentPerpPosition.size)) / 1e6;
+                perpPnL =
+                    (int256(
+                        uint256(
+                            currentPerpPosition.entryPrice - currentPerpPrice
+                        )
+                    ) * int256(uint256(currentPerpPosition.size))) / 1e6;
             } else {
-                perpPnL = -int256(uint256(currentPerpPrice - currentPerpPosition.entryPrice)) * int256(uint256(currentPerpPosition.size)) / 1e6;
+                perpPnL =
+                    (-int256(
+                        uint256(
+                            currentPerpPrice - currentPerpPosition.entryPrice
+                        )
+                    ) * int256(uint256(currentPerpPosition.size))) / 1e6;
             }
 
-            emit PositionClosed(false, currentPerpPosition.index, uint256(perpPnL > 0 ? perpPnL : -perpPnL));
+            emit PositionClosed(
+                false,
+                currentPerpPosition.index,
+                uint256(perpPnL > 0 ? perpPnL : -perpPnL)
+            );
 
             delete currentPerpPosition;
         }
 
         // Query actual balances to bridge back
         // Use perpDexIndex 0 for cross-margin account
-        PrecompileLib.AccountMarginSummary memory marginSummary = PrecompileLib.accountMarginSummary(0, address(this));
-        PrecompileLib.SpotBalance memory spotBalance = PrecompileLib.spotBalance(address(this), USDC_TOKEN_ID);
+        PrecompileLib.AccountMarginSummary memory marginSummary = PrecompileLib
+            .accountMarginSummary(0, address(this));
+        PrecompileLib.SpotBalance memory spotBalance = PrecompileLib
+            .spotBalance(address(this), USDC_TOKEN_ID);
 
         // Transfer funds back from perp to spot (if any perp margin)
         if (marginSummary.accountValue > 0) {
@@ -386,7 +459,11 @@ contract CrestManager is Auth, ReentrancyGuard {
     /**
      * @notice Returns current position details
      */
-    function getPositions() external view returns (Position memory spot, Position memory perp) {
+    function getPositions()
+        external
+        view
+        returns (Position memory spot, Position memory perp)
+    {
         return (currentSpotPosition, currentPerpPosition);
     }
 
@@ -405,15 +482,21 @@ contract CrestManager is Auth, ReentrancyGuard {
 
         // Add spot position value using real price
         if (currentSpotPosition.size > 0) {
-            uint64 currentSpotPrice = PrecompileLib.spotPx(uint64(currentSpotPosition.index));
+            uint64 currentSpotPrice = PrecompileLib.spotPx(
+                uint64(currentSpotPosition.index)
+            );
             totalValue += (currentSpotPosition.size * currentSpotPrice) / 1e8;
         }
 
         // Add perp position value using real mark price
         if (currentPerpPosition.size > 0) {
-            uint64 currentPerpPrice = PrecompileLib.markPx(currentPerpPosition.index);
+            uint64 currentPerpPrice = PrecompileLib.markPx(
+                currentPerpPosition.index
+            );
             // For short position, calculate the P&L
-            int256 perpPnL = int256(uint256(currentPerpPosition.entryPrice - currentPerpPrice)) * int256(uint256(currentPerpPosition.size)) / 1e6;
+            int256 perpPnL = (int256(
+                uint256(currentPerpPosition.entryPrice - currentPerpPrice)
+            ) * int256(uint256(currentPerpPosition.size))) / 1e6;
             if (perpPnL > 0) {
                 totalValue += uint256(perpPnL);
             }
@@ -424,7 +507,8 @@ contract CrestManager is Auth, ReentrancyGuard {
         totalValue += vaultBalance;
 
         // Add margin in perp account
-        PrecompileLib.AccountMarginSummary memory marginSummary = PrecompileLib.accountMarginSummary(0, address(this));
+        PrecompileLib.AccountMarginSummary memory marginSummary = PrecompileLib
+            .accountMarginSummary(0, address(this));
         if (marginSummary.accountValue > 0) {
             totalValue += uint256(uint64(marginSummary.accountValue));
         }

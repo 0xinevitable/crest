@@ -1,5 +1,5 @@
-import { httpClient } from '../utils/http-client';
 import { fileUtils } from '../utils/file-utils';
+import { httpClient } from '../utils/http-client';
 import { RawLogData } from './types/funding-rate';
 
 export interface LogFetcherConfig {
@@ -27,7 +27,7 @@ export class LogFetcher {
       retryAttempts: 3,
       retryDelayMs: 1000,
       requestTimeoutMs: 30000,
-      ...config
+      ...config,
     };
   }
 
@@ -42,32 +42,33 @@ export class LogFetcher {
     try {
       console.log('Fetching funding rates from Hyperliquid API...');
       const data = await this.fetchWithRetry();
-      
+
       console.log(`Received ${data.length} symbols from API`);
-      
+
       // Ensure directory exists
       await fileUtils.ensureDirectory(baseDir);
-      
+
       // Save to file
       await fileUtils.writeJson(filepath, data);
-      
+
       console.log(`Funding rates saved to ${filepath}`);
-      
+
       return {
         success: true,
         filename,
         filepath,
         recordCount: data.length,
-        timestamp
+        timestamp,
       };
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      const errorMessage =
+        error instanceof Error ? error.message : 'Unknown error';
       console.error('Failed to fetch and save funding rates:', errorMessage);
-      
+
       return {
         success: false,
         error: errorMessage,
-        timestamp
+        timestamp,
       };
     }
   }
@@ -80,14 +81,16 @@ export class LogFetcher {
 
     for (let attempt = 1; attempt <= this.config.retryAttempts; attempt++) {
       try {
-        console.log(`Attempt ${attempt}/${this.config.retryAttempts}: Fetching from ${this.config.hyperliquidApiUrl}`);
-        
+        console.log(
+          `Attempt ${attempt}/${this.config.retryAttempts}: Fetching from ${this.config.hyperliquidApiUrl}`,
+        );
+
         const response = await httpClient.post<RawLogData>(
           this.config.hyperliquidApiUrl,
           { type: 'predictedFundings' },
           {
-            'Content-Type': 'application/json'
-          }
+            'Content-Type': 'application/json',
+          },
         );
 
         if (!Array.isArray(response.data)) {
@@ -99,7 +102,7 @@ export class LogFetcher {
       } catch (error) {
         lastError = error instanceof Error ? error : new Error('Unknown error');
         console.warn(`Attempt ${attempt} failed:`, lastError.message);
-        
+
         if (attempt < this.config.retryAttempts) {
           console.log(`Waiting ${this.config.retryDelayMs}ms before retry...`);
           await this.delay(this.config.retryDelayMs);
@@ -107,7 +110,9 @@ export class LogFetcher {
       }
     }
 
-    throw new Error(`Failed to fetch after ${this.config.retryAttempts} attempts. Last error: ${lastError?.message}`);
+    throw new Error(
+      `Failed to fetch after ${this.config.retryAttempts} attempts. Last error: ${lastError?.message}`,
+    );
   }
 
   /**
@@ -119,7 +124,7 @@ export class LogFetcher {
     const day = String(timestamp.getDate()).padStart(2, '0');
     const hour = String(timestamp.getHours()).padStart(2, '0');
     const minute = String(timestamp.getMinutes()).padStart(2, '0');
-    
+
     return `${year}${month}${day}${hour}${minute}-funding-rates.json`;
   }
 
@@ -127,7 +132,7 @@ export class LogFetcher {
    * Simple delay utility
    */
   private delay(ms: number): Promise<void> {
-    return new Promise(resolve => setTimeout(resolve, ms));
+    return new Promise((resolve) => setTimeout(resolve, ms));
   }
 
   /**
@@ -137,12 +142,15 @@ export class LogFetcher {
     try {
       const response = await httpClient.post<RawLogData>(
         this.config.hyperliquidApiUrl,
-        { type: 'predictedFundings' }
+        { type: 'predictedFundings' },
       );
-      
+
       return Array.isArray(response.data) && response.data.length > 0;
     } catch (error) {
-      console.error('Connection test failed:', error instanceof Error ? error.message : 'Unknown error');
+      console.error(
+        'Connection test failed:',
+        error instanceof Error ? error.message : 'Unknown error',
+      );
       return false;
     }
   }

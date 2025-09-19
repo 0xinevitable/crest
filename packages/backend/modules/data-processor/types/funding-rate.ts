@@ -12,7 +12,9 @@ export interface SymbolData {
   [symbolName: string]: Array<[string, ExchangeFundingData | null]>;
 }
 
-export type RawLogData = Array<[string, Array<[string, ExchangeFundingData | null]>]>;
+export type RawLogData = Array<
+  [string, Array<[string, ExchangeFundingData | null]>]
+>;
 
 export interface ProcessedFundingRate {
   symbol: string;

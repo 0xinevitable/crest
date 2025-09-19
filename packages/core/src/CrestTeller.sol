@@ -1,13 +1,13 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.21;
 
-import {ERC20} from "@solmate/tokens/ERC20.sol";
-import {SafeTransferLib} from "@solmate/utils/SafeTransferLib.sol";
-import {FixedPointMathLib} from "@solmate/utils/FixedPointMathLib.sol";
-import {Auth, Authority} from "@solmate/auth/Auth.sol";
-import {ReentrancyGuard} from "@solmate/utils/ReentrancyGuard.sol";
-import {CrestVault} from "./CrestVault.sol";
-import {CrestAccountant} from "./CrestAccountant.sol";
+import { ERC20 } from '@solmate/tokens/ERC20.sol';
+import { SafeTransferLib } from '@solmate/utils/SafeTransferLib.sol';
+import { FixedPointMathLib } from '@solmate/utils/FixedPointMathLib.sol';
+import { Auth, Authority } from '@solmate/auth/Auth.sol';
+import { ReentrancyGuard } from '@solmate/utils/ReentrancyGuard.sol';
+import { CrestVault } from './CrestVault.sol';
+import { CrestAccountant } from './CrestAccountant.sol';
 
 contract CrestTeller is Auth, ReentrancyGuard {
     using SafeTransferLib for ERC20;
@@ -114,7 +114,8 @@ contract CrestTeller is Auth, ReentrancyGuard {
      * @notice Updates the share lock period
      */
     function setShareLockPeriod(uint64 _period) external requiresAuth {
-        if (_period > MAX_SHARE_LOCK_PERIOD) revert CrestTeller__ShareLockPeriodTooLong();
+        if (_period > MAX_SHARE_LOCK_PERIOD)
+            revert CrestTeller__ShareLockPeriodTooLong();
         shareLockPeriod = _period;
         emit ShareLockPeriodUpdated(_period);
     }
@@ -143,15 +144,14 @@ contract CrestTeller is Auth, ReentrancyGuard {
      * @param receiver Address to receive the shares
      * @return shares Amount of shares minted
      */
-    function deposit(uint256 assets, address receiver)
-        external
-        nonReentrant
-        whenNotPaused
-        returns (uint256 shares)
-    {
+    function deposit(
+        uint256 assets,
+        address receiver
+    ) external nonReentrant whenNotPaused returns (uint256 shares) {
         if (assets == 0) revert CrestTeller__ZeroAssets();
         if (assets < MIN_DEPOSIT) revert CrestTeller__MinimumDepositNotMet();
-        if (address(accountant) == address(0)) revert CrestTeller__NoAccountant();
+        if (address(accountant) == address(0))
+            revert CrestTeller__NoAccountant();
 
         // Calculate shares to mint
         shares = accountant.convertToShares(assets);
@@ -182,15 +182,15 @@ contract CrestTeller is Auth, ReentrancyGuard {
      * @param receiver Address to receive the USDC
      * @return assets Amount of USDC withdrawn
      */
-    function withdraw(uint256 shares, address receiver)
-        external
-        nonReentrant
-        whenNotPaused
-        returns (uint256 assets)
-    {
+    function withdraw(
+        uint256 shares,
+        address receiver
+    ) external nonReentrant whenNotPaused returns (uint256 assets) {
         if (shares == 0) revert CrestTeller__ZeroShares();
-        if (block.timestamp < shareUnlockTime[msg.sender]) revert CrestTeller__SharesAreLocked();
-        if (address(accountant) == address(0)) revert CrestTeller__NoAccountant();
+        if (block.timestamp < shareUnlockTime[msg.sender])
+            revert CrestTeller__SharesAreLocked();
+        if (address(accountant) == address(0))
+            revert CrestTeller__NoAccountant();
 
         // Calculate assets to withdraw
         assets = accountant.convertToAssets(shares);

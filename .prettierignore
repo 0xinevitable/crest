@@ -1,8 +1,5 @@
-# docs
+dist
 build
 .vercel
-
-# web
 .next
-
 packages/core/lib

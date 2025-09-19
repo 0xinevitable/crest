@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.21;
 
-import {ERC20} from "@solmate/tokens/ERC20.sol";
-import {FixedPointMathLib} from "@solmate/utils/FixedPointMathLib.sol";
-import {Auth, Authority} from "@solmate/auth/Auth.sol";
-import {CrestVault} from "./CrestVault.sol";
+import { ERC20 } from '@solmate/tokens/ERC20.sol';
+import { FixedPointMathLib } from '@solmate/utils/FixedPointMathLib.sol';
+import { Auth, Authority } from '@solmate/auth/Auth.sol';
+import { CrestVault } from './CrestVault.sol';
 
 contract CrestAccountant is Auth {
     using FixedPointMathLib for uint256;
@@ -74,10 +74,19 @@ contract CrestAccountant is Auth {
 
     //============================== EVENTS ===============================
 
-    event RateUpdated(uint96 oldRate, uint96 newRate, uint256 platformFees, uint256 performanceFees);
+    event RateUpdated(
+        uint96 oldRate,
+        uint96 newRate,
+        uint256 platformFees,
+        uint256 performanceFees
+    );
     event FeesUpdated(uint16 platformFeeBps, uint16 performanceFeeBps);
     event FeeRecipientUpdated(address indexed recipient);
-    event FeesCollected(address indexed recipient, uint256 platformFees, uint256 performanceFees);
+    event FeesCollected(
+        address indexed recipient,
+        uint256 platformFees,
+        uint256 performanceFees
+    );
     event Paused();
     event Unpaused();
     event MaxRateChangeUpdated(uint16 bps);
@@ -118,7 +127,9 @@ contract CrestAccountant is Auth {
      * @notice Updates the exchange rate based on current vault performance
      * @param totalAssets The total value of assets in the vault (in USDC)
      */
-    function updateExchangeRate(uint256 totalAssets) external requiresAuth whenNotPaused {
+    function updateExchangeRate(
+        uint256 totalAssets
+    ) external requiresAuth whenNotPaused {
         if (block.timestamp < lastRateUpdate + rateUpdateCooldown) {
             revert CrestAccountant__CooldownNotMet();
         }
@@ -133,8 +144,10 @@ contract CrestAccountant is Auth {
         uint96 newRate = uint96((totalAssets * 1e6) / totalSupply);
 
         // Check rate change limits
-        uint256 maxRate = (uint256(exchangeRate) * (10000 + maxRateChangeBps)) / 10000;
-        uint256 minRate = (uint256(exchangeRate) * (10000 - maxRateChangeBps)) / 10000;
+        uint256 maxRate = (uint256(exchangeRate) * (10000 + maxRateChangeBps)) /
+            10000;
+        uint256 minRate = (uint256(exchangeRate) * (10000 - maxRateChangeBps)) /
+            10000;
 
         if (newRate > maxRate) revert CrestAccountant__RateChangeTooBig();
         if (newRate < minRate) revert CrestAccountant__RateChangeTooBig();
@@ -144,14 +157,16 @@ contract CrestAccountant is Auth {
         uint256 performanceFee = 0;
 
         if (newRate > exchangeRate) {
-            uint256 profit = uint256(newRate - exchangeRate) * totalSupply / 1e6;
+            uint256 profit = (uint256(newRate - exchangeRate) * totalSupply) /
+                1e6;
 
             // Platform fee on all profit
             platformFee = (profit * platformFeeBps) / 10000;
 
             // Performance fee only on profit above high water mark
             if (newRate > highWaterMark) {
-                uint256 outperformance = uint256(newRate - highWaterMark) * totalSupply / 1e6;
+                uint256 outperformance = (uint256(newRate - highWaterMark) *
+                    totalSupply) / 1e6;
                 performanceFee = (outperformance * performanceFeeBps) / 10000;
                 highWaterMark = newRate;
             }
@@ -159,7 +174,9 @@ contract CrestAccountant is Auth {
             // Deduct fees from new rate
             uint256 totalFees = platformFee + performanceFee;
             if (totalFees > 0) {
-                newRate = uint96(((totalAssets - totalFees) * 1e6) / totalSupply);
+                newRate = uint96(
+                    ((totalAssets - totalFees) * 1e6) / totalSupply
+                );
             }
 
             accumulatedPlatformFees += platformFee;
@@ -177,7 +194,8 @@ contract CrestAccountant is Auth {
      * @notice Collects accumulated fees
      */
     function collectFees() external requiresAuth {
-        if (feeRecipient == address(0)) revert CrestAccountant__NoFeeRecipient();
+        if (feeRecipient == address(0))
+            revert CrestAccountant__NoFeeRecipient();
 
         uint256 platformFees = accumulatedPlatformFees;
         uint256 performanceFees = accumulatedPerformanceFees;
@@ -189,7 +207,13 @@ contract CrestAccountant is Auth {
         if (totalFees > 0) {
             // Mint fee shares to recipient
             uint256 feeShares = (totalFees * 1e6) / exchangeRate;
-            vault.enter(address(vault), ERC20(address(0)), 0, feeRecipient, feeShares);
+            vault.enter(
+                address(vault),
+                ERC20(address(0)),
+                0,
+                feeRecipient,
+                feeShares
+            );
         }
 
         emit FeesCollected(feeRecipient, platformFees, performanceFees);
@@ -198,7 +222,10 @@ contract CrestAccountant is Auth {
     /**
      * @notice Updates fee parameters
      */
-    function updateFees(uint16 _platformFeeBps, uint16 _performanceFeeBps) external requiresAuth {
+    function updateFees(
+        uint16 _platformFeeBps,
+        uint16 _performanceFeeBps
+    ) external requiresAuth {
         if (_platformFeeBps > 500) revert CrestAccountant__InvalidFee(); // Max 5%
         if (_performanceFeeBps > 3000) revert CrestAccountant__InvalidFee(); // Max 30%
 
@@ -219,7 +246,9 @@ contract CrestAccountant is Auth {
     /**
      * @notice Updates the maximum rate change allowed per update
      */
-    function updateMaxRateChange(uint16 _maxRateChangeBps) external requiresAuth {
+    function updateMaxRateChange(
+        uint16 _maxRateChangeBps
+    ) external requiresAuth {
         if (_maxRateChangeBps > 2000) revert CrestAccountant__InvalidFee(); // Max 20%
         maxRateChangeBps = _maxRateChangeBps;
         emit MaxRateChangeUpdated(_maxRateChangeBps);

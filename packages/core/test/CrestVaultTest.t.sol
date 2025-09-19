@@ -1,23 +1,23 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.21;
 
-import {Test, console} from "forge-std/Test.sol";
-import {CrestVault} from "../src/CrestVault.sol";
-import {CrestTeller} from "../src/CrestTeller.sol";
-import {CrestAccountant} from "../src/CrestAccountant.sol";
-import {CrestManager} from "../src/CrestManager.sol";
-import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import {ERC20} from "@solmate/tokens/ERC20.sol";
+import { Test, console } from 'forge-std/Test.sol';
+import { CrestVault } from '../src/CrestVault.sol';
+import { CrestTeller } from '../src/CrestTeller.sol';
+import { CrestAccountant } from '../src/CrestAccountant.sol';
+import { CrestManager } from '../src/CrestManager.sol';
+import { IERC20 } from '@openzeppelin/contracts/token/ERC20/IERC20.sol';
+import { ERC20 } from '@solmate/tokens/ERC20.sol';
 
 // REAL Hyperliquid imports
-import {CoreSimulatorLib} from "@hyper-evm-lib/test/simulation/CoreSimulatorLib.sol";
-import {PrecompileSimulator} from "@hyper-evm-lib/test/utils/PrecompileSimulator.sol";
-import {PrecompileLib} from "@hyper-evm-lib/src/PrecompileLib.sol";
-import {HLConstants} from "@hyper-evm-lib/src/common/HLConstants.sol";
-import {HLConversions} from "@hyper-evm-lib/src/common/HLConversions.sol";
-import {CoreWriterLib} from "@hyper-evm-lib/src/CoreWriterLib.sol";
+import { CoreSimulatorLib } from '@hyper-evm-lib/test/simulation/CoreSimulatorLib.sol';
+import { PrecompileSimulator } from '@hyper-evm-lib/test/utils/PrecompileSimulator.sol';
+import { PrecompileLib } from '@hyper-evm-lib/src/PrecompileLib.sol';
+import { HLConstants } from '@hyper-evm-lib/src/common/HLConstants.sol';
+import { HLConversions } from '@hyper-evm-lib/src/common/HLConversions.sol';
+import { CoreWriterLib } from '@hyper-evm-lib/src/CoreWriterLib.sol';
 
-import {ERC20Mock} from "./mocks/ERC20Mock.sol";
+import { ERC20Mock } from './mocks/ERC20Mock.sol';
 
 contract CrestVaultTest is Test {
     // Core contracts
@@ -60,31 +60,40 @@ contract CrestVaultTest is Test {
 
     function setUp() public {
         // REAL HYPERLIQUID FORK
-        vm.createSelectFork("https://rpc.hyperliquid.xyz/evm");
+        vm.createSelectFork('https://rpc.hyperliquid.xyz/evm');
 
         // Initialize REAL Hyperliquid simulation
         CoreSimulatorLib.init();
         PrecompileSimulator.init();
 
         // Setup actors
-        owner = makeAddr("owner");
-        curator = makeAddr("curator");
-        feeRecipient = makeAddr("feeRecipient");
-        alice = makeAddr("alice");
-        bob = makeAddr("bob");
-        attacker = makeAddr("attacker");
+        owner = makeAddr('owner');
+        curator = makeAddr('curator');
+        feeRecipient = makeAddr('feeRecipient');
+        alice = makeAddr('alice');
+        bob = makeAddr('bob');
+        attacker = makeAddr('attacker');
 
         // Deploy mock USDC for testing
-        usdc = new ERC20Mock("USD Coin", "USDC", 6);
+        usdc = new ERC20Mock('USD Coin', 'USDC', 6);
         usdcAddress = address(usdc);
 
         // Deploy all contracts
         vm.startPrank(owner);
 
-        vault = new CrestVault(owner, "Crest Vault", "cvUSDC");
-        accountant = new CrestAccountant(payable(address(vault)), owner, feeRecipient);
+        vault = new CrestVault(owner, 'Crest Vault', 'cvUSDC');
+        accountant = new CrestAccountant(
+            payable(address(vault)),
+            owner,
+            feeRecipient
+        );
         teller = new CrestTeller(payable(address(vault)), usdcAddress, owner);
-        manager = new CrestManager(payable(address(vault)), usdcAddress, owner, curator);
+        manager = new CrestManager(
+            payable(address(vault)),
+            usdcAddress,
+            owner,
+            curator
+        );
 
         // Configure contracts
         teller.setAccountant(address(accountant));
@@ -114,7 +123,7 @@ contract CrestVaultTest is Test {
         _fundUser(alice, MILLION_USDC);
 
         uint256 aliceBalanceBefore = usdc.balanceOf(alice);
-        assertEq(aliceBalanceBefore, MILLION_USDC, "Funding failed");
+        assertEq(aliceBalanceBefore, MILLION_USDC, 'Funding failed');
 
         uint256 depositAmount = TEN_THOUSAND_USDC;
 
@@ -124,11 +133,27 @@ contract CrestVaultTest is Test {
         vm.stopPrank();
 
         // Then: Alice receives 1:1 shares on first deposit
-        assertEq(sharesReceived, depositAmount, "Should receive 1:1 shares");
-        assertEq(vault.balanceOf(alice), sharesReceived, "Alice should have shares");
-        assertEq(usdc.balanceOf(alice), aliceBalanceBefore - depositAmount, "USDC transferred from Alice");
-        assertEq(usdc.balanceOf(address(vault)), depositAmount, "Vault holds USDC");
-        assertEq(vault.totalSupply(), depositAmount, "Total supply equals deposit");
+        assertEq(sharesReceived, depositAmount, 'Should receive 1:1 shares');
+        assertEq(
+            vault.balanceOf(alice),
+            sharesReceived,
+            'Alice should have shares'
+        );
+        assertEq(
+            usdc.balanceOf(alice),
+            aliceBalanceBefore - depositAmount,
+            'USDC transferred from Alice'
+        );
+        assertEq(
+            usdc.balanceOf(address(vault)),
+            depositAmount,
+            'Vault holds USDC'
+        );
+        assertEq(
+            vault.totalSupply(),
+            depositAmount,
+            'Total supply equals deposit'
+        );
     }
 
     function test_Deposit_MultipleUsers_CorrectShares() public {
@@ -147,9 +172,13 @@ contract CrestVaultTest is Test {
         vm.stopPrank();
 
         // Then: Both get 1:1 shares at same rate
-        assertEq(aliceShares, HUNDRED_THOUSAND_USDC, "Alice gets 1:1");
-        assertEq(bobShares, TEN_THOUSAND_USDC, "Bob gets 1:1");
-        assertEq(vault.totalSupply(), HUNDRED_THOUSAND_USDC + TEN_THOUSAND_USDC, "Total supply correct");
+        assertEq(aliceShares, HUNDRED_THOUSAND_USDC, 'Alice gets 1:1');
+        assertEq(bobShares, TEN_THOUSAND_USDC, 'Bob gets 1:1');
+        assertEq(
+            vault.totalSupply(),
+            HUNDRED_THOUSAND_USDC + TEN_THOUSAND_USDC,
+            'Total supply correct'
+        );
     }
 
     function test_Deposit_BelowMinimum_Reverts() public {
@@ -189,8 +218,8 @@ contract CrestVaultTest is Test {
         uint256 assetsReceived = teller.withdraw(shares, alice);
 
         // Then: Alice gets her USDC back
-        assertEq(assetsReceived, TEN_THOUSAND_USDC, "Should receive full USDC");
-        assertEq(vault.balanceOf(alice), 0, "Shares burned");
+        assertEq(assetsReceived, TEN_THOUSAND_USDC, 'Should receive full USDC');
+        assertEq(vault.balanceOf(alice), 0, 'Shares burned');
     }
 
     function test_Withdraw_DuringLockPeriod_Reverts() public {
@@ -221,8 +250,8 @@ contract CrestVaultTest is Test {
         uint256 assetsReceived = teller.withdraw(halfShares, alice);
 
         // Then: Alice gets half USDC, keeps half shares
-        assertEq(assetsReceived, TEN_THOUSAND_USDC / 2, "Should receive half");
-        assertEq(vault.balanceOf(alice), halfShares, "Half shares remain");
+        assertEq(assetsReceived, TEN_THOUSAND_USDC / 2, 'Should receive half');
+        assertEq(vault.balanceOf(alice), halfShares, 'Half shares remain');
     }
 
     // ==================== ALLOCATION TESTS ====================
@@ -242,16 +271,31 @@ contract CrestVaultTest is Test {
         CoreSimulatorLib.nextBlock();
 
         // Then: Positions set correctly
-        (CrestManager.Position memory spotPos, CrestManager.Position memory perpPos) = manager.getPositions();
-        assertEq(spotPos.index, HYPE_SPOT_INDEX, "HYPE spot index 107");
-        assertEq(perpPos.index, HYPE_PERP_INDEX, "HYPE perp index 159");
+        (
+            CrestManager.Position memory spotPos,
+            CrestManager.Position memory perpPos
+        ) = manager.getPositions();
+        assertEq(spotPos.index, HYPE_SPOT_INDEX, 'HYPE spot index 107');
+        assertEq(perpPos.index, HYPE_PERP_INDEX, 'HYPE perp index 159');
         // The positions are created with the correct indexes
         // Size might be 0 if the orders haven't filled yet, but positions are tracked
-        assertTrue(spotPos.index == HYPE_SPOT_INDEX || perpPos.index == HYPE_PERP_INDEX, "Has position indexes");
+        assertTrue(
+            spotPos.index == HYPE_SPOT_INDEX ||
+                perpPos.index == HYPE_PERP_INDEX,
+            'Has position indexes'
+        );
 
         // And: Vault state updated
-        assertEq(vault.currentSpotIndex(), HYPE_SPOT_INDEX, "Vault tracks spot");
-        assertEq(vault.currentPerpIndex(), HYPE_PERP_INDEX, "Vault tracks perp");
+        assertEq(
+            vault.currentSpotIndex(),
+            HYPE_SPOT_INDEX,
+            'Vault tracks spot'
+        );
+        assertEq(
+            vault.currentPerpIndex(),
+            HYPE_PERP_INDEX,
+            'Vault tracks perp'
+        );
     }
 
     function test_Allocate_NonCurator_Reverts() public {
@@ -304,13 +348,24 @@ contract CrestVaultTest is Test {
         manager.rebalance(PURR_SPOT_INDEX, PURR_PERP_INDEX);
 
         // Then: Positions updated
-        (CrestManager.Position memory spotPos, CrestManager.Position memory perpPos) = manager.getPositions();
-        assertEq(spotPos.index, PURR_SPOT_INDEX, "PURR spot index");
-        assertEq(perpPos.index, PURR_PERP_INDEX, "PURR perp index");
+        (
+            CrestManager.Position memory spotPos,
+            CrestManager.Position memory perpPos
+        ) = manager.getPositions();
+        assertEq(spotPos.index, PURR_SPOT_INDEX, 'PURR spot index');
+        assertEq(perpPos.index, PURR_PERP_INDEX, 'PURR perp index');
 
         // And: Vault state updated
-        assertEq(vault.currentSpotIndex(), PURR_SPOT_INDEX, "Vault tracks PURR spot");
-        assertEq(vault.currentPerpIndex(), PURR_PERP_INDEX, "Vault tracks PURR perp");
+        assertEq(
+            vault.currentSpotIndex(),
+            PURR_SPOT_INDEX,
+            'Vault tracks PURR spot'
+        );
+        assertEq(
+            vault.currentPerpIndex(),
+            PURR_PERP_INDEX,
+            'Vault tracks PURR perp'
+        );
     }
 
     function test_Rebalance_WithoutPositions_Reverts() public {
@@ -342,11 +397,13 @@ contract CrestVaultTest is Test {
         usdc.mint(address(vault), TEN_THOUSAND_USDC);
 
         vm.prank(owner);
-        accountant.updateExchangeRate(HUNDRED_THOUSAND_USDC + TEN_THOUSAND_USDC);
+        accountant.updateExchangeRate(
+            HUNDRED_THOUSAND_USDC + TEN_THOUSAND_USDC
+        );
 
         // Then: Platform fees accumulated (2% annually)
         uint256 platformFees = accountant.accumulatedPlatformFees();
-        assertGt(platformFees, 0, "Platform fees accumulated");
+        assertGt(platformFees, 0, 'Platform fees accumulated');
     }
 
     function test_Fees_PerformanceFee_OnProfit() public {
@@ -362,12 +419,14 @@ contract CrestVaultTest is Test {
         usdc.mint(address(vault), TEN_THOUSAND_USDC);
 
         vm.prank(owner);
-        accountant.updateExchangeRate(HUNDRED_THOUSAND_USDC + TEN_THOUSAND_USDC);
+        accountant.updateExchangeRate(
+            HUNDRED_THOUSAND_USDC + TEN_THOUSAND_USDC
+        );
 
         // Then: Performance fees taken (20% of 10k = 2k)
         uint256 performanceFees = accountant.accumulatedPerformanceFees();
-        assertGt(performanceFees, 0, "Performance fees accumulated");
-        _assertApproxEqRel(performanceFees, 2000e6, 0.1e18, "~20% of profit");
+        assertGt(performanceFees, 0, 'Performance fees accumulated');
+        _assertApproxEqRel(performanceFees, 2000e6, 0.1e18, '~20% of profit');
     }
 
     function test_Fees_MaxRateChange_Enforced() public {
@@ -384,33 +443,35 @@ contract CrestVaultTest is Test {
 
         // The updateExchangeRate should revert if rate change is too big
         vm.prank(owner);
-        vm.expectRevert(CrestAccountant.CrestAccountant__RateChangeTooBig.selector);
+        vm.expectRevert(
+            CrestAccountant.CrestAccountant__RateChangeTooBig.selector
+        );
         accountant.updateExchangeRate(HUNDRED_THOUSAND_USDC * 2);
     }
 
     // ==================== AUTHORIZATION TESTS ====================
 
     function test_Authorization_OnlyOwnerCanAuthorize() public {
-        address newContract = makeAddr("newContract");
+        address newContract = makeAddr('newContract');
 
         // Given: Owner can authorize
         vm.prank(owner);
         vault.authorize(newContract);
-        assertTrue(vault.authorized(newContract), "Should be authorized");
+        assertTrue(vault.authorized(newContract), 'Should be authorized');
 
         // When/Then: Non-owner cannot authorize
         vm.prank(alice);
-        vm.expectRevert("UNAUTHORIZED");
-        vault.authorize(makeAddr("another"));
+        vm.expectRevert('UNAUTHORIZED');
+        vault.authorize(makeAddr('another'));
     }
 
     function test_Authorization_OnlyAuthorizedCanEnter() public {
         // Given: Teller is authorized
-        assertTrue(vault.authorized(address(teller)), "Teller authorized");
+        assertTrue(vault.authorized(address(teller)), 'Teller authorized');
 
         // When/Then: Unauthorized cannot call enter
         vm.prank(attacker);
-        vm.expectRevert("UNAUTHORIZED");
+        vm.expectRevert('UNAUTHORIZED');
         vault.enter(alice, ERC20(address(usdc)), 0, alice, 1000e6);
     }
 
@@ -420,7 +481,7 @@ contract CrestVaultTest is Test {
         // Deposit/withdraw have reentrancy protection
         // This would require a malicious token to test properly
         // For now, verify nonReentrant modifier exists
-        assertTrue(true, "Reentrancy protection in place");
+        assertTrue(true, 'Reentrancy protection in place');
     }
 
     function test_Security_ShareLockPreventsImmediateExit() public {
@@ -491,7 +552,7 @@ contract CrestVaultTest is Test {
         uint256 withdrawn = teller.withdraw(aliceShares, alice);
 
         // Alice should get more than deposited due to yield
-        assertGt(withdrawn, 10 * MILLION_USDC, "Alice profits from yield");
+        assertGt(withdrawn, 10 * MILLION_USDC, 'Alice profits from yield');
     }
 
     function test_Integration_EmergencyPause() public {
@@ -529,12 +590,17 @@ contract CrestVaultTest is Test {
         teller.withdraw(shares, alice);
         vm.stopPrank();
 
-        assertEq(vault.balanceOf(alice), 0, "Alice withdrew all shares");
+        assertEq(vault.balanceOf(alice), 0, 'Alice withdrew all shares');
     }
 
     // ==================== HELPER FUNCTIONS ====================
 
-    function _assertApproxEqRel(uint256 a, uint256 b, uint256 maxPercentDelta, string memory err) internal {
+    function _assertApproxEqRel(
+        uint256 a,
+        uint256 b,
+        uint256 maxPercentDelta,
+        string memory err
+    ) internal {
         if (b == 0) {
             assertEq(a, b, err);
             return;

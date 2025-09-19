@@ -1,1 +1,4 @@
 export { FundingRatesJob } from './funding-rates';
+export { BaseFundingRatesJob } from './base-funding-rates';
+export { MainnetFundingRatesJob } from './mainnet-funding-rates';
+export { TestnetFundingRatesJob } from './testnet-funding-rates';

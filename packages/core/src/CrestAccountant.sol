@@ -25,12 +25,12 @@ contract CrestAccountant is Auth {
     /**
      * @notice Platform fee in basis points (100 = 1%)
      */
-    uint16 public platformFeeBps = 200; // 2%
+    uint16 public platformFeeBps = 100; // 1%
 
     /**
      * @notice Performance fee in basis points (100 = 1%)
      */
-    uint16 public performanceFeeBps = 2000; // 20%
+    uint16 public performanceFeeBps = 500; // 5%
 
     /**
      * @notice High water mark for performance fee calculation

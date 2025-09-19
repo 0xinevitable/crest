@@ -401,7 +401,7 @@ contract CrestVaultTest is Test {
             HUNDRED_THOUSAND_USDC + TEN_THOUSAND_USDC
         );
 
-        // Then: Platform fees accumulated (2% annually)
+        // Then: Platform fees accumulated (1% annually)
         uint256 platformFees = accountant.accumulatedPlatformFees();
         assertGt(platformFees, 0, 'Platform fees accumulated');
     }
@@ -423,10 +423,10 @@ contract CrestVaultTest is Test {
             HUNDRED_THOUSAND_USDC + TEN_THOUSAND_USDC
         );
 
-        // Then: Performance fees taken (20% of 10k = 2k)
+        // Then: Performance fees taken (5% of 10k = 500)
         uint256 performanceFees = accountant.accumulatedPerformanceFees();
         assertGt(performanceFees, 0, 'Performance fees accumulated');
-        _assertApproxEqRel(performanceFees, 2000e6, 0.1e18, '~20% of profit');
+        _assertApproxEqRel(performanceFees, 500e6, 0.1e18, '~5% of profit');
     }
 
     function test_Fees_MaxRateChange_Enforced() public {

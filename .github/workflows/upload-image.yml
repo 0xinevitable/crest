@@ -2,11 +2,19 @@ name: Build and Push Docker Image
 
 on:
   push:
+    paths:
+      - packages/database/**
+      - packages/server/**
+      - packages/spec/**
     branches:
       - main
     tags:
       - v*
   pull_request:
+    paths:
+      - packages/database/**
+      - packages/server/**
+      - packages/spec/**
 
 env:
   IMAGE_NAME: crest-server
@@ -20,10 +28,10 @@ jobs:
 
     steps:
       - uses: actions/checkout@v5
-      
+
       - name: Build image
         run: docker build . --file Dockerfile --tag $IMAGE_NAME --label "runnumber=${GITHUB_RUN_ID}"
-        
+
       - name: Log in to registry
         run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
 

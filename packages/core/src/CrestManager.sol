@@ -35,16 +35,6 @@ contract CrestManager is Auth, ReentrancyGuard {
     }
 
     /**
-     * @notice USDT0 ERC20 address on Hyperliquid EVM
-     */
-    function usdt0Address() internal view returns (address) {
-        return
-            block.chainid == TESTNET_CHAINID
-                ? 0x779Ded0c9e1022225f8E0630b35a9b54bE713736
-                : 0xB8CE59FC3717ada4C02eaDF9682A9e934F625ebb;
-    }
-
-    /**
      * @notice USDT0/USDC spot index for swapping
      */
     function usdt0SpotIndex() internal view returns (uint32) {
@@ -202,7 +192,7 @@ contract CrestManager is Auth, ReentrancyGuard {
 
         // Bridge USDT0 to Hyperliquid core
         CoreWriterLib.bridgeToCore(
-            usdt0Address(),
+            address(usdt0),
             marginAmount + spotAmount + perpAmount
         );
 

@@ -1034,8 +1034,8 @@ contract CrestVaultTest is Test {
         // Process the close orders
         CoreSimulatorLib.nextBlock();
 
-        // Simulate funds returning from Hyperliquid (since closeAllPositions uses placeholder amounts)
-        // In production, the actual amounts would be bridged back
+        // Simulate additional yield/profit that would come from successful trading
+        // The closeAllPositions already bridges back the principal amount
         _dealUsdt0(address(vault), 15 * MILLION_USDT0 + 500_000 * ONE_USDT0);
 
         // 7. Alice withdraws with profit

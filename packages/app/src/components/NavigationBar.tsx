@@ -1,12 +1,30 @@
 import styled from '@emotion/styled';
+import Link from 'next/link';
 
 import { ConnectButton } from './ConnectButton';
 
+const NAVIGATION_ITEMS = [
+  { title: 'Interact', href: '#interact' },
+  { title: 'Composition', href: '#composition' },
+];
+
 export const NavigationBar = () => {
+  const scrollToTop = () => window.scrollTo({ top: 0, behavior: 'smooth' });
+
   return (
     <Wrapper>
       <Container>
-        <Logo src="/assets/crest-logo.svg" />
+        <Link href="/" onClick={() => scrollToTop()}>
+          <Logo src="/assets/crest-logo.svg" />
+        </Link>
+
+        <NavigationList>
+          {NAVIGATION_ITEMS.map((item) => (
+            <Link key={item.href} href={item.href}>
+              <Button>{item.title}</Button>
+            </Link>
+          ))}
+        </NavigationList>
 
         <Right>
           <ConnectButton />
@@ -32,11 +50,37 @@ const Container = styled.div`
 
   display: flex;
   align-items: center;
+  gap: 24px;
 `;
 const Logo = styled.img`
   width: 124px;
   height: 32px;
   object-fit: contain;
+`;
+
+const NavigationList = styled.nav`
+  display: flex;
+  align-items: center;
+  gap: 6px;
+`;
+const Button = styled.button`
+  width: fit-content;
+  display: flex;
+  padding: 4px 14px;
+  justify-content: center;
+  align-items: center;
+  gap: 10px;
+
+  border-radius: 8px;
+  background: #253738;
+
+  color: #fff;
+  text-align: center;
+  font-family: 'Optician Sans';
+  font-size: 20px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: 100%;
 `;
 
 const Right = styled.div`

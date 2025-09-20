@@ -1,0 +1,85 @@
+class HyperliquidAPI {
+  async _requestInfo<T extends object>(request: { type: string }): Promise<T> {
+    const response = await fetch('https://api.hyperliquid.xyz/info', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(request),
+    });
+    return response.json();
+  }
+
+  async _getSpotIndex(symbol: string) {
+    const { tokens, universe } = await this._requestInfo<{
+      tokens: { name: string; index: number }[];
+      universe: {
+        index: number;
+        tokens: [tokenIndex: number, quoteTokenIndex: number];
+      }[];
+    }>({ type: 'spotMeta' });
+
+    const token = tokens.find((token) => token.name === symbol);
+    if (token?.index === undefined) {
+      throw new Error(`Token ${symbol} not found`);
+    }
+    const spot = universe.find((asset) => asset.tokens[0] === token.index);
+    if (spot?.index === undefined) {
+      throw new Error(`Spot ${symbol} not found`);
+    }
+    return {
+      tokenIndex: token.index,
+      spotIndex: spot.index,
+      meta: { token, spot },
+    };
+  }
+
+  async _getPerpIndex(symbol: string) {
+    const { universe } = await this._requestInfo<{
+      universe: {
+        szDecimals: number;
+        name: string;
+        maxLeverage: number;
+        marginTableId: number;
+      }[];
+    }>({ type: 'meta' });
+
+    const perpIndex = universe.findIndex((asset) => asset.name === symbol);
+    return { perpIndex, meta: universe[perpIndex] };
+  }
+
+  async getIndexesBySymbol(symbol: string) {
+    const spot = await this._getSpotIndex(symbol);
+    const perp = await this._getPerpIndex(symbol);
+    return {
+      symbol,
+      tokenIndex: spot.tokenIndex,
+      spotIndex: spot.spotIndex,
+      perpIndex: perp.perpIndex,
+    };
+  }
+}
+
+const main = async () => {
+  const hl = new HyperliquidAPI();
+
+  {
+    const indexes = await hl.getIndexesBySymbol('HYPE');
+    console.log(indexes);
+  }
+
+  {
+    const indexes = await hl.getIndexesBySymbol('PURR');
+    console.log(indexes);
+  }
+
+  {
+    const indexes = await hl.getIndexesBySymbol('BERA');
+    console.log(indexes);
+  }
+
+  {
+    const indexes = await hl.getIndexesBySymbol('USDT0');
+    console.log(indexes);
+  }
+};
+
+main();

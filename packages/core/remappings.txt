@@ -1,0 +1,6 @@
+@hyper-evm-lib/=lib/hyper-evm-lib/
+@boring-vault/=lib/boring-vault/
+@solmate/=lib/boring-vault/lib/solmate/src/
+@openzeppelin-v4/=lib/boring-vault/lib/openzeppelin-contracts/
+@openzeppelin/=lib/hyper-evm-lib/lib/openzeppelin-contracts/
+forge-std/=lib/forge-std/src/

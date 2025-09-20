@@ -10,6 +10,14 @@ module.exports = withPlugins(
     compiler: {
       emotion: true,
     },
+    webpack5: true,
+    webpack: (config) => {
+      config.resolve.fallback = {
+        // Peer dependency import fallback for wagmi > @wagmi/connectors > @metamask/sdk
+        '@react-native-async-storage/async-storage': false,
+      };
+      return config;
+    },
   },
   [withBundleAnalyzer],
 );

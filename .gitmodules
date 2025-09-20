@@ -7,3 +7,6 @@
 [submodule "packages/core/lib/boring-vault"]
 	path = packages/core/lib/boring-vault
 	url = https://github.com/Se7en-Seas/boring-vault
+[submodule "packages/core/lib/solady"]
+	path = packages/core/lib/solady
+	url = https://github.com/vectorized/solady

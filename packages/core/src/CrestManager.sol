@@ -169,7 +169,8 @@ contract CrestManager is Auth, ReentrancyGuard {
 
         // Get available USDT0 balance
         uint256 availableUsdt0 = usdt0.balanceOf(address(vault));
-        if (availableUsdt0 == 0) revert CrestManager__InsufficientBalance();
+        // Minimum 50 USDT0 needed to meet Core's minimum order requirements (20 USDT0)
+        if (availableUsdt0 < 50e6) revert CrestManager__InsufficientBalance();
 
         // Calculate allocations
         uint256 marginAmount = (availableUsdt0 * MARGIN_ALLOCATION_BPS) / 10000;

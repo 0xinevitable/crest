@@ -293,34 +293,77 @@ contract CrestVaultTest is Test {
         // Market Maker 1: Provides 80% liquidity at current price
         // For spot: Sell orders (for our buy to fill against)
         uint64 spotSellPrice80 = baseSpotPrice; // Exactly at market
-        uint64 spotSize80 = 800; // 80% of typical size
+        uint64 spotSize80 = 40000 * 1e8 / baseSpotPrice; // ~40k USDT0 worth
 
         // For perp: Buy orders (for our short sell to fill against)
         uint64 perpBuyPrice80 = basePerpPrice; // Exactly at market
-        uint64 perpSize80 = 800; // 80% of typical size
+        uint64 perpSize80 = 40000 * 1e6 / basePerpPrice; // ~40k USD worth
 
         // Market Maker 2: Provides 20% liquidity one tick worse
         // For spot: Sell orders slightly above market (worse for buyer)
         uint64 spotSellPrice20 = baseSpotPrice + (baseSpotPrice * 25 / 10000); // +0.25% (one tick up)
-        uint64 spotSize20 = 200; // 20% of typical size
+        uint64 spotSize20 = 10000 * 1e8 / baseSpotPrice; // ~10k USDT0 worth
 
         // For perp: Buy orders slightly below market (worse for seller)
         uint64 perpBuyPrice20 = basePerpPrice - (basePerpPrice * 25 / 10000); // -0.25% (one tick down)
-        uint64 perpSize20 = 200; // 20% of typical size
+        uint64 perpSize20 = 10000 * 1e6 / basePerpPrice; // ~10k USD worth
 
         console2.log("\n=== MARKET MAKER LIQUIDITY SETUP ===");
         console2.log("Spot Market Liquidity:");
-        console2.log("  80% at price: ", spotSellPrice80, "(at market)");
-        console2.log("  20% at price: ", spotSellPrice20, "(+0.25% above)");
+        console2.log("  MM1: ", spotSize80, "@ price", spotSellPrice80);
+        console2.log("  MM2: ", spotSize20, "@ price", spotSellPrice20);
         console2.log("");
         console2.log("Perp Market Liquidity:");
-        console2.log("  80% at price: ", perpBuyPrice80, "(at market)");
-        console2.log("  20% at price: ", perpBuyPrice20, "(-0.25% below)");
+        console2.log("  MM1: ", perpSize80, "@ price", perpBuyPrice80);
+        console2.log("  MM2: ", perpSize20, "@ price", perpBuyPrice20);
         console2.log("");
 
-        // Note: In reality we'd place these as resting limit orders
-        // but the simulator executes based on price comparisons
-        // Our IOC orders with 0.5% slippage should fill against both levels
+        // Place actual limit orders as market makers
+        vm.startPrank(marketMaker1);
+        // Spot sell order at market price
+        CoreWriterLib.placeLimitOrder(
+            spotIndex,
+            false, // sell
+            spotSellPrice80,
+            spotSize80,
+            false,
+            0, // GTC
+            uint128(block.timestamp << 32) + 1
+        );
+        // Perp buy order at market price
+        CoreWriterLib.placeLimitOrder(
+            perpIndex,
+            true, // buy
+            perpBuyPrice80,
+            perpSize80,
+            false,
+            0, // GTC
+            uint128(block.timestamp << 32) + 2
+        );
+        vm.stopPrank();
+
+        vm.startPrank(marketMaker2);
+        // Spot sell order slightly above
+        CoreWriterLib.placeLimitOrder(
+            spotIndex,
+            false, // sell
+            spotSellPrice20,
+            spotSize20,
+            false,
+            0, // GTC
+            uint128(block.timestamp << 32) + 3
+        );
+        // Perp buy order slightly below
+        CoreWriterLib.placeLimitOrder(
+            perpIndex,
+            true, // buy
+            perpBuyPrice20,
+            perpSize20,
+            false,
+            0, // GTC
+            uint128(block.timestamp << 32) + 4
+        );
+        vm.stopPrank();
     }
 
     // ==================== ALLOCATION TESTS ====================
@@ -570,15 +613,15 @@ contract CrestVaultTest is Test {
     }
 
     function test_Allocate_InsufficientBalance_Reverts() public {
-        // Given: Vault has only 10 USDT0 (well below minimum needed for allocation)
+        // Given: Vault has only 1 USDT0 (well below minimum needed for allocation)
         _fundUser(alice, HUNDRED_USDT0);
         vm.startPrank(alice);
-        teller.deposit(TEN_USDT0, alice);
+        teller.deposit(ONE_USDT0, alice);
         vm.stopPrank();
 
         // When/Then: Allocation should revert due to insufficient balance
         vm.prank(curator);
-        vm.expectRevert();
+        vm.expectRevert(CrestManager.CrestManager__InsufficientBalance.selector);
         manager.allocate(HYPE_SPOT_INDEX, HYPE_PERP_INDEX);
     }
 
@@ -717,11 +760,11 @@ contract CrestVaultTest is Test {
 
         // Calculate P&L
         if (spotPosBefore.size > 0 && spotPosAfter.size == 0) {
-            uint256 spotProfit = (spotClosePrice - spotOpenPrice) * spotPosBefore.size / 1e8;
+            uint256 spotProfit = uint256(spotClosePrice - spotOpenPrice) * spotPosBefore.size / 1e8;
             console2.log("Spot P&L: +", spotProfit, "(profit from price increase)");
         }
         if (perpPosBefore.size > 0 && perpPosAfter.size == 0) {
-            uint256 perpLoss = (perpClosePrice - perpOpenPrice) * perpPosBefore.size / 1e8;
+            uint256 perpLoss = uint256(perpClosePrice - perpOpenPrice) * perpPosBefore.size / 1e8;
             console2.log("Perp P&L: -", perpLoss, "(loss from price increase on short)");
         }
 

@@ -75,6 +75,11 @@ const main = async () => {
     const indexes = await hl.getIndexesBySymbol('BERA');
     console.log(indexes);
   }
+
+  {
+    const indexes = await hl.getIndexesBySymbol('USDT0');
+    console.log(indexes);
+  }
 };
 
 main();

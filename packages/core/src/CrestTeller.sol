@@ -33,9 +33,9 @@ contract CrestTeller is Auth, ReentrancyGuard {
     CrestAccountant public accountant;
 
     /**
-     * @notice The USDC token contract
+     * @notice The USDT0 token contract
      */
-    ERC20 public immutable usdc;
+    ERC20 public immutable usdt0;
 
     /**
      * @notice After deposits, shares are locked to the msg.sender's address for `shareLockPeriod`.
@@ -53,7 +53,7 @@ contract CrestTeller is Auth, ReentrancyGuard {
     bool public isPaused;
 
     /**
-     * @notice Minimum deposit amount (1 USDC)
+     * @notice Minimum deposit amount (1 USDT0 - 6 decimals)
      */
     uint256 public constant MIN_DEPOSIT = 1e6;
 
@@ -93,11 +93,11 @@ contract CrestTeller is Auth, ReentrancyGuard {
 
     constructor(
         address payable _vault,
-        address _usdc,
+        address _usdt0,
         address _owner
     ) Auth(_owner, Authority(address(0))) {
         vault = CrestVault(_vault);
-        usdc = ERC20(_usdc);
+        usdt0 = ERC20(_usdt0);
     }
 
     //============================== ADMIN FUNCTIONS ===============================
@@ -139,8 +139,8 @@ contract CrestTeller is Auth, ReentrancyGuard {
     //============================== DEPOSIT FUNCTIONS ===============================
 
     /**
-     * @notice Deposits USDC for vault shares
-     * @param assets Amount of USDC to deposit
+     * @notice Deposits USDT0 for vault shares
+     * @param assets Amount of USDT0 to deposit
      * @param receiver Address to receive the shares
      * @return shares Amount of shares minted
      */
@@ -162,11 +162,11 @@ contract CrestTeller is Auth, ReentrancyGuard {
             revert CrestTeller__MinimumSharesNotMet();
         }
 
-        // Transfer USDC from user
-        usdc.safeTransferFrom(msg.sender, address(vault), assets);
+        // Transfer USDT0 from user
+        usdt0.safeTransferFrom(msg.sender, address(vault), assets);
 
         // Mint shares through vault
-        vault.enter(address(vault), usdc, 0, receiver, shares);
+        vault.enter(address(vault), usdt0, 0, receiver, shares);
 
         // Set share lock
         shareUnlockTime[receiver] = block.timestamp + shareLockPeriod;
@@ -177,10 +177,10 @@ contract CrestTeller is Auth, ReentrancyGuard {
     //============================== WITHDRAW FUNCTIONS ===============================
 
     /**
-     * @notice Withdraws USDC by burning vault shares
+     * @notice Withdraws USDT0 by burning vault shares
      * @param shares Amount of shares to burn
-     * @param receiver Address to receive the USDC
-     * @return assets Amount of USDC withdrawn
+     * @param receiver Address to receive the USDT0
+     * @return assets Amount of USDT0 withdrawn
      */
     function withdraw(
         uint256 shares,
@@ -197,7 +197,7 @@ contract CrestTeller is Auth, ReentrancyGuard {
         if (assets == 0) revert CrestTeller__ZeroAssets();
 
         // Burn shares and transfer assets through vault
-        vault.exit(receiver, usdc, assets, msg.sender, shares);
+        vault.exit(receiver, usdt0, assets, msg.sender, shares);
 
         emit Withdraw(msg.sender, assets, shares);
     }

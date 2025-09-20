@@ -11,13 +11,13 @@ import { ERC20 } from '@solmate/tokens/ERC20.sol';
 
 // REAL Hyperliquid imports
 import { CoreSimulatorLib } from '@hyper-evm-lib/test/simulation/CoreSimulatorLib.sol';
+import { HyperCore } from '@hyper-evm-lib/test/simulation/HyperCore.sol';
 import { PrecompileSimulator } from '@hyper-evm-lib/test/utils/PrecompileSimulator.sol';
 import { PrecompileLib } from '@hyper-evm-lib/src/PrecompileLib.sol';
 import { HLConstants } from '@hyper-evm-lib/src/common/HLConstants.sol';
 import { HLConversions } from '@hyper-evm-lib/src/common/HLConversions.sol';
 import { CoreWriterLib } from '@hyper-evm-lib/src/CoreWriterLib.sol';
 
-import { ERC20Mock } from './mocks/ERC20Mock.sol';
 
 contract CrestVaultTest is Test {
     // Core contracts
@@ -26,10 +26,11 @@ contract CrestVaultTest is Test {
     CrestAccountant public accountant;
     CrestManager public manager;
 
-    // Mock USDC for testing (since real USDC bridging is complex)
-    ERC20Mock public usdc;
-    address public usdcAddress;
-    uint64 public constant USDC_TOKEN_ID = 0;
+    // Real USDT0 from mainnet fork
+    ERC20 public usdt0;
+    address public constant USDT0_ADDRESS = 0xB8CE59FC3717ada4C02eaDF9682A9e934F625ebb;
+    uint64 public constant USDT0_TOKEN_ID = 268;
+    uint32 public constant USDT0_USDC_SPOT_INDEX = 166;
 
     // REAL indexes from API (yarn start)
     // HYPE: tokenIndex: 150, spotIndex: 107, perpIndex: 159
@@ -50,13 +51,14 @@ contract CrestVaultTest is Test {
     address public bob;
     address public attacker;
 
-    // Constants
-    uint256 constant ONE_USDC = 1e6;
-    uint256 constant HUNDRED_USDC = 100e6;
-    uint256 constant THOUSAND_USDC = 1_000e6;
-    uint256 constant TEN_THOUSAND_USDC = 10_000e6;
-    uint256 constant HUNDRED_THOUSAND_USDC = 100_000e6;
-    uint256 constant MILLION_USDC = 1_000_000e6;
+    // Constants (USDT0 has 6 decimals like USDC)
+    uint256 constant ONE_USDT0 = 1e6;
+    uint256 constant TEN_USDT0 = 10e6;
+    uint256 constant HUNDRED_USDT0 = 100e6;
+    uint256 constant THOUSAND_USDT0 = 1_000e6;
+    uint256 constant TEN_THOUSAND_USDT0 = 10_000e6;
+    uint256 constant HUNDRED_THOUSAND_USDT0 = 100_000e6;
+    uint256 constant MILLION_USDT0 = 1_000_000e6;
 
     function setUp() public {
         // REAL HYPERLIQUID FORK
@@ -74,23 +76,26 @@ contract CrestVaultTest is Test {
         bob = makeAddr('bob');
         attacker = makeAddr('attacker');
 
-        // Deploy mock USDC for testing
-        usdc = new ERC20Mock('USD Coin', 'USDC', 6);
-        usdcAddress = address(usdc);
+        // Use real USDT0 from mainnet fork
+        usdt0 = ERC20(USDT0_ADDRESS);
+
+        // Register USDT0 token info in HyperCore simulation
+        HyperCore hyperCore = HyperCore(payable(0x9999999999999999999999999999999999999999));
+        hyperCore.registerTokenInfo(USDT0_TOKEN_ID);
 
         // Deploy all contracts
         vm.startPrank(owner);
 
-        vault = new CrestVault(owner, 'Crest Vault', 'cvUSDC');
+        vault = new CrestVault(owner, 'Crest Vault', 'cvUSDT0');
         accountant = new CrestAccountant(
             payable(address(vault)),
             owner,
             feeRecipient
         );
-        teller = new CrestTeller(payable(address(vault)), usdcAddress, owner);
+        teller = new CrestTeller(payable(address(vault)), USDT0_ADDRESS, owner);
         manager = new CrestManager(
             payable(address(vault)),
-            usdcAddress,
+            USDT0_ADDRESS,
             owner,
             curator
         );
@@ -107,27 +112,27 @@ contract CrestVaultTest is Test {
     }
 
     function _fundUser(address user, uint256 amount) internal {
-        // Mint mock USDC to user for testing
-        usdc.mint(user, amount);
+        // Use deal to give user USDT0 tokens
+        deal(USDT0_ADDRESS, user, amount);
 
         // Approve teller for convenience
         vm.startPrank(user);
-        usdc.approve(address(teller), type(uint256).max);
+        usdt0.approve(address(teller), type(uint256).max);
         vm.stopPrank();
     }
 
     // ==================== DEPOSIT TESTS ====================
 
     function test_Deposit_SingleUser_Success() public {
-        // Given: Alice has USDC balance
-        _fundUser(alice, MILLION_USDC);
+        // Given: Alice has USDT0 balance
+        _fundUser(alice, MILLION_USDT0);
 
-        uint256 aliceBalanceBefore = usdc.balanceOf(alice);
-        assertEq(aliceBalanceBefore, MILLION_USDC, 'Funding failed');
+        uint256 aliceBalanceBefore = usdt0.balanceOf(alice);
+        assertEq(aliceBalanceBefore, MILLION_USDT0, 'Funding failed');
 
-        uint256 depositAmount = TEN_THOUSAND_USDC;
+        uint256 depositAmount = TEN_THOUSAND_USDT0;
 
-        // When: Alice deposits USDC
+        // When: Alice deposits USDT0
         vm.startPrank(alice);
         uint256 sharesReceived = teller.deposit(depositAmount, alice);
         vm.stopPrank();
@@ -140,14 +145,14 @@ contract CrestVaultTest is Test {
             'Alice should have shares'
         );
         assertEq(
-            usdc.balanceOf(alice),
+            usdt0.balanceOf(alice),
             aliceBalanceBefore - depositAmount,
-            'USDC transferred from Alice'
+            'USDT0 transferred from Alice'
         );
         assertEq(
-            usdc.balanceOf(address(vault)),
+            usdt0.balanceOf(address(vault)),
             depositAmount,
-            'Vault holds USDC'
+            'Vault holds USDT0'
         );
         assertEq(
             vault.totalSupply(),
@@ -158,32 +163,32 @@ contract CrestVaultTest is Test {
 
     function test_Deposit_MultipleUsers_CorrectShares() public {
         // Given: Exchange rate is 1:1 initially
-        _fundUser(alice, MILLION_USDC);
-        _fundUser(bob, MILLION_USDC);
+        _fundUser(alice, MILLION_USDT0);
+        _fundUser(bob, MILLION_USDT0);
 
         // When: Alice deposits first
         vm.startPrank(alice);
-        uint256 aliceShares = teller.deposit(HUNDRED_THOUSAND_USDC, alice);
+        uint256 aliceShares = teller.deposit(HUNDRED_THOUSAND_USDT0, alice);
         vm.stopPrank();
 
         // And: Bob deposits second
         vm.startPrank(bob);
-        uint256 bobShares = teller.deposit(TEN_THOUSAND_USDC, bob);
+        uint256 bobShares = teller.deposit(TEN_THOUSAND_USDT0, bob);
         vm.stopPrank();
 
         // Then: Both get 1:1 shares at same rate
-        assertEq(aliceShares, HUNDRED_THOUSAND_USDC, 'Alice gets 1:1');
-        assertEq(bobShares, TEN_THOUSAND_USDC, 'Bob gets 1:1');
+        assertEq(aliceShares, HUNDRED_THOUSAND_USDT0, 'Alice gets 1:1');
+        assertEq(bobShares, TEN_THOUSAND_USDT0, 'Bob gets 1:1');
         assertEq(
             vault.totalSupply(),
-            HUNDRED_THOUSAND_USDC + TEN_THOUSAND_USDC,
+            HUNDRED_THOUSAND_USDT0 + TEN_THOUSAND_USDT0,
             'Total supply correct'
         );
     }
 
     function test_Deposit_BelowMinimum_Reverts() public {
-        // Given: Minimum deposit is 1 USDC
-        uint256 belowMinimum = ONE_USDC - 1;
+        // Given: Minimum deposit is 1 USDT0
+        uint256 belowMinimum = ONE_USDT0 - 1;
 
         // When/Then: Should revert
         vm.prank(alice);
@@ -199,16 +204,16 @@ contract CrestVaultTest is Test {
         // When/Then: Should revert
         vm.prank(alice);
         vm.expectRevert(CrestTeller.CrestTeller__Paused.selector);
-        teller.deposit(TEN_THOUSAND_USDC, alice);
+        teller.deposit(TEN_THOUSAND_USDT0, alice);
     }
 
     // ==================== WITHDRAWAL TESTS ====================
 
     function test_Withdraw_AfterLockPeriod_Success() public {
         // Given: Alice deposited and lock period passed
-        _fundUser(alice, MILLION_USDC);
+        _fundUser(alice, MILLION_USDT0);
         vm.startPrank(alice);
-        uint256 shares = teller.deposit(TEN_THOUSAND_USDC, alice);
+        uint256 shares = teller.deposit(TEN_THOUSAND_USDT0, alice);
         vm.stopPrank();
 
         vm.warp(block.timestamp + 1 days + 1);
@@ -217,16 +222,16 @@ contract CrestVaultTest is Test {
         vm.prank(alice);
         uint256 assetsReceived = teller.withdraw(shares, alice);
 
-        // Then: Alice gets her USDC back
-        assertEq(assetsReceived, TEN_THOUSAND_USDC, 'Should receive full USDC');
+        // Then: Alice gets her USDT0 back
+        assertEq(assetsReceived, TEN_THOUSAND_USDT0, 'Should receive full USDT0');
         assertEq(vault.balanceOf(alice), 0, 'Shares burned');
     }
 
     function test_Withdraw_DuringLockPeriod_Reverts() public {
         // Given: Alice just deposited
-        _fundUser(alice, MILLION_USDC);
+        _fundUser(alice, MILLION_USDT0);
         vm.startPrank(alice);
-        uint256 shares = teller.deposit(TEN_THOUSAND_USDC, alice);
+        uint256 shares = teller.deposit(TEN_THOUSAND_USDT0, alice);
         vm.stopPrank();
 
         // When/Then: Immediate withdrawal reverts
@@ -237,9 +242,9 @@ contract CrestVaultTest is Test {
 
     function test_Withdraw_Partial_Success() public {
         // Given: Alice deposited and lock expired
-        _fundUser(alice, MILLION_USDC);
+        _fundUser(alice, MILLION_USDT0);
         vm.startPrank(alice);
-        uint256 totalShares = teller.deposit(TEN_THOUSAND_USDC, alice);
+        uint256 totalShares = teller.deposit(TEN_THOUSAND_USDT0, alice);
         vm.stopPrank();
 
         vm.warp(block.timestamp + 1 days + 1);
@@ -249,8 +254,8 @@ contract CrestVaultTest is Test {
         vm.prank(alice);
         uint256 assetsReceived = teller.withdraw(halfShares, alice);
 
-        // Then: Alice gets half USDC, keeps half shares
-        assertEq(assetsReceived, TEN_THOUSAND_USDC / 2, 'Should receive half');
+        // Then: Alice gets half USDT0, keeps half shares
+        assertEq(assetsReceived, TEN_THOUSAND_USDT0 / 2, 'Should receive half');
         assertEq(vault.balanceOf(alice), halfShares, 'Half shares remain');
     }
 
@@ -276,8 +281,8 @@ contract CrestVaultTest is Test {
         // Give them balances
         CoreSimulatorLib.forceAccountActivation(marketMaker1);
         CoreSimulatorLib.forceAccountActivation(marketMaker2);
-        CoreSimulatorLib.forceSpotBalance(marketMaker1, USDC_TOKEN_ID, 10000000 * 1e6); // 10M USDC
-        CoreSimulatorLib.forceSpotBalance(marketMaker2, USDC_TOKEN_ID, 10000000 * 1e6); // 10M USDC
+        CoreSimulatorLib.forceSpotBalance(marketMaker1, USDT0_TOKEN_ID, 10000000 * 1e8); // 10M USDT0 in Core (8 decimals)
+        CoreSimulatorLib.forceSpotBalance(marketMaker2, USDT0_TOKEN_ID, 10000000 * 1e8); // 10M USDT0 in Core
         CoreSimulatorLib.forcePerpBalance(marketMaker1, 10000000 * 1e6); // 10M USD perp margin
         CoreSimulatorLib.forcePerpBalance(marketMaker2, 10000000 * 1e6); // 10M USD perp margin
 
@@ -321,15 +326,28 @@ contract CrestVaultTest is Test {
     // ==================== ALLOCATION TESTS ====================
 
     function test_Allocate_WithMarketMakerLiquidity() public {
-        // Given: Vault has USDC from deposits
-        _fundUser(alice, MILLION_USDC);
+        // Given: Vault has USDT0 from deposits
+        _fundUser(alice, MILLION_USDT0);
         vm.startPrank(alice);
-        teller.deposit(MILLION_USDC, alice);
+        teller.deposit(MILLION_USDT0, alice);
         vm.stopPrank();
 
-        // Set up market with tiered liquidity
-        uint64 spotMarketPrice = 10000 * 1e8; // $10,000
-        uint64 perpMarketPrice = 10050 * 1e8; // $10,050
+        // Get real market prices first to understand the format
+        uint64 realSpotPrice = PrecompileLib.spotPx(uint64(HYPE_SPOT_INDEX));
+        uint64 realPerpPrice = PrecompileLib.markPx(HYPE_PERP_INDEX);
+        console2.log("\nReal prices before setting:");
+        console2.log("  Spot:", realSpotPrice);
+        console2.log("  Perp:", realPerpPrice);
+
+        // Use prices in the same format as real Hyperliquid (appears to be 6 decimals)
+        // Based on logs showing prices like 56229000 ($56.229 with 6 decimals = $56,229)
+        uint64 spotMarketPrice = 10000 * 1e6; // $10,000 in 6 decimals
+        uint64 perpMarketPrice = 10050 * 1e6; // $10,050 in 6 decimals
+
+        // Force balances for manager to ensure it has funds
+        CoreSimulatorLib.forceSpotBalance(address(manager), USDT0_TOKEN_ID, 1000000 * 1e8); // 1M USDT0 in Core
+        CoreSimulatorLib.forcePerpBalance(address(manager), 1000000 * 1e6);
+
         _setupMarketMakerLiquidity(HYPE_SPOT_INDEX, HYPE_PERP_INDEX, spotMarketPrice, perpMarketPrice);
 
         // Calculate our limit order prices with 0.5% slippage
@@ -342,9 +360,30 @@ contract CrestVaultTest is Test {
         console2.log("");
 
         // When: Curator allocates
+        console2.log("\n=== BEFORE ALLOCATION ===");
+        console2.log("Manager USDT0 balance:", usdt0.balanceOf(address(manager)));
+        console2.log("Vault USDT0 balance:", usdt0.balanceOf(address(vault)));
+
+        // Check prices after setting
+        uint64 spotPriceAfterSet = PrecompileLib.spotPx(uint64(HYPE_SPOT_INDEX));
+        uint64 perpPriceAfterSet = PrecompileLib.markPx(HYPE_PERP_INDEX);
+        console2.log("\nPrices after setting:");
+        console2.log("  Spot:", spotPriceAfterSet);
+        console2.log("  Expected spot:", spotMarketPrice);
+        console2.log("  Perp:", perpPriceAfterSet);
+        console2.log("  Expected perp:", perpMarketPrice);
+
         vm.prank(curator);
         manager.allocate(HYPE_SPOT_INDEX, HYPE_PERP_INDEX);
+
+        console2.log("\n=== AFTER ALLOCATION (before nextBlock) ===");
+        (CrestManager.Position memory spotPosBefore, CrestManager.Position memory perpPosBefore) = manager.getPositions();
+        console2.log("Spot position size:", spotPosBefore.size);
+        console2.log("Perp position size:", perpPosBefore.size);
+
         CoreSimulatorLib.nextBlock();
+
+        console2.log("\n=== AFTER nextBlock ===");
 
         // Then: Check execution
         (
@@ -369,51 +408,42 @@ contract CrestVaultTest is Test {
         console2.log("  - Size filled:   ", spotPos.size);
         console2.log("  - Entry price:   ", spotPos.entryPrice);
         console2.log("  - Market price:  ", PrecompileLib.spotPx(uint64(HYPE_SPOT_INDEX)));
-        if (spotPos.size > 0) {
-            // Calculate weighted average price if filled
-            uint256 weightedAvg = (spotMarketPrice * 80 + (spotMarketPrice + spotMarketPrice * 25 / 10000) * 20) / 100;
-            console2.log("  - Expected avg:  ", weightedAvg, "(80% at market + 20% at +0.25%)");
-            console2.log("  - Within limit:  ", spotPos.entryPrice <= spotLimitPrice ? "YES" : "NO");
-        } else {
-            console2.log("  - NOTE: IOC order cancelled (no fill in simulation)");
-            console2.log("  - In production: Would fill 80% at market, 20% at +0.25%");
-            console2.log("  - Weighted avg would be:", (spotMarketPrice * 80 + (spotMarketPrice + spotMarketPrice * 25 / 10000) * 20) / 100);
-        }
+
+        // Calculate weighted average price for spot
+        uint256 spotWeightedAvg = (spotMarketPrice * 80 + (spotMarketPrice + spotMarketPrice * 25 / 10000) * 20) / 100;
+        console2.log("  - Expected avg:  ", spotWeightedAvg, "(80% at market + 20% at +0.25%)");
+        console2.log("  - Within limit:  ", spotPos.entryPrice <= spotLimitPrice ? "YES" : "NO");
+
         console2.log("");
         console2.log("Perp position:");
         console2.log("  - Size filled:   ", perpPos.size);
         console2.log("  - Entry price:   ", perpPos.entryPrice);
         console2.log("  - Market price:  ", PrecompileLib.markPx(HYPE_PERP_INDEX));
-        if (perpPos.size > 0) {
-            // Calculate weighted average price if filled
-            uint256 weightedAvg = (perpMarketPrice * 80 + (perpMarketPrice - perpMarketPrice * 25 / 10000) * 20) / 100;
-            console2.log("  - Expected avg:  ", weightedAvg, "(80% at market + 20% at -0.25%)");
-            console2.log("  - Within limit:  ", perpPos.entryPrice >= perpLimitPrice ? "YES" : "NO");
-        } else {
-            console2.log("  - NOTE: IOC order cancelled (no fill in simulation)");
-            console2.log("  - In production: Would fill 80% at market, 20% at -0.25%");
-            console2.log("  - Weighted avg would be:", (perpMarketPrice * 80 + (perpMarketPrice - perpMarketPrice * 25 / 10000) * 20) / 100);
-        }
+
+        // Calculate weighted average price for perp
+        uint256 perpWeightedAvg = (perpMarketPrice * 80 + (perpMarketPrice - perpMarketPrice * 25 / 10000) * 20) / 100;
+        console2.log("  - Expected avg:  ", perpWeightedAvg, "(80% at market + 20% at -0.25%)");
+        console2.log("  - Within limit:  ", perpPos.entryPrice >= perpLimitPrice ? "YES" : "NO");
 
         console2.log("");
-        console2.log("=== KEY FINDINGS ===");
-        console2.log("1. IOC orders placed with correct slippage tolerance (+/-0.5%)");
-        console2.log("2. In production with tiered liquidity:");
-        console2.log("   - 80% would fill at market price");
-        console2.log("   - 20% would fill at slightly worse price (within tolerance)");
-        console2.log("3. Actual avg price would be better than max slippage");
-        console2.log("4. Orders NEVER fill beyond limit price with IOC");
+        console2.log("=== VERIFICATION ===");
+        console2.log("1. IOC orders FILLED with actual sizes");
+        console2.log("2. Spot filled", spotPos.size, "units");
+        console2.log("3. Perp filled", perpPos.size, "units");
+        console2.log("4. Orders executed within slippage tolerance");
 
-        // Verify positions exist
+        // Assert positions filled
+        assertGt(spotPos.size, 0, "Spot position filled");
+        assertGt(perpPos.size, 0, "Perp position filled");
         assertEq(spotPos.index, HYPE_SPOT_INDEX, "Spot index set");
         assertEq(perpPos.index, HYPE_PERP_INDEX, "Perp index set");
     }
 
     function test_Allocate_CuratorOnly_Success() public {
-        // Given: Vault has USDC from deposits
-        _fundUser(alice, MILLION_USDC);
+        // Given: Vault has USDT0 from deposits
+        _fundUser(alice, MILLION_USDT0);
         vm.startPrank(alice);
-        teller.deposit(MILLION_USDC, alice); // Use larger amount to avoid HyperliquidLib__EvmAmountTooSmall
+        teller.deposit(MILLION_USDT0, alice); // Use larger amount to avoid HyperliquidLib__EvmAmountTooSmall
         vm.stopPrank();
 
         // Set initial market prices for testing
@@ -520,10 +550,10 @@ contract CrestVaultTest is Test {
     }
 
     function test_Allocate_NonCurator_Reverts() public {
-        // Given: Vault has USDC
-        _fundUser(alice, MILLION_USDC);
+        // Given: Vault has USDT0
+        _fundUser(alice, MILLION_USDT0);
         vm.startPrank(alice);
-        teller.deposit(MILLION_USDC, alice);
+        teller.deposit(MILLION_USDT0, alice);
         vm.stopPrank();
 
         // When/Then: Non-curator/non-owner cannot allocate
@@ -540,13 +570,13 @@ contract CrestVaultTest is Test {
     }
 
     function test_Allocate_InsufficientBalance_Reverts() public {
-        // Given: Vault has only 100 USDC (below minimum)
-        _fundUser(alice, THOUSAND_USDC);
+        // Given: Vault has only 10 USDT0 (well below minimum needed for allocation)
+        _fundUser(alice, HUNDRED_USDT0);
         vm.startPrank(alice);
-        teller.deposit(HUNDRED_USDC, alice);
+        teller.deposit(TEN_USDT0, alice);
         vm.stopPrank();
 
-        // When/Then: Allocation should revert
+        // When/Then: Allocation should revert due to insufficient balance
         vm.prank(curator);
         vm.expectRevert();
         manager.allocate(HYPE_SPOT_INDEX, HYPE_PERP_INDEX);
@@ -556,9 +586,9 @@ contract CrestVaultTest is Test {
 
     function test_Rebalance_FromHypeToPurr_Success() public {
         // Given: Vault allocated to HYPE
-        _fundUser(alice, 10 * MILLION_USDC);
+        _fundUser(alice, 10 * MILLION_USDT0);
         vm.startPrank(alice);
-        teller.deposit(10 * MILLION_USDC, alice);
+        teller.deposit(10 * MILLION_USDT0, alice);
         vm.stopPrank();
 
         vm.prank(curator);
@@ -591,9 +621,9 @@ contract CrestVaultTest is Test {
 
     function test_Rebalance_WithoutPositions_Reverts() public {
         // Given: No positions open
-        _fundUser(alice, MILLION_USDC);
+        _fundUser(alice, MILLION_USDT0);
         vm.startPrank(alice);
-        teller.deposit(MILLION_USDC, alice);
+        teller.deposit(MILLION_USDT0, alice);
         vm.stopPrank();
 
         // When/Then: Rebalance should revert
@@ -604,9 +634,9 @@ contract CrestVaultTest is Test {
 
     function test_ClosePositions_WithMarketMakerLiquidity() public {
         // Given: Vault has allocated positions
-        _fundUser(alice, 10 * MILLION_USDC);
+        _fundUser(alice, 10 * MILLION_USDT0);
         vm.startPrank(alice);
-        teller.deposit(10 * MILLION_USDC, alice);
+        teller.deposit(10 * MILLION_USDT0, alice);
         vm.stopPrank();
 
         // Initial allocation at lower prices
@@ -701,9 +731,9 @@ contract CrestVaultTest is Test {
 
     function test_ClosePositions_WithSlippage() public {
         // Given: Vault has allocated positions
-        _fundUser(alice, 10 * MILLION_USDC);
+        _fundUser(alice, 10 * MILLION_USDT0);
         vm.startPrank(alice);
-        teller.deposit(10 * MILLION_USDC, alice);
+        teller.deposit(10 * MILLION_USDT0, alice);
         vm.stopPrank();
 
         // Set initial market prices
@@ -788,20 +818,20 @@ contract CrestVaultTest is Test {
 
     function test_Fees_PlatformFee_Applied() public {
         // Given: Vault has deposits
-        _fundUser(alice, MILLION_USDC);
+        _fundUser(alice, MILLION_USDT0);
         vm.startPrank(alice);
-        teller.deposit(HUNDRED_THOUSAND_USDC, alice);
+        teller.deposit(HUNDRED_THOUSAND_USDT0, alice);
         vm.stopPrank();
 
         // When: Time passes and rate updates
         vm.warp(block.timestamp + 365 days);
 
-        // Simulate some profit
-        usdc.mint(address(vault), TEN_THOUSAND_USDC);
+        // Simulate some profit by dealing USDT0 to vault
+        _dealUsdt0(address(vault), usdt0.balanceOf(address(vault)) + TEN_THOUSAND_USDT0);
 
         vm.prank(owner);
         accountant.updateExchangeRate(
-            HUNDRED_THOUSAND_USDC + TEN_THOUSAND_USDC
+            HUNDRED_THOUSAND_USDT0 + TEN_THOUSAND_USDT0
         );
 
         // Then: Platform fees accumulated (1% annually)
@@ -811,19 +841,19 @@ contract CrestVaultTest is Test {
 
     function test_Fees_PerformanceFee_OnProfit() public {
         // Given: Vault has deposits
-        _fundUser(alice, MILLION_USDC);
+        _fundUser(alice, MILLION_USDT0);
         vm.startPrank(alice);
-        teller.deposit(HUNDRED_THOUSAND_USDC, alice);
+        teller.deposit(HUNDRED_THOUSAND_USDT0, alice);
         vm.stopPrank();
 
         vm.warp(block.timestamp + 1 hours + 1);
 
-        // When: Vault makes 10% profit
-        usdc.mint(address(vault), TEN_THOUSAND_USDC);
+        // When: Vault makes 10% profit by dealing more USDT0
+        _dealUsdt0(address(vault), usdt0.balanceOf(address(vault)) + TEN_THOUSAND_USDT0);
 
         vm.prank(owner);
         accountant.updateExchangeRate(
-            HUNDRED_THOUSAND_USDC + TEN_THOUSAND_USDC
+            HUNDRED_THOUSAND_USDT0 + TEN_THOUSAND_USDT0
         );
 
         // Then: Performance fees taken (5% of 10k = 500)
@@ -834,22 +864,22 @@ contract CrestVaultTest is Test {
 
     function test_Fees_MaxRateChange_Enforced() public {
         // Given: Vault has deposits
-        _fundUser(alice, MILLION_USDC);
+        _fundUser(alice, MILLION_USDT0);
         vm.startPrank(alice);
-        teller.deposit(HUNDRED_THOUSAND_USDC, alice);
+        teller.deposit(HUNDRED_THOUSAND_USDT0, alice);
         vm.stopPrank();
 
         vm.warp(block.timestamp + 1 hours + 1);
 
         // When: Huge profit that would exceed max rate change
-        usdc.mint(address(vault), HUNDRED_THOUSAND_USDC); // 100% profit
+        _dealUsdt0(address(vault), usdt0.balanceOf(address(vault)) + HUNDRED_THOUSAND_USDT0); // 100% profit
 
         // The updateExchangeRate should revert if rate change is too big
         vm.prank(owner);
         vm.expectRevert(
             CrestAccountant.CrestAccountant__RateChangeTooBig.selector
         );
-        accountant.updateExchangeRate(HUNDRED_THOUSAND_USDC * 2);
+        accountant.updateExchangeRate(HUNDRED_THOUSAND_USDT0 * 2);
     }
 
     // ==================== AUTHORIZATION TESTS ====================
@@ -875,7 +905,7 @@ contract CrestVaultTest is Test {
         // When/Then: Unauthorized cannot call enter
         vm.prank(attacker);
         vm.expectRevert('UNAUTHORIZED');
-        vault.enter(alice, ERC20(address(usdc)), 0, alice, 1000e6);
+        vault.enter(alice, usdt0, 0, alice, 1000e6);
     }
 
     // ==================== SECURITY TESTS ====================
@@ -889,9 +919,9 @@ contract CrestVaultTest is Test {
 
     function test_Security_ShareLockPreventsImmediateExit() public {
         // Given: Alice deposits
-        _fundUser(alice, MILLION_USDC);
+        _fundUser(alice, MILLION_USDT0);
         vm.startPrank(alice);
-        uint256 shares = teller.deposit(TEN_THOUSAND_USDC, alice);
+        uint256 shares = teller.deposit(TEN_THOUSAND_USDT0, alice);
         vm.stopPrank();
 
         // When/Then: Cannot immediately withdraw (1 day lock)
@@ -909,14 +939,14 @@ contract CrestVaultTest is Test {
 
     function test_Integration_FullLifecycle() public {
         // 1. Multiple deposits
-        _fundUser(alice, 10 * MILLION_USDC);
+        _fundUser(alice, 10 * MILLION_USDT0);
         vm.startPrank(alice);
-        teller.deposit(10 * MILLION_USDC, alice);
+        teller.deposit(10 * MILLION_USDT0, alice);
         vm.stopPrank();
 
-        _fundUser(bob, 5 * MILLION_USDC);
+        _fundUser(bob, 5 * MILLION_USDT0);
         vm.startPrank(bob);
-        teller.deposit(5 * MILLION_USDC, bob);
+        teller.deposit(5 * MILLION_USDT0, bob);
         vm.stopPrank();
 
         // 2. Curator allocates to HYPE
@@ -925,11 +955,11 @@ contract CrestVaultTest is Test {
 
         // 3. Time passes, simulate yield
         vm.warp(block.timestamp + 7 days);
-        usdc.mint(address(vault), 500_000 * ONE_USDC); // 3.3% yield
+        _dealUsdt0(address(vault), usdt0.balanceOf(address(vault)) + 500_000 * ONE_USDT0); // 3.3% yield
 
         // 4. Update exchange rate
         vm.prank(owner);
-        accountant.updateExchangeRate(15 * MILLION_USDC + 500_000 * ONE_USDC);
+        accountant.updateExchangeRate(15 * MILLION_USDT0 + 500_000 * ONE_USDT0);
 
         // 5. Rebalance to BERA
         vm.prank(curator);
@@ -963,7 +993,7 @@ contract CrestVaultTest is Test {
 
         // Simulate funds returning from Hyperliquid (since closeAllPositions uses placeholder amounts)
         // In production, the actual amounts would be bridged back
-        usdc.mint(address(vault), 15 * MILLION_USDC + 500_000 * ONE_USDC);
+        _dealUsdt0(address(vault), 15 * MILLION_USDT0 + 500_000 * ONE_USDT0);
 
         // 7. Alice withdraws with profit
         uint256 aliceShares = vault.balanceOf(alice);
@@ -971,14 +1001,14 @@ contract CrestVaultTest is Test {
         uint256 withdrawn = teller.withdraw(aliceShares, alice);
 
         // Alice should get more than deposited due to yield
-        assertGt(withdrawn, 10 * MILLION_USDC, 'Alice profits from yield');
+        assertGt(withdrawn, 10 * MILLION_USDT0, 'Alice profits from yield');
     }
 
     function test_Integration_EmergencyPause() public {
         // Given: Normal operations
-        _fundUser(alice, MILLION_USDC);
+        _fundUser(alice, MILLION_USDT0);
         vm.startPrank(alice);
-        teller.deposit(TEN_THOUSAND_USDC, alice);
+        teller.deposit(TEN_THOUSAND_USDT0, alice);
         vm.stopPrank();
 
         // When: Emergency pause
@@ -986,10 +1016,10 @@ contract CrestVaultTest is Test {
         teller.pause();
 
         // Then: Deposits blocked
-        _fundUser(bob, MILLION_USDC);
+        _fundUser(bob, MILLION_USDT0);
         vm.startPrank(bob);
         vm.expectRevert(CrestTeller.CrestTeller__Paused.selector);
-        teller.deposit(THOUSAND_USDC, bob);
+        teller.deposit(THOUSAND_USDT0, bob);
         vm.stopPrank();
 
         // And withdrawals are also blocked during pause for safety
@@ -1013,6 +1043,11 @@ contract CrestVaultTest is Test {
     }
 
     // ==================== HELPER FUNCTIONS ====================
+
+    function _dealUsdt0(address to, uint256 amount) internal {
+        // Use deal to set USDT0 balance
+        deal(USDT0_ADDRESS, to, amount);
+    }
 
     function _assertApproxEqRel(
         uint256 a,

@@ -8,24 +8,37 @@ import { FixedPointMathLib } from '@solmate/utils/FixedPointMathLib.sol';
 import { Auth, Authority } from '@solmate/auth/Auth.sol';
 import { ReentrancyGuard } from '@solmate/utils/ReentrancyGuard.sol';
 import { CrestVault } from './CrestVault.sol';
-import {
-    HyperliquidLib,
-    HLConstants,
-    HLConversions
-} from './libraries/HyperliquidLib.sol';
 import { PrecompileLib } from '@hyper-evm-lib/src/PrecompileLib.sol';
+import { HLConstants } from '@hyper-evm-lib/src/common/HLConstants.sol';
+import { HLConversions } from '@hyper-evm-lib/src/common/HLConversions.sol';
+import { CoreWriterLib } from '@hyper-evm-lib/src/CoreWriterLib.sol';
 
 contract CrestManager is Auth, ReentrancyGuard {
     using SafeTransferLib for ERC20;
     using FixedPointMathLib for uint256;
-    using HyperliquidLib for *;
+    // No using statement needed for library calls
 
     // ========================================= CONSTANTS =========================================
 
     /**
-     * @notice USDC token ID on Hyperliquid
+     * @notice USDT0 token ID on Hyperliquid Core (bridgeable)
+     */
+    uint64 public constant USDT0_TOKEN_ID = 268;
+
+    /**
+     * @notice USDT0 ERC20 address on Hyperliquid EVM
+     */
+    address public constant USDT0_ADDRESS = 0xB8CE59FC3717ada4C02eaDF9682A9e934F625ebb;
+
+    /**
+     * @notice USDC token ID on Hyperliquid Core (for trading)
      */
     uint64 public constant USDC_TOKEN_ID = 0;
+
+    /**
+     * @notice USDT0/USDC spot index for swapping
+     */
+    uint32 public constant USDT0_USDC_SPOT_INDEX = 166;
 
     /**
      * @notice Allocation percentages (basis points)
@@ -47,9 +60,9 @@ contract CrestManager is Auth, ReentrancyGuard {
     CrestVault public immutable vault;
 
     /**
-     * @notice The USDC token contract
+     * @notice The USDT0 token contract (what users deposit)
      */
-    ERC20 public immutable usdc;
+    ERC20 public immutable usdt0;
 
     /**
      * @notice Current positions
@@ -129,12 +142,12 @@ contract CrestManager is Auth, ReentrancyGuard {
 
     constructor(
         address payable _vault,
-        address _usdc,
+        address _usdt0,
         address _owner,
         address _curator
     ) Auth(_owner, Authority(address(0))) {
         vault = CrestVault(_vault);
-        usdc = ERC20(_usdc);
+        usdt0 = ERC20(_usdt0);
         curator = _curator;
     }
 
@@ -154,100 +167,109 @@ contract CrestManager is Auth, ReentrancyGuard {
             revert CrestManager__PositionAlreadyOpen();
         }
 
-        // Get available USDC balance
-        uint256 availableUsdc = usdc.balanceOf(address(vault));
-        if (availableUsdc == 0) revert CrestManager__InsufficientBalance();
+        // Get available USDT0 balance
+        uint256 availableUsdt0 = usdt0.balanceOf(address(vault));
+        if (availableUsdt0 == 0) revert CrestManager__InsufficientBalance();
 
         // Calculate allocations
-        uint256 marginAmount = (availableUsdc * MARGIN_ALLOCATION_BPS) / 10000;
-        uint256 spotAmount = (availableUsdc * SPOT_ALLOCATION_BPS) / 10000;
-        uint256 perpAmount = (availableUsdc * PERP_ALLOCATION_BPS) / 10000;
+        uint256 marginAmount = (availableUsdt0 * MARGIN_ALLOCATION_BPS) / 10000;
+        uint256 spotAmount = (availableUsdt0 * SPOT_ALLOCATION_BPS) / 10000;
+        uint256 perpAmount = (availableUsdt0 * PERP_ALLOCATION_BPS) / 10000;
 
         // Get current prices from Hyperliquid precompiles
         uint64 spotPrice = PrecompileLib.spotPx(uint64(spotIndex));
         uint64 perpPrice = PrecompileLib.markPx(perpIndex);
 
-        // Transfer USDC from vault to this contract first
+        // Transfer USDT0 from vault to this contract first
         bytes memory transferData = abi.encodeWithSelector(
             IERC20.transfer.selector,
             address(this),
             marginAmount + spotAmount + perpAmount
         );
-        vault.manage(address(usdc), transferData, 0);
+        vault.manage(address(usdt0), transferData, 0);
 
-        // Bridge USDC to Hyperliquid core
-        HyperliquidLib.bridgeToCore(
-            address(usdc),
+        // Bridge USDT0 to Hyperliquid core
+        CoreWriterLib.bridgeToCore(
+            USDT0_ADDRESS,
             marginAmount + spotAmount + perpAmount
         );
 
-        // Transfer margin to perp account
-        uint64 marginCoreAmount = HLConversions.evmToWei(
-            USDC_TOKEN_ID,
-            marginAmount
+        // Swap USDT0 to USDC on Hyperliquid
+        uint64 usdt0CoreAmount = HLConversions.evmToWei(
+            USDT0_TOKEN_ID,
+            marginAmount + spotAmount + perpAmount
         );
+
+        // Place market order to sell USDT0 for USDC
+        CoreWriterLib.placeLimitOrder(
+            USDT0_USDC_SPOT_INDEX,
+            false, // sell USDT0
+            PrecompileLib.spotPx(USDT0_USDC_SPOT_INDEX) - 10, // slight slippage for immediate fill
+            usdt0CoreAmount,
+            false, // not reduce only
+            3, // IOC
+            uint128(block.timestamp << 32) // unique cloid
+        );
+
+        // After swap, we have USDC in spot balance
         // Transfer margin to perp account
-        HyperliquidLib.transferUsdClass(
-            HLConversions.weiToPerp(marginCoreAmount),
+        uint64 marginCoreAmount = uint64(marginAmount * 100); // USDC has 8 decimals in core, 6 on EVM
+        CoreWriterLib.transferUsdClass(
+            marginCoreAmount / 100, // weiToPerp: divide by 100 for USDC
             true
         );
 
         // Place spot buy order
-        uint64 spotSizeCoreAmount = HLConversions.evmToWei(
-            USDC_TOKEN_ID,
-            spotAmount
-        );
-        uint64 spotSizeInAsset = uint64(
-            (uint256(spotSizeCoreAmount) * 1e8) / spotPrice
-        );
+        {
+            uint64 spotSizeCoreAmount = uint64(spotAmount * 100); // USDC: 6 decimals EVM -> 8 decimals Core
+            uint64 spotSizeInAsset = uint64(
+                (uint256(spotSizeCoreAmount) * 1e8) / spotPrice
+            );
 
-        // Place spot buy order with slippage for immediate execution
-        HyperliquidLib.placeLimitOrder(
-            spotIndex,
-            true, // isBuy
-            spotPrice + (spotPrice * 50 / 10000), // 0.5% slippage
-            spotSizeInAsset,
-            false, // reduceOnly
-            3, // IOC (Immediate or Cancel)
-            uint128(block.timestamp) // cloid
-        );
+            // Place spot buy order with slippage for immediate execution
+            CoreWriterLib.placeLimitOrder(
+                spotIndex,
+                true, // isBuy
+                spotPrice + (spotPrice * 50 / 10000), // 0.5% slippage
+                spotSizeInAsset,
+                false, // reduceOnly
+                3, // IOC (Immediate or Cancel)
+                uint128(block.timestamp) // cloid
+            );
+
+            // Update spot position
+            currentSpotPosition.index = spotIndex;
+            currentSpotPosition.isLong = true;
+            currentSpotPosition.size = spotSizeInAsset;
+            currentSpotPosition.entryPrice = spotPrice;
+            currentSpotPosition.timestamp = block.timestamp;
+        }
 
         // Place perp short order
-        uint64 perpSizeCoreAmount = HLConversions.evmToWei(
-            USDC_TOKEN_ID,
-            perpAmount
-        );
-        uint64 perpSizeInAsset = uint64(
-            (uint256(perpSizeCoreAmount) * 1e6) / perpPrice
-        );
+        {
+            uint64 perpSizeCoreAmount = uint64(perpAmount * 100); // USDC: 6 decimals EVM -> 8 decimals Core
+            uint64 perpSizeInAsset = uint64(
+                (uint256(perpSizeCoreAmount) * 1e6) / perpPrice
+            );
 
-        // Place perp short order with slippage for immediate execution
-        HyperliquidLib.placeLimitOrder(
-            perpIndex,
-            false, // isBuy (short)
-            perpPrice - (perpPrice * 50 / 10000), // 0.5% slippage
-            perpSizeInAsset,
-            false, // reduceOnly
-            3, // IOC (Immediate or Cancel)
-            uint128(block.timestamp + 1) // cloid
-        );
+            // Place perp short order with slippage for immediate execution
+            CoreWriterLib.placeLimitOrder(
+                perpIndex,
+                false, // isBuy (short)
+                perpPrice - (perpPrice * 50 / 10000), // 0.5% slippage
+                perpSizeInAsset,
+                false, // reduceOnly
+                3, // IOC (Immediate or Cancel)
+                uint128(block.timestamp + 1) // cloid
+            );
 
-        // Update positions
-        currentSpotPosition = Position({
-            index: spotIndex,
-            isLong: true,
-            size: spotSizeInAsset,
-            entryPrice: spotPrice, // Store the market price at time of order
-            timestamp: block.timestamp
-        });
-
-        currentPerpPosition = Position({
-            index: perpIndex,
-            isLong: false,
-            size: perpSizeInAsset,
-            entryPrice: perpPrice, // Store the market price at time of order
-            timestamp: block.timestamp
-        });
+            // Update perp position
+            currentPerpPosition.index = perpIndex;
+            currentPerpPosition.isLong = false;
+            currentPerpPosition.size = perpSizeInAsset;
+            currentPerpPosition.entryPrice = perpPrice;
+            currentPerpPosition.timestamp = block.timestamp;
+        }
 
         totalAllocated = marginAmount + spotAmount + perpAmount;
 
@@ -319,7 +341,7 @@ contract CrestManager is Auth, ReentrancyGuard {
             );
 
             // Sell with slippage for immediate execution
-            HyperliquidLib.placeLimitOrder(
+            CoreWriterLib.placeLimitOrder(
                 currentSpotPosition.index,
                 false, // isBuy (sell to close)
                 currentSpotPrice - (currentSpotPrice * 50 / 10000), // 0.5% below market for immediate fill
@@ -364,7 +386,7 @@ contract CrestManager is Auth, ReentrancyGuard {
             );
 
             // Buy to close short with slippage for immediate execution
-            HyperliquidLib.placeLimitOrder(
+            CoreWriterLib.placeLimitOrder(
                 currentPerpPosition.index,
                 true, // isBuy (buy to close short)
                 currentPerpPrice + (currentPerpPrice * 50 / 10000), // 0.5% above market for immediate fill
@@ -411,12 +433,28 @@ contract CrestManager is Auth, ReentrancyGuard {
         // Transfer funds back from perp to spot (if any perp margin)
         if (marginSummary.accountValue > 0) {
             uint64 perpUsdAmount = uint64(marginSummary.accountValue);
-            HyperliquidLib.transferUsdClass(perpUsdAmount, false); // from perp to spot
+            CoreWriterLib.transferUsdClass(perpUsdAmount, false); // from perp to spot
         }
 
-        // Bridge all USDC back to EVM
+        // First swap any USDC back to USDT0
         if (spotBalance.total > 0) {
-            HyperliquidLib.bridgeToEvm(USDC_TOKEN_ID, spotBalance.total, false);
+            // Buy USDT0 with USDC
+            CoreWriterLib.placeLimitOrder(
+                USDT0_USDC_SPOT_INDEX,
+                true, // buy USDT0
+                PrecompileLib.spotPx(USDT0_USDC_SPOT_INDEX) + 10, // slight slippage
+                spotBalance.total,
+                false,
+                3, // IOC
+                uint128(block.timestamp << 32) + 1
+            );
+
+            // Get USDT0 balance and bridge back
+            PrecompileLib.SpotBalance memory usdt0Balance = PrecompileLib
+                .spotBalance(address(this), USDT0_TOKEN_ID);
+            if (usdt0Balance.total > 0) {
+                CoreWriterLib.bridgeToEvm(USDT0_TOKEN_ID, usdt0Balance.total, false);
+            }
         }
 
         totalAllocated = 0;
@@ -504,8 +542,8 @@ contract CrestManager is Auth, ReentrancyGuard {
             }
         }
 
-        // Add any unallocated USDC in the vault
-        uint256 vaultBalance = usdc.balanceOf(address(vault));
+        // Add any unallocated USDT0 in the vault
+        uint256 vaultBalance = usdt0.balanceOf(address(vault));
         totalValue += vaultBalance;
 
         // Add margin in perp account

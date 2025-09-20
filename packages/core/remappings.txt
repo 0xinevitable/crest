@@ -4,3 +4,4 @@
 @openzeppelin-v4/=lib/boring-vault/lib/openzeppelin-contracts/
 @openzeppelin/=lib/hyper-evm-lib/lib/openzeppelin-contracts/
 forge-std/=lib/forge-std/src/
+@solady/=lib/solady/src/

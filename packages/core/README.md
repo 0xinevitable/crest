@@ -189,3 +189,17 @@ Requires sequential deployment:
 5. Authorize Teller and Manager on Vault
 6. Set Accountant on Teller
 7. Set fee recipient on Accountant
+
+```env
+PRIVATE_KEY=0x0
+CURATOR_ADDRESS=0x0
+FEE_RECIPIENT_ADDRESS=0x0
+```
+
+```bash
+# dry run
+forge script script/Deploy.s.sol --rpc-url https://rpc.hyperliquid-testnet.xyz/evm
+
+# broadcast
+forge script script/Deploy.s.sol --rpc-url https://rpc.hyperliquid-testnet.xyz/evm --broadcast
+```

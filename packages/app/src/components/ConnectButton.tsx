@@ -74,7 +74,7 @@ export const ConnectButton: React.FC = () => {
 const Button = styled.button`
   width: fit-content;
   display: flex;
-  padding: 4px 16px;
+  padding: 4px 14px;
   justify-content: center;
   align-items: center;
   gap: 10px;
@@ -88,9 +88,11 @@ const Button = styled.button`
   font-size: 20px;
   font-style: normal;
   font-weight: 400;
-  line-height: 130%; /* 28.6px */
+  line-height: 100%;
 `;
-const ConnectWalletButton = styled(Button)``;
+const ConnectWalletButton = styled(Button)`
+  padding: 4px 16px;
+`;
 
 const UserButton = styled(Button)`
   background: #253738;

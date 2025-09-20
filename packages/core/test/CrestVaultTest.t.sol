@@ -981,16 +981,36 @@ contract CrestVaultTest is Test {
     // ==================== INTEGRATION TESTS ====================
 
     function test_Integration_FullLifecycle() public {
+        console2.log("\n========== FULL LIFECYCLE TEST ==========\n");
+
+        // Log initial exchange rates
+        console2.log("=== INITIAL EXCHANGE RATES ===");
+        console2.log("1 USDT0 -> shares: ", accountant.convertToShares(ONE_USDT0));
+        console2.log("1 share -> USDT0:  ", accountant.convertToAssets(ONE_USDT0));
+        console2.log("Exchange rate:     ", accountant.exchangeRate());
+        console2.log("");
+
         // 1. Multiple deposits
         _fundUser(alice, 10 * MILLION_USDT0);
         vm.startPrank(alice);
-        teller.deposit(10 * MILLION_USDT0, alice);
+        uint256 aliceShares = teller.deposit(10 * MILLION_USDT0, alice);
         vm.stopPrank();
+        console2.log("Alice deposited 10M USDT0, received", aliceShares, "shares");
 
         _fundUser(bob, 5 * MILLION_USDT0);
         vm.startPrank(bob);
-        teller.deposit(5 * MILLION_USDT0, bob);
+        uint256 bobShares = teller.deposit(5 * MILLION_USDT0, bob);
         vm.stopPrank();
+        console2.log("Bob deposited 5M USDT0, received", bobShares, "shares");
+        console2.log("");
+
+        // Log post-deposit exchange rates
+        console2.log("=== POST-DEPOSIT EXCHANGE RATES ===");
+        console2.log("1 USDT0 -> shares: ", accountant.convertToShares(ONE_USDT0));
+        console2.log("1 share -> USDT0:  ", accountant.convertToAssets(ONE_USDT0));
+        console2.log("Total supply:      ", vault.totalSupply());
+        console2.log("Total assets:      ", usdt0.balanceOf(address(vault)));
+        console2.log("");
 
         // 2. Curator allocates to HYPE
         vm.prank(curator);
@@ -1000,9 +1020,25 @@ contract CrestVaultTest is Test {
         vm.warp(block.timestamp + 7 days);
         _dealUsdt0(address(vault), usdt0.balanceOf(address(vault)) + 500_000 * ONE_USDT0); // 3.3% yield
 
+        // Log pre-update exchange rates (stale)
+        console2.log("=== PRE-UPDATE EXCHANGE RATES (after yield) ===");
+        console2.log("1 USDT0 -> shares: ", accountant.convertToShares(ONE_USDT0));
+        console2.log("1 share -> USDT0:  ", accountant.convertToAssets(ONE_USDT0));
+        console2.log("Total assets (actual):    ", usdt0.balanceOf(address(vault)));
+        console2.log("Exchange rate (stale):    ", accountant.exchangeRate());
+        console2.log("");
+
         // 4. Update exchange rate
         vm.prank(owner);
         accountant.updateExchangeRate(15 * MILLION_USDT0 + 500_000 * ONE_USDT0);
+
+        // Log post-update exchange rates
+        console2.log("=== POST-UPDATE EXCHANGE RATES ===");
+        console2.log("1 USDT0 -> shares: ", accountant.convertToShares(ONE_USDT0));
+        console2.log("1 share -> USDT0:  ", accountant.convertToAssets(ONE_USDT0));
+        console2.log("Exchange rate:     ", accountant.exchangeRate());
+        console2.log("Total assets:      ", usdt0.balanceOf(address(vault)));
+        console2.log("");
 
         // 5. Rebalance to BERA
         vm.prank(curator);
@@ -1039,9 +1075,26 @@ contract CrestVaultTest is Test {
         _dealUsdt0(address(vault), 15 * MILLION_USDT0 + 500_000 * ONE_USDT0);
 
         // 7. Alice withdraws with profit
-        uint256 aliceShares = vault.balanceOf(alice);
+        uint256 aliceSharesBefore = vault.balanceOf(alice);
+
+        // Log final exchange rates before withdrawal
+        console2.log("=== FINAL EXCHANGE RATES (before withdrawal) ===");
+        console2.log("1 USDT0 -> shares: ", accountant.convertToShares(ONE_USDT0));
+        console2.log("1 share -> USDT0:  ", accountant.convertToAssets(ONE_USDT0));
+        console2.log("Alice shares:      ", aliceSharesBefore);
+        console2.log("Alice share value: ", accountant.convertToAssets(aliceSharesBefore));
+        console2.log("");
+
         vm.prank(alice);
-        uint256 withdrawn = teller.withdraw(aliceShares, alice);
+        uint256 withdrawn = teller.withdraw(aliceSharesBefore, alice);
+
+        // Log withdrawal results
+        console2.log("=== WITHDRAWAL RESULTS ===");
+        console2.log("Alice deposited:   ", 10 * MILLION_USDT0);
+        console2.log("Alice withdrew:    ", withdrawn);
+        console2.log("Alice profit:      ", withdrawn - 10 * MILLION_USDT0);
+        console2.log("Alice ROI:         ", (withdrawn - 10 * MILLION_USDT0) * 100 / (10 * MILLION_USDT0), "%");
+        console2.log("");
 
         // Alice should get more than deposited due to yield
         assertGt(withdrawn, 10 * MILLION_USDT0, 'Alice profits from yield');

@@ -75,6 +75,7 @@ USDT0 (EVM) → Bridge → USDT0 (Core) → Swap (spot 166) → USDC (Core)
 ## Access Control & Authorization Matrix
 
 ### Authorization Flow
+
 ```
 CrestVault (Owner)
     ├── authorizes → CrestTeller
@@ -88,17 +89,19 @@ CrestAccountant → readonly (provides exchange rates)
 
 ### Role Permissions
 
-| Contract | Owner | Curator | Authorized | Public |
-|----------|--------|---------|------------|--------|
-| **CrestVault** | `authorize()`, `unauthorize()`, `setOwner()` | - | `manage()` | View functions |
-| **CrestTeller** | `setAccountant()`, `pause()`, `unpause()` | - | - | `deposit()`, `withdraw()` |
-| **CrestManager** | `setCurator()`, `pause()`, `unpause()` | `allocate()`, `rebalance()`, `closeAllPositions()` | - | View functions |
-| **CrestAccountant** | `updateExchangeRate()`, `setFees()`, `claimFees()` | - | - | `convertToShares()`, `convertToAssets()` |
+| Contract            | Owner                                              | Curator                                            | Authorized | Public                                   |
+| ------------------- | -------------------------------------------------- | -------------------------------------------------- | ---------- | ---------------------------------------- |
+| **CrestVault**      | `authorize()`, `unauthorize()`, `setOwner()`       | -                                                  | `manage()` | View functions                           |
+| **CrestTeller**     | `setAccountant()`, `pause()`, `unpause()`          | -                                                  | -          | `deposit()`, `withdraw()`                |
+| **CrestManager**    | `setCurator()`, `pause()`, `unpause()`             | `allocate()`, `rebalance()`, `closeAllPositions()` | -          | View functions                           |
+| **CrestAccountant** | `updateExchangeRate()`, `setFees()`, `claimFees()` | -                                                  | -          | `convertToShares()`, `convertToAssets()` |
 
 ## Core Functions
 
 ### CrestManager.allocate(uint32 spotIndex, uint32 perpIndex)
+
 Opens new positions on Hyperliquid:
+
 1. Validates no existing positions (`currentSpotPosition.size == 0`)
 2. Checks minimum balance (50 USDT0)
 3. Transfers USDT0 from vault via `vault.manage()`
@@ -109,7 +112,9 @@ Opens new positions on Hyperliquid:
 8. Updates vault's tracking indexes
 
 ### CrestManager.rebalance(uint32 newSpotIndex, uint32 newPerpIndex)
+
 Rotates positions to new assets:
+
 1. Validates existing positions
 2. Closes current positions via `_closeAllPositions()`:
    - Places IOC sell order for spot (0.5% below market)
@@ -119,7 +124,9 @@ Rotates positions to new assets:
 4. Does NOT automatically open new positions (requires separate `allocate()` call)
 
 ### CrestManager.closeAllPositions()
+
 Exits all positions and returns funds:
+
 1. Closes spot position (sell with IOC)
 2. Closes perp position (buy to close short with IOC)
 3. Swaps USDC → USDT0
@@ -127,20 +134,26 @@ Exits all positions and returns funds:
 5. Emits `PositionClosed` events with realized PnL
 
 ### CrestTeller.deposit(uint256 assets, address receiver)
+
 User deposits USDT0 for shares:
+
 1. Calculates shares via `accountant.convertToShares()`
 2. Transfers USDT0 to vault
 3. Mints shares via `vault.enter()`
 4. Sets 1-day lock: `shareUnlockTime[receiver] = block.timestamp + shareLockPeriod`
 
 ### CrestTeller.withdraw(uint256 shares, address receiver)
+
 User withdraws USDT0 by burning shares:
+
 1. Checks lock period: `block.timestamp >= shareUnlockTime[msg.sender]`
 2. Calculates assets via `accountant.convertToAssets()`
 3. Burns shares and transfers USDT0 via `vault.exit()`
 
 ### CrestAccountant.updateExchangeRate()
+
 Updates share/asset exchange rate:
+
 1. Calculates total value (vault balance + positions)
 2. Applies platform fee (1% annually)
 3. Calculates performance fee if above high water mark (5% of profit)
@@ -159,7 +172,7 @@ Updates share/asset exchange rate:
 
 ```bash
 # Fork Hyperliquid mainnet
-forge test --fork-url https://rpc.hyperliquid.xyz/evm --compute-units-per-second 1
+forge test --fork-url https://rpc.hyperliquid.xyz/evm
 
 # Use vm.deal() to allocate USDT0 in tests
 deal(USDT0_ADDRESS, user, amount);

@@ -21,24 +21,35 @@ contract CrestManager is Auth, ReentrancyGuard {
     // ========================================= CONSTANTS =========================================
 
     /**
-     * @notice USDT0 token ID on Hyperliquid Core (bridgeable)
-     */
-    uint64 public constant USDT0_TOKEN_ID = 268;
-
-    /**
-     * @notice USDT0 ERC20 address on Hyperliquid EVM
-     */
-    address public constant USDT0_ADDRESS = 0xB8CE59FC3717ada4C02eaDF9682A9e934F625ebb;
-
-    /**
      * @notice USDC token ID on Hyperliquid Core (for trading)
      */
     uint64 public constant USDC_TOKEN_ID = 0;
 
+    uint256 public constant TESTNET_CHAINID = 998;
+
+    /**
+     * @notice USDT0 token ID on Hyperliquid Core (bridgeable)
+     */
+    function usdt0TokenId() internal view returns (uint64) {
+        return block.chainid == TESTNET_CHAINID ? 1204 : 268;
+    }
+
+    /**
+     * @notice USDT0 ERC20 address on Hyperliquid EVM
+     */
+    function usdt0Address() internal view returns (address) {
+        return
+            block.chainid == TESTNET_CHAINID
+                ? 0x779Ded0c9e1022225f8E0630b35a9b54bE713736
+                : 0xB8CE59FC3717ada4C02eaDF9682A9e934F625ebb;
+    }
+
     /**
      * @notice USDT0/USDC spot index for swapping
      */
-    uint32 public constant USDT0_USDC_SPOT_INDEX = 166;
+    function usdt0SpotIndex() internal view returns (uint32) {
+        return block.chainid == TESTNET_CHAINID ? 1115 : 166;
+    }
 
     /**
      * @notice Allocation percentages (basis points)
@@ -191,21 +202,21 @@ contract CrestManager is Auth, ReentrancyGuard {
 
         // Bridge USDT0 to Hyperliquid core
         CoreWriterLib.bridgeToCore(
-            USDT0_ADDRESS,
+            usdt0Address(),
             marginAmount + spotAmount + perpAmount
         );
 
         // Swap USDT0 to USDC on Hyperliquid
         uint64 usdt0CoreAmount = HLConversions.evmToWei(
-            USDT0_TOKEN_ID,
+            usdt0TokenId(),
             marginAmount + spotAmount + perpAmount
         );
 
         // Place market order to sell USDT0 for USDC
         CoreWriterLib.placeLimitOrder(
-            USDT0_USDC_SPOT_INDEX,
+            usdt0SpotIndex(),
             false, // sell USDT0
-            PrecompileLib.spotPx(USDT0_USDC_SPOT_INDEX) - 10, // slight slippage for immediate fill
+            PrecompileLib.spotPx(usdt0SpotIndex()) - 10, // slight slippage for immediate fill
             usdt0CoreAmount,
             false, // not reduce only
             3, // IOC
@@ -231,7 +242,7 @@ contract CrestManager is Auth, ReentrancyGuard {
             CoreWriterLib.placeLimitOrder(
                 spotIndex,
                 true, // isBuy
-                spotPrice + (spotPrice * 50 / 10000), // 0.5% slippage
+                spotPrice + ((spotPrice * 50) / 10000), // 0.5% slippage
                 spotSizeInAsset,
                 false, // reduceOnly
                 3, // IOC (Immediate or Cancel)
@@ -257,7 +268,7 @@ contract CrestManager is Auth, ReentrancyGuard {
             CoreWriterLib.placeLimitOrder(
                 perpIndex,
                 false, // isBuy (short)
-                perpPrice - (perpPrice * 50 / 10000), // 0.5% slippage
+                perpPrice - ((perpPrice * 50) / 10000), // 0.5% slippage
                 perpSizeInAsset,
                 false, // reduceOnly
                 3, // IOC (Immediate or Cancel)
@@ -345,7 +356,7 @@ contract CrestManager is Auth, ReentrancyGuard {
             CoreWriterLib.placeLimitOrder(
                 currentSpotPosition.index,
                 false, // isBuy (sell to close)
-                currentSpotPrice - (currentSpotPrice * 50 / 10000), // 0.5% below market for immediate fill
+                currentSpotPrice - ((currentSpotPrice * 50) / 10000), // 0.5% below market for immediate fill
                 currentSpotPosition.size,
                 true, // reduceOnly
                 3, // IOC
@@ -390,7 +401,7 @@ contract CrestManager is Auth, ReentrancyGuard {
             CoreWriterLib.placeLimitOrder(
                 currentPerpPosition.index,
                 true, // isBuy (buy to close short)
-                currentPerpPrice + (currentPerpPrice * 50 / 10000), // 0.5% above market for immediate fill
+                currentPerpPrice + ((currentPerpPrice * 50) / 10000), // 0.5% above market for immediate fill
                 currentPerpPosition.size,
                 true, // reduceOnly
                 3, // IOC
@@ -441,9 +452,9 @@ contract CrestManager is Auth, ReentrancyGuard {
         if (spotBalance.total > 0) {
             // Buy USDT0 with USDC
             CoreWriterLib.placeLimitOrder(
-                USDT0_USDC_SPOT_INDEX,
+                usdt0SpotIndex(),
                 true, // buy USDT0
-                PrecompileLib.spotPx(USDT0_USDC_SPOT_INDEX) + 10, // slight slippage
+                PrecompileLib.spotPx(usdt0SpotIndex()) + 10, // slight slippage
                 spotBalance.total,
                 false,
                 3, // IOC
@@ -452,9 +463,13 @@ contract CrestManager is Auth, ReentrancyGuard {
 
             // Get USDT0 balance and bridge back
             PrecompileLib.SpotBalance memory usdt0Balance = PrecompileLib
-                .spotBalance(address(this), USDT0_TOKEN_ID);
+                .spotBalance(address(this), usdt0TokenId());
             if (usdt0Balance.total > 0) {
-                CoreWriterLib.bridgeToEvm(USDT0_TOKEN_ID, usdt0Balance.total, false);
+                CoreWriterLib.bridgeToEvm(
+                    usdt0TokenId(),
+                    usdt0Balance.total,
+                    false
+                );
             }
         }
 

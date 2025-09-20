@@ -1,6 +1,11 @@
 class HyperliquidAPI {
+  baseUrl: string;
+  constructor(baseUrl: string) {
+    this.baseUrl = baseUrl;
+  }
+
   async _requestInfo<T extends object>(request: { type: string }): Promise<T> {
-    const response = await fetch('https://api.hyperliquid.xyz/info', {
+    const response = await fetch(`${this.baseUrl}/info`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(request),
@@ -59,25 +64,33 @@ class HyperliquidAPI {
 }
 
 const main = async () => {
-  const hl = new HyperliquidAPI();
-
+  console.log('===== MAINNET =====');
+  const hl = new HyperliquidAPI('https://api.hyperliquid.xyz');
   {
     const indexes = await hl.getIndexesBySymbol('HYPE');
     console.log(indexes);
   }
-
   {
     const indexes = await hl.getIndexesBySymbol('PURR');
     console.log(indexes);
   }
-
   {
-    const indexes = await hl.getIndexesBySymbol('BERA');
+    const indexes = await hl.getIndexesBySymbol('USDT0');
     console.log(indexes);
   }
 
+  console.log('===== TESTNET =====');
+  const testnet = new HyperliquidAPI('https://api.hyperliquid-testnet.xyz');
   {
-    const indexes = await hl.getIndexesBySymbol('USDT0');
+    const indexes = await testnet.getIndexesBySymbol('HYPE');
+    console.log(indexes);
+  }
+  {
+    const indexes = await testnet.getIndexesBySymbol('PURR');
+    console.log(indexes);
+  }
+  {
+    const indexes = await testnet.getIndexesBySymbol('TZERO'); // USDT0
     console.log(indexes);
   }
 };

@@ -8,8 +8,14 @@ import { CrestAccountant } from '../src/CrestAccountant.sol';
 import { CrestManager } from '../src/CrestManager.sol';
 
 contract DeployCrestVault is Script {
-    // Hyperliquid USDC address
-    address constant USDC = 0xd825E39c8F28401f36eBe4DF59A8B92a8A1A0b93;
+    uint256 constant TESTNET_CHAINID = 998;
+
+    // Get USDT0 address based on chain
+    function getUsdt0Address() internal view returns (address) {
+        return block.chainid == TESTNET_CHAINID
+            ? 0x779Ded0c9e1022225f8E0630b35a9b54bE713736  // Testnet USDT0
+            : 0xB8CE59FC3717ada4C02eaDF9682A9e934F625ebb; // Mainnet USDT0
+    }
 
     function run() external {
         uint256 deployerPrivateKey = vm.envUint('PRIVATE_KEY');
@@ -21,7 +27,7 @@ contract DeployCrestVault is Script {
         console.log('  Deployer:', deployer);
         console.log('  Curator:', curator);
         console.log('  Fee Recipient:', feeRecipient);
-        console.log('  USDC:', USDC);
+        console.log('  USDT0:', getUsdt0Address());
 
         vm.startBroadcast(deployerPrivateKey);
 
@@ -40,7 +46,7 @@ contract DeployCrestVault is Script {
         // Deploy teller
         CrestTeller teller = new CrestTeller(
             payable(address(vault)),
-            USDC,
+            getUsdt0Address(),
             deployer
         );
         console.log('Teller deployed at:', address(teller));
@@ -48,7 +54,7 @@ contract DeployCrestVault is Script {
         // Deploy manager
         CrestManager manager = new CrestManager(
             payable(address(vault)),
-            USDC,
+            getUsdt0Address(),
             deployer,
             curator
         );

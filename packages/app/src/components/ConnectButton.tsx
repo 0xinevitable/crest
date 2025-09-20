@@ -2,6 +2,7 @@ import styled from '@emotion/styled';
 import { ConnectButton as RainbowKitConnectButton } from '@rainbow-me/rainbowkit';
 import { WalletIcon } from 'lucide-react';
 
+import { OpticianSans } from '@/fonts';
 import { shortenAddress } from '@/utils/address';
 
 export const ConnectButton: React.FC = () => {
@@ -84,7 +85,7 @@ const Button = styled.button`
 
   color: #000;
   text-align: center;
-  font-family: 'Optician Sans';
+  font-family: ${OpticianSans.style.fontFamily};
   font-size: 20px;
   font-style: normal;
   font-weight: 400;

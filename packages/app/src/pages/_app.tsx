@@ -7,6 +7,7 @@ import { WagmiProvider } from 'wagmi';
 
 import { NavigationBar } from '@/components/NavigationBar';
 import { wagmiConfig } from '@/constants/config';
+import { InstrumentSans } from '@/fonts';
 import '@/styles/global.css';
 
 const queryClient = new QueryClient();
@@ -34,6 +35,24 @@ const MyApp: React.FC<AppProps> = ({ Component, pageProps }) => {
       </WagmiProvider>
 
       <div id="portal" />
+
+      <style jsx global>{`
+        * {
+          font-family:
+            ${InstrumentSans.style.fontFamily},
+            -apple-system,
+            BlinkMacSystemFont,
+            'Segoe UI',
+            Roboto,
+            Helvetica,
+            Arial,
+            sans-serif,
+            'Apple Color Emoji',
+            'Segoe UI Emoji',
+            'Segoe UI Symbol';
+          font-optical-sizing: auto;
+        }
+      `}</style>
     </>
   );
 };

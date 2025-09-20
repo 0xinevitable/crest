@@ -1,6 +1,8 @@
 import styled from '@emotion/styled';
 import Link from 'next/link';
 
+import { OpticianSans } from '@/fonts';
+
 import { ConnectButton } from './ConnectButton';
 
 const NAVIGATION_ITEMS = [
@@ -76,7 +78,7 @@ const Button = styled.button`
 
   color: #fff;
   text-align: center;
-  font-family: 'Optician Sans';
+  font-family: ${OpticianSans.style.fontFamily};
   font-size: 20px;
   font-style: normal;
   font-weight: 400;

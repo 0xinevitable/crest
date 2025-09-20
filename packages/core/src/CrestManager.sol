@@ -201,14 +201,14 @@ contract CrestManager is Auth, ReentrancyGuard {
             (uint256(spotSizeCoreAmount) * 1e8) / spotPrice
         );
 
-        // Place spot buy order
+        // Place spot buy order with slippage for immediate execution
         HyperliquidLib.placeLimitOrder(
             spotIndex,
             true, // isBuy
-            uint64(spotPrice),
+            spotPrice + (spotPrice * 50 / 10000), // 0.5% slippage
             spotSizeInAsset,
             false, // reduceOnly
-            2, // GTC
+            3, // IOC (Immediate or Cancel)
             uint128(block.timestamp) // cloid
         );
 
@@ -221,14 +221,14 @@ contract CrestManager is Auth, ReentrancyGuard {
             (uint256(perpSizeCoreAmount) * 1e6) / perpPrice
         );
 
-        // Place perp short order
+        // Place perp short order with slippage for immediate execution
         HyperliquidLib.placeLimitOrder(
             perpIndex,
             false, // isBuy (short)
-            uint64(perpPrice),
+            perpPrice - (perpPrice * 50 / 10000), // 0.5% slippage
             perpSizeInAsset,
             false, // reduceOnly
-            2, // GTC
+            3, // IOC (Immediate or Cancel)
             uint128(block.timestamp + 1) // cloid
         );
 
@@ -237,7 +237,7 @@ contract CrestManager is Auth, ReentrancyGuard {
             index: spotIndex,
             isLong: true,
             size: spotSizeInAsset,
-            entryPrice: uint64(spotPrice),
+            entryPrice: spotPrice, // Store the market price at time of order
             timestamp: block.timestamp
         });
 
@@ -245,7 +245,7 @@ contract CrestManager is Auth, ReentrancyGuard {
             index: perpIndex,
             isLong: false,
             size: perpSizeInAsset,
-            entryPrice: uint64(perpPrice),
+            entryPrice: perpPrice, // Store the market price at time of order
             timestamp: block.timestamp
         });
 
@@ -318,10 +318,11 @@ contract CrestManager is Auth, ReentrancyGuard {
                 uint64(currentSpotPosition.index)
             );
 
+            // Sell with slippage for immediate execution
             HyperliquidLib.placeLimitOrder(
                 currentSpotPosition.index,
                 false, // isBuy (sell to close)
-                currentSpotPrice,
+                currentSpotPrice - (currentSpotPrice * 50 / 10000), // 0.5% below market for immediate fill
                 currentSpotPosition.size,
                 true, // reduceOnly
                 3, // IOC
@@ -362,10 +363,11 @@ contract CrestManager is Auth, ReentrancyGuard {
                 currentPerpPosition.index
             );
 
+            // Buy to close short with slippage for immediate execution
             HyperliquidLib.placeLimitOrder(
                 currentPerpPosition.index,
                 true, // isBuy (buy to close short)
-                currentPerpPrice,
+                currentPerpPrice + (currentPerpPrice * 50 / 10000), // 0.5% above market for immediate fill
                 currentPerpPosition.size,
                 true, // reduceOnly
                 3, // IOC

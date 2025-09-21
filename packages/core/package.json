@@ -3,15 +3,17 @@
   "version": "1.0.0",
   "license": "MIT",
   "scripts": {
-    "start": "tsx typescript/fetch-index.ts"
-  },
-  "devDependencies": {
-    "@types/node": "^24.5.1",
-    "tsx": "^4.20.5",
-    "typescript": "^5.9.2"
+    "start": "tsx typescript/fetch-index.ts",
+    "codegen": "wagmi generate"
   },
   "dependencies": {
     "@wagmi/cli": "^2.5.1",
     "viem": "^2.37.7"
+  },
+  "devDependencies": {
+    "@types/node": "^24.5.1",
+    "dotenv": "^17.2.2",
+    "tsx": "^4.20.5",
+    "typescript": "^5.9.2"
   }
 }

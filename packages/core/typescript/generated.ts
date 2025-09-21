@@ -2079,7 +2079,6 @@ export const crestManagerAbi = [
     name: 'PrecompileLib__AccountMarginSummaryPrecompileFailed',
   },
   { type: 'error', inputs: [], name: 'PrecompileLib__BboPrecompileFailed' },
-  { type: 'error', inputs: [], name: 'PrecompileLib__MarkPxPrecompileFailed' },
   {
     type: 'error',
     inputs: [],
@@ -2095,7 +2094,6 @@ export const crestManagerAbi = [
     inputs: [],
     name: 'PrecompileLib__SpotInfoPrecompileFailed',
   },
-  { type: 'error', inputs: [], name: 'PrecompileLib__SpotPxPrecompileFailed' },
   {
     type: 'error',
     inputs: [],

@@ -73,7 +73,7 @@ const TokenIcon = styled.img<{
   isHyperEVM: boolean;
 }>`
   width: ${({ size, isHyperEVM }) => {
-    if (isHyperEVM) return '100%';
+    if (isHyperEVM) return '120px';
     return size === 'small' ? '20px' : '28px';
   }};
   height: ${({ size }) => (size === 'small' ? '20px' : '28px')};

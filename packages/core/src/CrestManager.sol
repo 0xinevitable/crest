@@ -509,10 +509,10 @@ contract CrestManager is Auth, ReentrancyGuard {
         currentSpotPosition.entryPrice = spotPrice;
 
         // Place perp short order
-        // USDC: 6 decimals on EVM, 8 decimals in Core
-        uint64 perpSizeCoreAmount = uint64(perpAmount) * 100;
+        // Convert USDC from EVM decimals to Core decimals
+        uint64 perpSizeCoreAmount = HLConversions.evmToWei(USDC_TOKEN_ID, perpAmount);
         uint64 perpSizeInAsset = uint64(
-            (uint256(perpSizeCoreAmount) * 1e6) / perpPrice
+            (uint256(perpSizeCoreAmount) * 1e8) / perpPrice
         );
 
         CoreWriterLib.placeLimitOrder(

@@ -7,6 +7,12 @@
   word-break: keep-all;
 }
 
+html,
+body {
+  background-color: #141b1d;
+  color: #fff;
+}
+
 a {
   text-decoration: none;
   cursor: pointer;

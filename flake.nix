@@ -23,7 +23,7 @@
             git
             podman
             podman-compose
-            iptables
+            (if system == "linux" then iptables else null)
             
             # Database tools
             postgresql

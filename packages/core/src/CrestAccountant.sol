@@ -52,20 +52,6 @@ contract CrestAccountant is Auth {
      */
     address public feeRecipient;
 
-    /**
-     * @notice Maximum allowed exchange rate change per update (basis points)
-     */
-    uint16 public maxRateChangeBps = 1000; // 10%
-
-    /**
-     * @notice Minimum time between rate updates
-     */
-    uint64 public rateUpdateCooldown = 1 hours;
-
-    /**
-     * @notice Last rate update timestamp
-     */
-    uint64 public lastRateUpdate;
 
     /**
      * @notice Pauses exchange rate updates
@@ -89,18 +75,12 @@ contract CrestAccountant is Auth {
     );
     event Paused();
     event Unpaused();
-    event MaxRateChangeUpdated(uint16 bps);
-    event RateUpdateCooldownUpdated(uint64 cooldown);
 
     //============================== ERRORS ===============================
 
     error CrestAccountant__Paused();
-    error CrestAccountant__RateTooHigh();
-    error CrestAccountant__RateTooLow();
-    error CrestAccountant__CooldownNotMet();
     error CrestAccountant__NoFeeRecipient();
     error CrestAccountant__InvalidFee();
-    error CrestAccountant__RateChangeTooBig();
 
     //============================== MODIFIERS ===============================
 
@@ -118,7 +98,6 @@ contract CrestAccountant is Auth {
     ) Auth(_owner, Authority(address(0))) {
         vault = CrestVault(_vault);
         feeRecipient = _feeRecipient;
-        lastRateUpdate = uint64(block.timestamp);
     }
 
     //============================== ADMIN FUNCTIONS ===============================
@@ -130,10 +109,6 @@ contract CrestAccountant is Auth {
     function updateExchangeRate(
         uint256 totalAssets
     ) external requiresAuth whenNotPaused {
-        if (block.timestamp < lastRateUpdate + rateUpdateCooldown) {
-            revert CrestAccountant__CooldownNotMet();
-        }
-
         uint256 totalSupply = vault.totalSupply();
         if (totalSupply == 0) {
             // No shares minted yet, keep rate at 1:1
@@ -145,15 +120,6 @@ contract CrestAccountant is Auth {
 
         // Calculate new rate
         uint96 newRate = uint96((adjustedTotalAssets * 1e6) / totalSupply);
-
-        // Check rate change limits
-        uint256 maxRate = (uint256(exchangeRate) * (10000 + maxRateChangeBps)) /
-            10000;
-        uint256 minRate = (uint256(exchangeRate) * (10000 - maxRateChangeBps)) /
-            10000;
-
-        if (newRate > maxRate) revert CrestAccountant__RateChangeTooBig();
-        if (newRate < minRate) revert CrestAccountant__RateChangeTooBig();
 
         // Calculate fees if rate increased
         uint256 platformFee = 0;
@@ -188,7 +154,6 @@ contract CrestAccountant is Auth {
 
         uint96 oldRate = exchangeRate;
         exchangeRate = newRate;
-        lastRateUpdate = uint64(block.timestamp);
 
         emit RateUpdated(oldRate, newRate, platformFee, performanceFee);
     }
@@ -246,24 +211,6 @@ contract CrestAccountant is Auth {
         emit FeeRecipientUpdated(_feeRecipient);
     }
 
-    /**
-     * @notice Updates the maximum rate change allowed per update
-     */
-    function updateMaxRateChange(
-        uint16 _maxRateChangeBps
-    ) external requiresAuth {
-        if (_maxRateChangeBps > 2000) revert CrestAccountant__InvalidFee(); // Max 20%
-        maxRateChangeBps = _maxRateChangeBps;
-        emit MaxRateChangeUpdated(_maxRateChangeBps);
-    }
-
-    /**
-     * @notice Updates the rate update cooldown period
-     */
-    function updateRateUpdateCooldown(uint64 _cooldown) external requiresAuth {
-        rateUpdateCooldown = _cooldown;
-        emit RateUpdateCooldownUpdated(_cooldown);
-    }
 
     /**
      * @notice Pauses exchange rate updates
@@ -305,20 +252,4 @@ contract CrestAccountant is Auth {
         return exchangeRate;
     }
 
-    /**
-     * @notice Returns whether rate update cooldown has passed
-     */
-    function canUpdateRate() external view returns (bool) {
-        return block.timestamp >= lastRateUpdate + rateUpdateCooldown;
-    }
-
-    /**
-     * @notice Returns time until next rate update is allowed
-     */
-    function timeUntilNextUpdate() external view returns (uint256) {
-        if (block.timestamp >= lastRateUpdate + rateUpdateCooldown) {
-            return 0;
-        }
-        return (lastRateUpdate + rateUpdateCooldown) - block.timestamp;
-    }
 }

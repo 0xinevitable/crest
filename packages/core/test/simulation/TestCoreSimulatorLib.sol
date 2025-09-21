@@ -167,6 +167,10 @@ library TestCoreSimulatorLib {
         hyperCore.setStakingYieldIndex(multiplier);
     }
 
+    function forcePosition(address account, uint16 perpIndex, int64 szi, uint64 entryNtl) internal {
+        hyperCore.forcePosition(account, perpIndex, szi, entryNtl);
+    }
+
     ///// VIEW AND PURE /////////
 
     function isSystemAddress(address addr) internal view returns (bool) {
@@ -198,5 +202,18 @@ library TestCoreSimulatorLib {
     function tokenExists(uint64 token) internal view returns (bool) {
         (bool success,) = HLConstants.TOKEN_INFO_PRECOMPILE_ADDRESS.staticcall(abi.encode(token));
         return success;
+    }
+
+    // BBO configuration functions
+    function setBboForSpot(uint32 spotIndex) internal {
+        BboPrecompileSim(payable(HLConstants.BBO_PRECOMPILE_ADDRESS)).setAsSpot(uint64(spotIndex));
+    }
+
+    function setBboForPerp(uint32 perpIndex) internal {
+        BboPrecompileSim(payable(HLConstants.BBO_PRECOMPILE_ADDRESS)).setAsPerp(uint64(perpIndex));
+    }
+
+    function setBbo(uint64 assetId, uint64 bid, uint64 ask) internal {
+        BboPrecompileSim(payable(HLConstants.BBO_PRECOMPILE_ADDRESS)).setBbo(assetId, bid, ask);
     }
 }

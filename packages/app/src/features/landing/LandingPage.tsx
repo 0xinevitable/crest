@@ -1,10 +1,13 @@
 import styled from '@emotion/styled';
 import { NextPage } from 'next';
 
+
+
 import { BalanceSheetSection } from './sections/BalanceSheetSection';
 import { HeroSection } from './sections/HeroSection';
 import { PartnersSection } from './sections/PartnersSection';
 import { VaultSection } from './sections/VaultSection';
+
 
 const LandingPage: NextPage = () => {
   return (

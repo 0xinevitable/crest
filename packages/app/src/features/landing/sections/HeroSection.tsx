@@ -7,7 +7,7 @@ export const HeroSection: React.FC = () => {
     <Container>
       <BackgroundIntersect src="/assets/graphics/hero-background-intersect.svg" />
       <CenterGraphic src="/assets/graphics/hero-3d-graphic.png" />
-      
+
       <Content>
         <Title>
           Ride the Peak
@@ -27,7 +27,7 @@ export const HeroSection: React.FC = () => {
 const Container = styled.div`
   position: relative;
   width: 100%;
-  height: 690px;
+  height: 43rem;
   background: linear-gradient(to bottom, #171f20, #090e0f);
   overflow: hidden;
   display: flex;
@@ -40,17 +40,17 @@ const BackgroundIntersect = styled.img`
   left: 50%;
   top: 0;
   transform: translateX(-50%);
-  width: 990px;
-  height: 530px;
+  width: 61rem;
+  height: 33rem;
   object-fit: contain;
 `;
 
 const CenterGraphic = styled.img`
   position: absolute;
   left: calc(50% - 0.133px);
-  top: 54px;
-  width: 365.733px;
-  height: 422px;
+  top: 3rem;
+  width: 22rem;
+  height: 26rem;
   object-fit: cover;
   object-position: 37.54% 30.7%;
   background-size: 162.64% 140.95%;
@@ -60,20 +60,20 @@ const CenterGraphic = styled.img`
 const Content = styled.div`
   position: absolute;
   left: 50%;
-  top: 389px;
+  top: 50%;
   transform: translateX(-50%);
   display: flex;
   flex-direction: column;
-  gap: 27px;
+  gap: 2rem;
   align-items: center;
   text-align: center;
-  width: 498px;
+  width: 31rem;
   z-index: 10;
 `;
 
 const Title = styled.h1`
   font-family: ${OpticianSans.style.fontFamily};
-  font-size: 64px;
+  font-size: 4rem;
   font-weight: 400;
   line-height: 0.93;
   color: #fff;
@@ -82,7 +82,7 @@ const Title = styled.h1`
 
 const Subtitle = styled.p`
   font-family: ${InstrumentSans.style.fontFamily};
-  font-size: 24px;
+  font-size: 1.5rem;
   font-weight: 500;
   line-height: 1.3;
   color: #59d0cf;

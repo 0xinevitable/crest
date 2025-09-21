@@ -218,15 +218,18 @@ contract CrestManager is Auth, ReentrancyGuard {
         );
 
         // Place market order to sell USDT0 for USDC
-        CoreWriterLib.placeLimitOrder(
-            usdt0SpotIndex(),
-            false, // sell USDT0
-            PrecompileLib.bbo(uint64(usdt0SpotIndex())).bid - 10, // sell at bid - slippage
-            usdt0CoreAmount,
-            false, // not reduce only
-            3, // IOC
-            uint128(block.timestamp << 32) // unique cloid
-        );
+        {
+            uint64 usdt0Bid = PrecompileLib.bbo(uint64(usdt0SpotIndex())).bid;
+            CoreWriterLib.placeLimitOrder(
+                usdt0SpotIndex(),
+                false, // sell USDT0
+                usdt0Bid - ((usdt0Bid * 100) / 10000), // sell at bid - 1% slippage
+                usdt0CoreAmount,
+                false, // not reduce only
+                3, // IOC
+                uint128(block.timestamp << 32) // unique cloid
+            );
+        }
 
         // After swap, we have USDC in spot balance
         // Transfer margin to perp account
@@ -549,10 +552,11 @@ contract CrestManager is Auth, ReentrancyGuard {
         // First swap any USDC back to USDT0
         if (spotBalance.total > 0) {
             // Buy USDT0 with USDC
+            uint64 usdt0Ask = PrecompileLib.bbo(uint64(usdt0SpotIndex())).ask;
             CoreWriterLib.placeLimitOrder(
                 usdt0SpotIndex(),
                 true, // buy USDT0
-                PrecompileLib.bbo(uint64(usdt0SpotIndex())).ask + 10, // buy at ask + slippage
+                usdt0Ask + ((usdt0Ask * 100) / 10000), // buy at ask + 1% slippage
                 spotBalance.total,
                 false,
                 3, // IOC

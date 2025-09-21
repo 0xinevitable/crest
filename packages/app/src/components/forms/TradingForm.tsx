@@ -3,9 +3,8 @@ import { useState } from 'react';
 
 import { OpticianSans } from '@/fonts';
 
-import { AmountInput } from '../ui/AmountInput';
+import { AmountInputWithTokens } from '../ui/AmountInputWithTokens';
 import { FeeDisplay } from '../ui/FeeDisplay';
-import { TokenSelector } from '../ui/TokenSelector';
 import { DepositWithdrawTabs } from './DepositWithdrawTabs';
 import { PriceDisplay } from './PriceDisplay';
 
@@ -18,7 +17,7 @@ const INPUT_TOKENS = [
   {
     symbol: 'USDC',
     name: 'USDC',
-    icon: '/assets/tokens/usdc-icon-1.svg',
+    icon: '/assets/tokens/usdc-icon-primary.svg',
   },
 ];
 
@@ -31,7 +30,7 @@ const OUTPUT_TOKENS = [
   {
     symbol: 'CREST',
     name: 'CREST',
-    icon: '/assets/tokens/crest-token-icon.png',
+    icon: '/assets/tokens/crest-icon.png',
   },
 ];
 
@@ -54,19 +53,23 @@ export const TradingForm: React.FC = () => {
           onTabChange={setActiveTab}
         />
 
-        <AmountInput
+        <AmountInputWithTokens
           label="You lock"
           value={inputAmount}
           onChange={setInputAmount}
+          tokens={INPUT_TOKENS}
+          onTokenSelect={(token) => console.log('Selected input token:', token)}
+          variant="input"
         />
-        <TokenSelector tokens={INPUT_TOKENS} />
 
-        <AmountInput
+        <AmountInputWithTokens
           label="You Receive"
           value={outputAmount}
           onChange={setOutputAmount}
+          tokens={OUTPUT_TOKENS}
+          onTokenSelect={(token) => console.log('Selected output token:', token)}
+          variant="output"
         />
-        <TokenSelector tokens={OUTPUT_TOKENS} variant="output" />
 
         <ActionButton>
           <ButtonText>Approve USDC</ButtonText>
@@ -77,11 +80,11 @@ export const TradingForm: React.FC = () => {
         label="Price per share"
         fromToken={{
           symbol: 'USDC',
-          icon: '/assets/tokens/usdc-icon-2.svg',
+          icon: '/assets/tokens/usdc-icon-secondary.svg',
         }}
         toToken={{
           symbol: 'CREST',
-          icon: '/assets/tokens/crest-token-icon.png',
+          icon: '/assets/tokens/crest-icon.png',
         }}
         rate="1 USDC ≈ 0.99 CREST"
       />
@@ -93,29 +96,29 @@ export const TradingForm: React.FC = () => {
 const Container = styled.div`
   display: flex;
   flex-direction: column;
-  gap: 10px;
-  padding: 20px;
+  gap: 0.75rem;
+  padding: 1.25rem;
   background: #0a0f10;
   border: 1px solid #233838;
-  border-radius: 12px;
+  border-radius: 0.75rem;
   width: 625px;
 `;
 
 const FormContent = styled.div`
   display: flex;
   flex-direction: column;
-  gap: 20px;
-  padding-bottom: 24px;
+  gap: 1.25rem;
+  padding-bottom: 1.5rem;
 `;
 
 const ActionButton = styled.button`
   display: flex;
-  gap: 10px;
+  gap: 0.75rem;
   align-items: center;
   justify-content: center;
-  padding: 15px 81px;
+  padding: 1rem 5rem;
   background: #256960;
-  border-radius: 8px;
+  border-radius: 0.5rem;
   border: none;
   cursor: pointer;
   width: 100%;
@@ -133,7 +136,7 @@ const ActionButton = styled.button`
 
 const ButtonText = styled.span`
   font-family: ${OpticianSans.style.fontFamily};
-  font-size: 28px;
+  font-size: 1.75rem;
   font-weight: 400;
   line-height: 1.3;
   color: #fff;

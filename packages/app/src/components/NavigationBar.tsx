@@ -73,20 +73,20 @@ const Wrapper = styled.div<WrapperProps>`
     scrolled &&
     css`
       background-color: rgba(0, 0, 0, 0.1);
-      backdrop-filter: blur(8px);
-      -webkit-backdrop-filter: blur(8px);
+      backdrop-filter: blur(0.5rem);
+      -webkit-backdrop-filter: blur(0.5rem);
     `}
 `;
 const Container = styled.div`
   margin: 0 auto;
-  padding: 24px 20px;
+  padding: 1.5rem 1.25rem;
 
   width: 100%;
   max-width: 1200px;
 
   display: flex;
   align-items: center;
-  gap: 24px;
+  gap: 1.5rem;
 `;
 const Logo = styled.img`
   width: 124px;
@@ -97,23 +97,23 @@ const Logo = styled.img`
 const NavigationList = styled.nav`
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 0.5rem;
 `;
 const Button = styled.button`
   width: fit-content;
   display: flex;
-  padding: 4px 14px;
+  padding: 0.25rem 1rem;
   justify-content: center;
   align-items: center;
-  gap: 10px;
+  gap: 0.75rem;
 
-  border-radius: 8px;
+  border-radius: 0.5rem;
   background: #253738;
 
   color: #fff;
   text-align: center;
   font-family: ${OpticianSans.style.fontFamily};
-  font-size: 20px;
+  font-size: 1.25rem;
   font-style: normal;
   font-weight: 400;
   line-height: 100%;

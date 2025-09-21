@@ -51,7 +51,7 @@ const MetricGroup = styled.div`
   align-items: flex-start;
 `;
 
-const Label = styled.div`
+const Label = styled.span`
   font-family: ${OpticianSans.style.fontFamily};
   font-size: 24px;
   font-weight: 400;
@@ -65,7 +65,7 @@ const ValueContainer = styled.div`
   align-items: flex-start;
 `;
 
-const Value = styled.div`
+const Value = styled.span`
   font-family: ${InstrumentSans.style.fontFamily};
   font-size: 40px;
   font-weight: 500;

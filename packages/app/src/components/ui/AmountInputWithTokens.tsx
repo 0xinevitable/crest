@@ -75,7 +75,7 @@ const Container = styled.div`
   width: 100%;
 `;
 
-const Label = styled.div`
+const Label = styled.span`
   font-family: ${OpticianSans.style.fontFamily};
   font-size: 1.5rem;
   font-weight: 400;

@@ -1,17 +1,9 @@
 import styled from '@emotion/styled';
 import React from 'react';
 
-
-
 import { OpticianSans } from '@/fonts';
 
-
-
 import { Modal, ModalProps } from './Modal';
-
-
-
-
 
 type OperationType = 'ALLOCATION' | 'REBALANCING' | 'EXIT';
 
@@ -184,7 +176,7 @@ const OperationInfo = styled.div`
   gap: 0.75rem;
 `;
 
-const OperationTypeLabel = styled.div`
+const OperationTypeLabel = styled.span`
   font-family: ${OpticianSans.style.fontFamily};
   font-size: 1.5rem;
   font-weight: 400;
@@ -198,7 +190,7 @@ const OperationLabelContainer = styled.div`
   gap: 0.75rem;
 `;
 
-const AllocationLabel = styled.div`
+const AllocationLabel = styled.span`
   font-family: ${OpticianSans.style.fontFamily};
   font-size: 1.5rem;
   font-weight: 400;
@@ -206,7 +198,7 @@ const AllocationLabel = styled.div`
   color: #59d0cf;
 `;
 
-const RebalancingLabel = styled.div`
+const RebalancingLabel = styled.span`
   display: flex;
   align-items: center;
   gap: 0.75rem;
@@ -227,7 +219,7 @@ const TokenPair = styled.div`
   color: #59d0cf;
 `;
 
-const ExitLabel = styled.div`
+const ExitLabel = styled.span`
   font-family: ${OpticianSans.style.fontFamily};
   font-size: 1.5rem;
   font-weight: 400;
@@ -270,7 +262,7 @@ const ArrowIcon = styled.img`
   height: 1.125rem;
 `;
 
-const Timestamp = styled.div`
+const Timestamp = styled.span`
   font-family: ${OpticianSans.style.fontFamily};
   font-size: 1.5rem;
   font-weight: 400;

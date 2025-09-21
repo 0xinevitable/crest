@@ -2,13 +2,18 @@ import styled from '@emotion/styled';
 import { useEffect, useState } from 'react';
 import { formatUnits } from 'viem';
 
+
+
 import { OpticianSans } from '@/fonts';
-import { CrestClient } from '@/utils/contracts';
+import { AccountantClient } from '@/utils/contracts';
+
+
 
 import { AmountInputWithTokens } from '../ui/AmountInputWithTokens';
 import { FeeDisplay } from '../ui/FeeDisplay';
 import { DepositWithdrawTabs } from './DepositWithdrawTabs';
 import { PriceDisplay } from './PriceDisplay';
+
 
 const INPUT_TOKENS = [
   {
@@ -52,10 +57,9 @@ export const TradingForm: React.FC = () => {
   useEffect(() => {
     const fetchExchangeRate = async () => {
       try {
-        const client = new CrestClient();
-        setExchangeRate(
-          Number(formatUnits(await client.getExchangeRate(), 6)).toFixed(4),
-        );
+        const accountantClient = new AccountantClient();
+        const rate = await accountantClient.exchangeRate;
+        setExchangeRate(Number(formatUnits(rate, 6)).toFixed(4));
       } catch (error) {
         console.error('Error fetching exchange rate:', error);
       }
@@ -72,23 +76,15 @@ export const TradingForm: React.FC = () => {
       }
 
       try {
+        const accountantClient = new AccountantClient();
         setIsCalculating(true);
-        const client = new CrestClient();
-
         const assetsInWei = BigInt(Math.floor(Number(inputAmount) * 1e6));
-
         if (activeTab === 'deposit') {
-          setOutputAmount(
-            Number(
-              formatUnits(await client.convertToShares(assetsInWei), 6),
-            ).toFixed(6),
-          );
+          const shares = await accountantClient.convertToShares(assetsInWei);
+          setOutputAmount(Number(formatUnits(shares, 6)).toFixed(6));
         } else {
-          setOutputAmount(
-            Number(
-              formatUnits(await client.convertToAssets(assetsInWei), 6),
-            ).toFixed(6),
-          );
+          const assets = await accountantClient.convertToAssets(assetsInWei);
+          setOutputAmount(Number(formatUnits(assets, 6)).toFixed(6));
         }
       } catch (error) {
         console.error('Error calculating conversion:', error);
@@ -98,7 +94,6 @@ export const TradingForm: React.FC = () => {
       }
     };
 
-    // Debounce the calculation
     const timeoutId = setTimeout(calculateShares, 300);
     return () => clearTimeout(timeoutId);
   }, [inputAmount, activeTab]);

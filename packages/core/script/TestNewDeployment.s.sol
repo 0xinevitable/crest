@@ -9,11 +9,11 @@ import { CrestAccountant } from '../src/CrestAccountant.sol';
 import { IERC20 } from '@openzeppelin/contracts/token/ERC20/IERC20.sol';
 
 contract TestNewDeploymentScript is Script {
-    // New testnet deployment addresses
-    address constant VAULT = 0xee19804007b994dC7A3Ccd98Ce1FA3e4e3D6464C;
-    address constant TELLER = 0x22e9C15599cB7a76D3ab717C373129cB08a32Dab;
-    address constant ACCOUNTANT = 0xBe01CbB9872b8bb89338c541B09B1CE92161B999;
-    address constant MANAGER = 0x5eA75B890bdB802e42a8010bf019b6aAD8F26473;
+    // Latest testnet deployment addresses from 998.json
+    address constant VAULT = 0x7CafB22811073bdB3203999A2Dbe24A63A23802d;
+    address constant TELLER = 0xDaCf544424491E831895162Fb5b96f428C317D49;
+    address constant ACCOUNTANT = 0xde14f361dB29b698EA168bFfa7DE6b6589c3ba26;
+    address constant MANAGER = 0xcC29Ea11E0F457b1BD36Ba18F18c3ba003584758;
     address constant USDT0 = 0x779Ded0c9e1022225f8E0630b35a9b54bE713736;
 
     // HYPE testnet indexes
@@ -86,8 +86,12 @@ contract TestNewDeploymentScript is Script {
         console.log('\n=== ALLOCATION INSTRUCTIONS ===');
         console.log('The deposit was successful. Now allocate funds using:');
         console.log('');
-        console.log('cast send 0x5eA75B890bdB802e42a8010bf019b6aAD8F26473 "allocate(uint32,uint32)" 1035 135');
-        console.log('  --private-key $PRIVATE_KEY --rpc-url https://rpc.hyperliquid-testnet.xyz/evm');
+        console.log(
+            'cast send 0x5eA75B890bdB802e42a8010bf019b6aAD8F26473 "allocate(uint32,uint32)" 1035 135'
+        );
+        console.log(
+            '  --private-key $PRIVATE_KEY --rpc-url https://rpc.hyperliquid-testnet.xyz/evm'
+        );
         console.log('');
         console.log('Expected allocation breakdown:');
         uint256 currentVaultBalance = usdt0.balanceOf(address(vault));

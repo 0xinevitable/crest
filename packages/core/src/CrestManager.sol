@@ -636,6 +636,11 @@ contract CrestManager is Auth, ReentrancyGuard {
      * @notice Estimates the current value of all positions
      */
     function estimatePositionValue() external view returns (uint256) {
+        // Return 0 if no positions allocated
+        if (totalAllocated == 0) {
+            return 0;
+        }
+
         uint256 totalValue = 0;
 
         // Add spot position value using real price

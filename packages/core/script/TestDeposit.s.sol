@@ -8,10 +8,11 @@ import { CrestVault } from '../src/CrestVault.sol';
 import { IERC20 } from '@openzeppelin/contracts/token/ERC20/IERC20.sol';
 
 contract TestDepositScript is Script {
-    // Testnet deployment addresses
-    address constant VAULT = 0xafC295423e8b0907D527FEe64aB5b2e7B5C33795;
-    address constant TELLER = 0x1A56836057e5c788C6d104f422Dc40100992EA0c;
-    address constant ACCOUNTANT = 0xD1aaDfDa4225a103620D735131C96FE347F4bbA1;
+    // Latest testnet deployment addresses from 998.json
+    address constant VAULT = 0x5f021Bac59050C118429c19e55d508C66753Eb68;
+    address constant TELLER = 0x2AE0Db98b1D541D65327b323269b8dF7E157F3f0;
+    address constant ACCOUNTANT = 0x6353Bc733C18c74322B1AAEAa365A0B36b8c7cA8;
+    address constant MANAGER = 0xDa5Eb4Ca4d1E84245847368542143342A73FA9F6;
     address constant USDT0 = 0x779Ded0c9e1022225f8E0630b35a9b54bE713736;
 
     function run() external {

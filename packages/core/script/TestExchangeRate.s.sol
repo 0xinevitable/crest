@@ -9,11 +9,11 @@ import { CrestAccountant } from '../src/CrestAccountant.sol';
 import { IERC20 } from '@openzeppelin/contracts/token/ERC20/IERC20.sol';
 
 contract TestExchangeRateScript is Script {
-    // Latest testnet deployment addresses
-    address constant VAULT = 0xA351De12FBa8A7cDc9cE8bcc38215c5d715b00b6;
-    address constant TELLER = 0x5101a50e44f9B3D5F30Bd048E34bfA8aB7aF5B08;
-    address constant ACCOUNTANT = 0x39302b737E25bd5217038935626E6c5c1476C417;
-    address constant MANAGER = 0x1013c950B41025A0495C48EdAFAccd7e235A4a8B;
+    // Latest testnet deployment addresses from 998.json
+    address constant VAULT = 0x7CafB22811073bdB3203999A2Dbe24A63A23802d;
+    address constant TELLER = 0xDaCf544424491E831895162Fb5b96f428C317D49;
+    address constant ACCOUNTANT = 0xde14f361dB29b698EA168bFfa7DE6b6589c3ba26;
+    address constant MANAGER = 0xcC29Ea11E0F457b1BD36Ba18F18c3ba003584758;
     address constant USDT0 = 0x779Ded0c9e1022225f8E0630b35a9b54bE713736;
 
     // HYPE testnet indexes
@@ -57,8 +57,14 @@ contract TestExchangeRateScript is Script {
             vm.stopBroadcast();
 
             console.log('Shares received:', shares);
-            console.log('Exchange rate after deposit:', accountant.exchangeRate());
-            console.log('Total assets after deposit:', accountant.getTotalAssets());
+            console.log(
+                'Exchange rate after deposit:',
+                accountant.exchangeRate()
+            );
+            console.log(
+                'Total assets after deposit:',
+                accountant.getTotalAssets()
+            );
         }
 
         // Show current state
@@ -73,21 +79,32 @@ contract TestExchangeRateScript is Script {
         if (usdt0.balanceOf(address(vault)) >= 50e6) {
             console.log('\n=== READY TO ALLOCATE ===');
             console.log('Run this command to allocate:');
-            console.log('cast send 0x1013c950B41025A0495C48EdAFAccd7e235A4a8B "allocate(uint32,uint32)" 1035 135');
-            console.log('  --private-key $PRIVATE_KEY --rpc-url https://rpc.hyperliquid-testnet.xyz/evm');
+            console.log(
+                'cast send 0x1013c950B41025A0495C48EdAFAccd7e235A4a8B "allocate(uint32,uint32)" 1035 135'
+            );
+            console.log(
+                '  --private-key $PRIVATE_KEY --rpc-url https://rpc.hyperliquid-testnet.xyz/evm'
+            );
 
-            console.log('\nAfter allocation, run this script again to see the exchange rate update!');
+            console.log(
+                '\nAfter allocation, run this script again to see the exchange rate update!'
+            );
         } else if (manager.totalAllocated() > 0) {
             console.log('\n=== FUNDS ALREADY ALLOCATED ===');
             console.log('Total allocated:', manager.totalAllocated());
-            console.log('Exchange rate WITH Core positions:', accountant.exchangeRate());
+            console.log(
+                'Exchange rate WITH Core positions:',
+                accountant.exchangeRate()
+            );
             console.log('Expected rate: 1e6 (1:1) if no profits/losses');
 
             uint256 currentRate = accountant.exchangeRate();
             if (currentRate == 1e6) {
                 console.log('SUCCESS: Exchange rate is correct!');
             } else if (currentRate == 0) {
-                console.log('ERROR: Exchange rate is still 0 - getTotalAssets might not be reading Manager correctly');
+                console.log(
+                    'ERROR: Exchange rate is still 0 - getTotalAssets might not be reading Manager correctly'
+                );
             } else {
                 console.log('Exchange rate reflects profit/loss');
             }

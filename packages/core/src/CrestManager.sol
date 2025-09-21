@@ -315,36 +315,37 @@ contract CrestManager is Auth, ReentrancyGuard {
         uint32 oldSpotIndex = currentSpotPosition.index;
         uint32 oldPerpIndex = currentPerpPosition.index;
 
-        // Close existing positions if they have size
+        // Close existing positions but keep funds in Core for reallocation
         if (currentSpotPosition.size > 0 || currentPerpPosition.size > 0) {
-            _closeAllPositions();
+            _closePositionsOnly();
         }
+
+        // Now reallocate to new positions (funds are still in Core as USDC)
+        _openPositions(newSpotIndex, newPerpIndex);
 
         // Update vault state
         vault.rebalance(newSpotIndex, newPerpIndex);
-
-        // Update manager's position tracking to new indexes
-        currentSpotPosition.index = newSpotIndex;
-        currentPerpPosition.index = newPerpIndex;
-        currentSpotPosition.size = 0; // Will be set when orders fill
-        currentPerpPosition.size = 0; // Will be set when orders fill
 
         emit Rebalanced(oldSpotIndex, oldPerpIndex, newSpotIndex, newPerpIndex);
     }
 
     /**
-     * @notice Closes all positions and withdraws funds back to vault
+     * @notice Exits all positions and bridges funds back to vault
      */
-    function closeAllPositions()
-        external
-        onlyCurator
-        whenNotPaused
-        nonReentrant
-    {
-        _closeAllPositions();
+    function exit() external onlyCurator whenNotPaused nonReentrant {
+        // Close all positions
+        _closePositionsOnly();
+
+        // Bridge everything back to EVM
+        _bridgeBackToVault();
+
+        totalAllocated = 0;
     }
 
-    function _closeAllPositions() internal {
+    /**
+     * @notice Internal function to close positions without bridging back
+     */
+    function _closePositionsOnly() internal {
         // Close spot position
         if (currentSpotPosition.size > 0) {
             // Get current spot price from precompile
@@ -387,7 +388,8 @@ contract CrestManager is Auth, ReentrancyGuard {
                 uint256(spotPnL > 0 ? spotPnL : -spotPnL)
             );
 
-            delete currentSpotPosition;
+            currentSpotPosition.size = 0;
+            currentSpotPosition.entryPrice = 0;
         }
 
         // Close perp position
@@ -432,11 +434,97 @@ contract CrestManager is Auth, ReentrancyGuard {
                 uint256(perpPnL > 0 ? perpPnL : -perpPnL)
             );
 
-            delete currentPerpPosition;
+            currentPerpPosition.size = 0;
+            currentPerpPosition.entryPrice = 0;
         }
 
-        // Query actual balances to bridge back
-        // Use perpDexIndex 0 for cross-margin account
+        // After closing positions, move any funds from perp back to spot account
+        // This is needed for rebalancing to have all USDC available in spot
+        PrecompileLib.AccountMarginSummary memory marginSummary = PrecompileLib
+            .accountMarginSummary(0, address(this));
+
+        if (marginSummary.accountValue > 0) {
+            uint64 perpUsdAmount = uint64(marginSummary.accountValue);
+            CoreWriterLib.transferUsdClass(perpUsdAmount, false); // from perp to spot
+        }
+    }
+
+    /**
+     * @notice Opens new positions with available USDC in Core
+     */
+    function _openPositions(uint32 spotIndex, uint32 perpIndex) internal {
+        // Always update indexes
+        currentSpotPosition.index = spotIndex;
+        currentPerpPosition.index = perpIndex;
+        currentSpotPosition.timestamp = block.timestamp;
+        currentPerpPosition.timestamp = block.timestamp;
+
+        // Get available USDC balance in Core
+        PrecompileLib.SpotBalance memory usdcBalance = PrecompileLib
+            .spotBalance(address(this), USDC_TOKEN_ID);
+
+        if (usdcBalance.total == 0) return;
+
+        // Calculate allocations from USDC balance
+        uint256 totalUsdc = usdcBalance.total / 100; // Convert from Core (8 decimals) to EVM (6 decimals)
+        uint256 marginAmount = (totalUsdc * MARGIN_ALLOCATION_BPS) / 10000;
+        uint256 spotAmount = (totalUsdc * SPOT_ALLOCATION_BPS) / 10000;
+        uint256 perpAmount = (totalUsdc * PERP_ALLOCATION_BPS) / 10000;
+
+        // Get current prices
+        uint64 spotPrice = PrecompileLib.spotPx(uint64(spotIndex));
+        uint64 perpPrice = PrecompileLib.markPx(perpIndex);
+
+        // Transfer margin to perp account
+        uint64 marginCoreAmount = uint64(marginAmount * 100);
+        CoreWriterLib.transferUsdClass(marginCoreAmount / 100, true);
+
+        // Place spot buy order
+        uint64 spotSizeCoreAmount = uint64(spotAmount * 100);
+        uint64 spotSizeInAsset = uint64(
+            (uint256(spotSizeCoreAmount) * 1e8) / spotPrice
+        );
+
+        CoreWriterLib.placeLimitOrder(
+            spotIndex,
+            true, // isBuy
+            spotPrice + ((spotPrice * 50) / 10000), // 0.5% slippage
+            spotSizeInAsset,
+            false, // reduceOnly
+            3, // IOC
+            uint128(block.timestamp << 32) + 10
+        );
+
+        currentSpotPosition.isLong = true;
+        currentSpotPosition.size = spotSizeInAsset;
+        currentSpotPosition.entryPrice = spotPrice;
+
+        // Place perp short order
+        uint64 perpSizeCoreAmount = uint64(perpAmount * 100);
+        uint64 perpSizeInAsset = uint64(
+            (uint256(perpSizeCoreAmount) * 1e6) / perpPrice
+        );
+
+        CoreWriterLib.placeLimitOrder(
+            perpIndex,
+            false, // isBuy (short)
+            perpPrice - ((perpPrice * 50) / 10000), // 0.5% slippage
+            perpSizeInAsset,
+            false, // reduceOnly
+            3, // IOC
+            uint128(block.timestamp << 32) + 11
+        );
+
+        currentPerpPosition.isLong = false;
+        currentPerpPosition.size = perpSizeInAsset;
+        currentPerpPosition.entryPrice = perpPrice;
+    }
+
+    /**
+     * @notice Bridges all funds back to vault
+     */
+    function _bridgeBackToVault() internal {
+        // Query actual balances
         PrecompileLib.AccountMarginSummary memory marginSummary = PrecompileLib
             .accountMarginSummary(0, address(this));
         PrecompileLib.SpotBalance memory spotBalance = PrecompileLib
@@ -458,7 +546,7 @@ contract CrestManager is Auth, ReentrancyGuard {
                 spotBalance.total,
                 false,
                 3, // IOC
-                uint128(block.timestamp << 32) + 1
+                uint128(block.timestamp << 32) + 100
             );
 
             // Get USDT0 balance and bridge back
@@ -473,7 +561,11 @@ contract CrestManager is Auth, ReentrancyGuard {
             }
         }
 
-        totalAllocated = 0;
+        // Transfer all USDT0 from Manager back to Vault
+        uint256 managerBalance = usdt0.balanceOf(address(this));
+        if (managerBalance > 0) {
+            usdt0.safeTransfer(address(vault), managerBalance);
+        }
     }
 
     //============================== ADMIN FUNCTIONS ===============================

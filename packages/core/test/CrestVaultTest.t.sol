@@ -746,7 +746,7 @@ contract CrestVaultTest is Test {
 
         // Close positions
         vm.prank(curator);
-        manager.closeAllPositions();
+        manager.exit();
         CoreSimulatorLib.nextBlock();
 
         // Check results
@@ -851,7 +851,7 @@ contract CrestVaultTest is Test {
 
         // When: Close all positions
         vm.prank(curator);
-        manager.closeAllPositions();
+        manager.exit();
         CoreSimulatorLib.nextBlock();
 
         // Then: Positions should be closed
@@ -1173,7 +1173,7 @@ contract CrestVaultTest is Test {
         // Process the rebalance orders
         CoreSimulatorLib.nextBlock();
 
-        // 4. Close all positions to get funds back to vault
+        // 4. Exit all positions to get funds back to vault
         // Get current market prices before closing
         uint64 spotClosePrice = PrecompileLib.spotPx(uint64(BERA_SPOT_INDEX));
         uint64 perpClosePrice = PrecompileLib.markPx(BERA_PERP_INDEX);
@@ -1191,20 +1191,28 @@ contract CrestVaultTest is Test {
         console2.log("Perp buy limit price:    ", perpBuyPrice, "(+0.5% to close short)");
 
         vm.prank(curator);
-        manager.closeAllPositions();
+        manager.exit();
 
         // Process the close orders
         CoreSimulatorLib.nextBlock();
 
-        // In test environment, the bridge back from Core doesn't always work
-        // So we simulate the funds returning to the vault
-        uint256 totalDeposited = 15000 * ONE_USDT0; // 10k from Alice + 5k from Bob
-        uint256 profit = 450 * ONE_USDT0; // 3% profit
-        _dealUsdt0(address(vault), totalDeposited + profit);
+        // Bridge completes in same tx, but IOC orders might not fill perfectly
+        // due to liquidity/slippage in test environment
+        // Simulate expected returns with profit for testing withdrawal flow
+        uint256 vaultBalance = usdt0.balanceOf(address(vault));
+        uint256 totalDeposited = 15000 * ONE_USDT0;
+        if (vaultBalance < totalDeposited) {
+            // If we have losses or bridge hasn't completed, add the expected amount for test
+            _dealUsdt0(address(vault), totalDeposited + 450 * ONE_USDT0 - vaultBalance);
+        } else if (vaultBalance == totalDeposited) {
+            // Add simulated profit for test
+            _dealUsdt0(address(vault), 450 * ONE_USDT0);
+        }
 
         // 5. Update exchange rate to reflect the profit
+        uint256 finalBalance = usdt0.balanceOf(address(vault));
         vm.prank(owner);
-        accountant.updateExchangeRate(totalDeposited + profit);
+        accountant.updateExchangeRate(finalBalance);
 
         // 6. Alice withdraws with profit
         uint256 aliceSharesBefore = vault.balanceOf(alice);

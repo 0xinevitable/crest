@@ -5,11 +5,3 @@ export {
   CrestVaultAbi,
   CrestManagerAbi,
 } from './abis';
-
-export {
-  TellerClient,
-  AccountantClient,
-  VaultClient,
-  ManagerClient,
-} from './client';
-

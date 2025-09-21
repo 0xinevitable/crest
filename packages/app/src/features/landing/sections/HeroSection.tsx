@@ -48,9 +48,10 @@ const BackgroundIntersect = styled.img`
 const CenterGraphic = styled.img`
   position: absolute;
   left: calc(50% - 0.133px);
-  top: 3rem;
-  width: 22rem;
-  height: 26rem;
+  top: 54px;
+  width: 365.733px;
+  height: 422px;
+
   object-fit: cover;
   object-position: 37.54% 30.7%;
   background-size: 162.64% 140.95%;
@@ -59,12 +60,13 @@ const CenterGraphic = styled.img`
 
 const Content = styled.div`
   position: absolute;
+  top: 389px;
   left: 50%;
-  top: 50%;
   transform: translateX(-50%);
+
   display: flex;
   flex-direction: column;
-  gap: 2rem;
+  gap: 28px;
   align-items: center;
   text-align: center;
   width: 31rem;
@@ -73,18 +75,18 @@ const Content = styled.div`
 
 const Title = styled.h1`
   font-family: ${OpticianSans.style.fontFamily};
-  font-size: 4rem;
-  font-weight: 400;
-  line-height: 0.93;
   color: #fff;
-  margin: 0;
+  text-align: center;
+  font-size: 64px;
+  font-weight: 400;
+  line-height: 93%; /* 59.52px */
 `;
 
 const Subtitle = styled.p`
   font-family: ${InstrumentSans.style.fontFamily};
-  font-size: 1.5rem;
-  font-weight: 500;
-  line-height: 1.3;
   color: #59d0cf;
-  margin: 0;
+  text-align: center;
+  font-size: 24px;
+  font-weight: 500;
+  line-height: 130%; /* 31.2px */
 `;

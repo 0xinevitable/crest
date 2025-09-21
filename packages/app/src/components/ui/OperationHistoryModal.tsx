@@ -1,9 +1,17 @@
 import styled from '@emotion/styled';
 import React from 'react';
 
+
+
 import { OpticianSans } from '@/fonts';
 
+
+
 import { Modal, ModalProps } from './Modal';
+
+
+
+
 
 type OperationType = 'ALLOCATION' | 'REBALANCING' | 'EXIT';
 
@@ -34,7 +42,7 @@ const mockOperations: OperationItem[] = [
     label: 'HYPE/USDC',
     timestamp: '7h ago',
     txId: 'tx456',
-    icon: '/assets/logos/hyperliquid-logo.svg',
+    // icon: '/assets/hyperliquid.png',
   },
   {
     type: 'REBALANCING',
@@ -83,11 +91,14 @@ export const OperationHistoryModal: React.FC<OperationHistoryModalProps> = ({
                   )}
                 </OperationLabelContainer>
               </OperationInfo>
-              
+
               <TransactionInfo>
                 <TxButton>
                   <TxText>TX</TxText>
-                  <ArrowIcon src="/assets/icons/arrow-up-right-icon.svg" alt="External link" />
+                  <ArrowIcon
+                    src="/assets/icons/arrow-up-right-icon.svg"
+                    alt="External link"
+                  />
                 </TxButton>
                 <Timestamp>{operation.timestamp}</Timestamp>
               </TransactionInfo>
@@ -169,7 +180,7 @@ const OperationItem = styled.div`
 
 const OperationInfo = styled.div`
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
   gap: 0.75rem;
 `;
 

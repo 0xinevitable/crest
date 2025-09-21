@@ -5,6 +5,7 @@ import { ERC20 } from '@solmate/tokens/ERC20.sol';
 import { FixedPointMathLib } from '@solmate/utils/FixedPointMathLib.sol';
 import { Auth, Authority } from '@solmate/auth/Auth.sol';
 import { CrestVault } from './CrestVault.sol';
+import { CrestTeller } from './CrestTeller.sol';
 
 contract CrestAccountant is Auth {
     using FixedPointMathLib for uint256;
@@ -72,6 +73,11 @@ contract CrestAccountant is Auth {
      */
     bool public isPaused;
 
+    /**
+     * @notice Reference to teller for getting Hyperdrive value
+     */
+    CrestTeller public teller;
+
     //============================== EVENTS ===============================
 
     event RateUpdated(
@@ -91,6 +97,7 @@ contract CrestAccountant is Auth {
     event Unpaused();
     event MaxRateChangeUpdated(uint16 bps);
     event RateUpdateCooldownUpdated(uint64 cooldown);
+    event TellerUpdated(address indexed teller);
 
     //============================== ERRORS ===============================
 
@@ -124,6 +131,14 @@ contract CrestAccountant is Auth {
     //============================== ADMIN FUNCTIONS ===============================
 
     /**
+     * @notice Sets the teller contract reference
+     */
+    function setTeller(address _teller) external requiresAuth {
+        teller = CrestTeller(_teller);
+        emit TellerUpdated(_teller);
+    }
+
+    /**
      * @notice Updates the exchange rate based on current vault performance
      * @param totalAssets The total value of assets in the vault (in USDC)
      */
@@ -140,8 +155,14 @@ contract CrestAccountant is Auth {
             return;
         }
 
+        // Add Hyperdrive value if teller is configured
+        uint256 adjustedTotalAssets = totalAssets;
+        if (address(teller) != address(0)) {
+            adjustedTotalAssets += teller.getHyperdriveValue();
+        }
+
         // Calculate new rate
-        uint96 newRate = uint96((totalAssets * 1e6) / totalSupply);
+        uint96 newRate = uint96((adjustedTotalAssets * 1e6) / totalSupply);
 
         // Check rate change limits
         uint256 maxRate = (uint256(exchangeRate) * (10000 + maxRateChangeBps)) /

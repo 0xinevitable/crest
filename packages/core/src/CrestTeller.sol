@@ -8,6 +8,7 @@ import { Auth, Authority } from '@solmate/auth/Auth.sol';
 import { ReentrancyGuard } from '@solmate/utils/ReentrancyGuard.sol';
 import { CrestVault } from './CrestVault.sol';
 import { CrestAccountant } from './CrestAccountant.sol';
+import { IHyperdriveMarket } from './interfaces/IHyperdriveMarket.sol';
 
 contract CrestTeller is Auth, ReentrancyGuard {
     using SafeTransferLib for ERC20;
@@ -62,6 +63,16 @@ contract CrestTeller is Auth, ReentrancyGuard {
      */
     uint256 public constant MIN_INITIAL_SHARES = 1e6;
 
+    /**
+     * @notice Hyperdrive market for USDT0 yield generation
+     */
+    IHyperdriveMarket public hyperdriveMarket;
+
+    /**
+     * @notice Tracks Hyperdrive shares owned by the vault
+     */
+    uint256 public hyperdriveShares;
+
     //============================== ERRORS ===============================
 
     error CrestTeller__Paused();
@@ -72,6 +83,7 @@ contract CrestTeller is Auth, ReentrancyGuard {
     error CrestTeller__SharesAreLocked();
     error CrestTeller__ShareLockPeriodTooLong();
     error CrestTeller__NoAccountant();
+    error CrestTeller__NoHyperdriveMarket();
 
     //============================== EVENTS ===============================
 
@@ -81,6 +93,7 @@ contract CrestTeller is Auth, ReentrancyGuard {
     event Unpaused();
     event AccountantUpdated(address indexed accountant);
     event ShareLockPeriodUpdated(uint64 period);
+    event HyperdriveMarketUpdated(address indexed market);
 
     //============================== MODIFIERS ===============================
 
@@ -108,6 +121,25 @@ contract CrestTeller is Auth, ReentrancyGuard {
     function setAccountant(address _accountant) external requiresAuth {
         accountant = CrestAccountant(_accountant);
         emit AccountantUpdated(_accountant);
+    }
+
+    /**
+     * @notice Sets the Hyperdrive market contract
+     */
+    function setHyperdriveMarket(address _market) external requiresAuth {
+        // Withdraw from old market if exists
+        if (address(hyperdriveMarket) != address(0) && hyperdriveShares > 0) {
+            _withdrawFromHyperdrive(type(uint256).max);
+        }
+
+        hyperdriveMarket = IHyperdriveMarket(_market);
+        emit HyperdriveMarketUpdated(_market);
+
+        // Deposit to new market if vault has USDT0
+        uint256 vaultBalance = usdt0.balanceOf(address(vault));
+        if (vaultBalance > 0) {
+            _depositToHyperdrive(vaultBalance);
+        }
     }
 
     /**
@@ -162,11 +194,16 @@ contract CrestTeller is Auth, ReentrancyGuard {
             revert CrestTeller__MinimumSharesNotMet();
         }
 
-        // Transfer USDT0 from user
+        // Transfer USDT0 from user to vault
         usdt0.safeTransferFrom(msg.sender, address(vault), assets);
 
         // Mint shares through vault
         vault.enter(address(vault), usdt0, 0, receiver, shares);
+
+        // Deposit USDT0 to Hyperdrive if configured
+        if (address(hyperdriveMarket) != address(0)) {
+            _depositToHyperdrive(assets);
+        }
 
         // Set share lock
         shareUnlockTime[receiver] = block.timestamp + shareLockPeriod;
@@ -195,6 +232,14 @@ contract CrestTeller is Auth, ReentrancyGuard {
         // Calculate assets to withdraw
         assets = accountant.convertToAssets(shares);
         if (assets == 0) revert CrestTeller__ZeroAssets();
+
+        // Withdraw from Hyperdrive if needed
+        if (address(hyperdriveMarket) != address(0)) {
+            uint256 vaultBalance = usdt0.balanceOf(address(vault));
+            if (vaultBalance < assets) {
+                _withdrawFromHyperdrive(assets - vaultBalance);
+            }
+        }
 
         // Burn shares and transfer assets through vault
         vault.exit(receiver, usdt0, assets, msg.sender, shares);
@@ -232,5 +277,76 @@ contract CrestTeller is Auth, ReentrancyGuard {
      */
     function getShareUnlockTime(address user) external view returns (uint256) {
         return shareUnlockTime[user];
+    }
+
+    /**
+     * @notice Returns the current value of Hyperdrive position including yield
+     */
+    function getHyperdriveValue() external view returns (uint256) {
+        if (address(hyperdriveMarket) == address(0) || hyperdriveShares == 0) {
+            return 0;
+        }
+        return hyperdriveMarket.previewRedeem(hyperdriveShares);
+    }
+
+    //============================== INTERNAL FUNCTIONS ===============================
+
+    /**
+     * @notice Deposits USDT0 from vault to Hyperdrive
+     */
+    function _depositToHyperdrive(uint256 amount) internal {
+        if (address(hyperdriveMarket) == address(0)) return;
+
+        // Transfer USDT0 from vault to this contract
+        usdt0.safeTransferFrom(address(vault), address(this), amount);
+
+        // Approve Hyperdrive to spend USDT0
+        usdt0.approve(address(hyperdriveMarket), amount);
+
+        // Deposit to Hyperdrive
+        uint256 shares = hyperdriveMarket.deposit(amount, address(this));
+        hyperdriveShares += shares;
+    }
+
+    /**
+     * @notice Withdraws USDT0 from Hyperdrive to vault
+     */
+    function _withdrawFromHyperdrive(uint256 amount) internal {
+        if (address(hyperdriveMarket) == address(0) || hyperdriveShares == 0)
+            return;
+
+        uint256 sharesToBurn;
+        uint256 actualWithdrawAmount;
+
+        if (amount == type(uint256).max) {
+            // Withdraw all
+            sharesToBurn = hyperdriveShares;
+            actualWithdrawAmount = hyperdriveMarket.previewRedeem(sharesToBurn);
+        } else {
+            // Calculate shares needed for specific amount
+            sharesToBurn = hyperdriveMarket.previewWithdraw(amount);
+            if (sharesToBurn > hyperdriveShares) {
+                sharesToBurn = hyperdriveShares;
+            }
+            actualWithdrawAmount = amount;
+        }
+
+
+        // Withdraw from Hyperdrive directly to vault
+        hyperdriveMarket.redeem(
+            sharesToBurn,
+            address(vault),
+            address(this)
+        );
+        hyperdriveShares -= sharesToBurn;
+    }
+
+    /**
+     * @notice Emergency function to withdraw all from Hyperdrive
+     */
+    function emergencyWithdrawFromHyperdrive() external requiresAuth {
+        if (address(hyperdriveMarket) != address(0) && hyperdriveShares > 0) {
+            _withdrawFromHyperdrive(type(uint256).max);
+        }
     }
 }

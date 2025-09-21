@@ -174,13 +174,10 @@ contract CrestManager is Auth, ReentrancyGuard {
         // Check if we need to withdraw from Hyperdrive
         uint256 hyperdriveValue = vault.getHyperdriveValue();
         if (hyperdriveValue > 0 && availableUsdt0 < 50e6) {
-            // Need to withdraw from Hyperdrive for allocation
-            uint256 neededAmount = 50e6 > availableUsdt0 ? 50e6 - availableUsdt0 : 0;
-            if (neededAmount > 0) {
-                vault.withdrawFromHyperdrive(neededAmount);
-                // Update vault balance after withdrawal
-                availableUsdt0 = usdt0.balanceOf(address(vault));
-            }
+            // Withdraw all from Hyperdrive for allocation
+            vault.withdrawFromHyperdrive(type(uint256).max);
+            // Update vault balance after withdrawal
+            availableUsdt0 = usdt0.balanceOf(address(vault));
         }
 
         // Minimum 50 USDT0 needed to meet Core's minimum order requirements (20 USDT0)

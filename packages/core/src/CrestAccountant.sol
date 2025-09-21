@@ -178,7 +178,7 @@ contract CrestAccountant is Auth {
             uint256 totalFees = platformFee + performanceFee;
             if (totalFees > 0) {
                 newRate = uint96(
-                    ((totalAssets - totalFees) * 1e6) / totalSupply
+                    ((adjustedTotalAssets - totalFees) * 1e6) / totalSupply
                 );
             }
 

@@ -472,8 +472,8 @@ contract CrestManager is Auth, ReentrancyGuard {
 
         if (usdcBalance.total == 0) return;
 
-        // Calculate allocations from USDC balance
-        uint256 totalUsdc = usdcBalance.total / 100; // Convert from Core (8 decimals) to EVM (6 decimals)
+        // Convert USDC balance from Core to EVM decimals
+        uint256 totalUsdc = HLConversions.weiToEvm(USDC_TOKEN_ID, uint64(usdcBalance.total));
         uint256 marginAmount = (totalUsdc * MARGIN_ALLOCATION_BPS) / 10000;
         uint256 spotAmount = (totalUsdc * SPOT_ALLOCATION_BPS) / 10000;
         uint256 perpAmount = (totalUsdc * PERP_ALLOCATION_BPS) / 10000;
@@ -483,13 +483,13 @@ contract CrestManager is Auth, ReentrancyGuard {
         uint64 perpPrice = PrecompileLib.markPx(perpIndex);
 
         // Transfer margin to perp account
-        // USDC: 6 decimals on EVM, 8 decimals in Core
-        uint64 marginCoreAmount = uint64(marginAmount) * 100;
+        // Convert USDC from EVM decimals to Core decimals
+        uint64 marginCoreAmount = HLConversions.evmToWei(USDC_TOKEN_ID, marginAmount);
         CoreWriterLib.transferUsdClass(marginCoreAmount, true);
 
         // Place spot buy order
-        // USDC: 6 decimals on EVM, 8 decimals in Core
-        uint64 spotSizeCoreAmount = uint64(spotAmount) * 100;
+        // Convert USDC from EVM decimals to Core decimals
+        uint64 spotSizeCoreAmount = HLConversions.evmToWei(USDC_TOKEN_ID, spotAmount);
         uint64 spotSizeInAsset = uint64(
             (uint256(spotSizeCoreAmount) * 1e8) / spotPrice
         );
@@ -643,32 +643,45 @@ contract CrestManager is Auth, ReentrancyGuard {
             uint64 currentSpotPrice = PrecompileLib.spotPx(
                 uint64(currentSpotPosition.index)
             );
-            totalValue += (currentSpotPosition.size * currentSpotPrice) / 1e8;
+            // size is in asset units (Core decimals), price is in Core decimals
+            // Calculate value in Core decimals then convert to EVM
+            uint64 spotValueCore = uint64((uint256(currentSpotPosition.size) * uint256(currentSpotPrice)) / 1e8);
+            totalValue += HLConversions.weiToEvm(USDC_TOKEN_ID, spotValueCore);
         }
 
-        // Add perp position value using real mark price
+        // Add perp position value (initial margin + P&L)
         if (currentPerpPosition.size > 0) {
+            // Start with initial allocated amount for perp
+            totalValue += (totalAllocated * PERP_ALLOCATION_BPS) / 10000;
+
             uint64 currentPerpPrice = PrecompileLib.markPx(
                 currentPerpPosition.index
             );
             // For short position, calculate the P&L
-            int256 perpPnL = (int256(
-                uint256(currentPerpPosition.entryPrice - currentPerpPrice)
-            ) * int256(uint256(currentPerpPosition.size))) / 1e6;
-            if (perpPnL > 0) {
-                totalValue += uint256(perpPnL);
+            // Both price and size are in 8 decimal format
+            if (currentPerpPosition.entryPrice > currentPerpPrice) {
+                // Profit from short
+                uint256 priceDiff = currentPerpPosition.entryPrice - currentPerpPrice;
+                uint256 perpProfit = (priceDiff * currentPerpPosition.size) / 1e10;
+                totalValue += perpProfit;
+            } else if (currentPerpPrice > currentPerpPosition.entryPrice) {
+                // Loss from short
+                uint256 priceDiff = currentPerpPrice - currentPerpPosition.entryPrice;
+                uint256 perpLoss = (priceDiff * currentPerpPosition.size) / 1e10;
+                // Subtract loss but ensure we don't go negative
+                if (perpLoss < totalValue) {
+                    totalValue -= perpLoss;
+                } else {
+                    totalValue = 0;
+                }
             }
         }
 
-        // Add any unallocated USDT0 in the vault
-        uint256 vaultBalance = usdt0.balanceOf(address(vault));
-        totalValue += vaultBalance;
-
-        // Add margin in perp account
+        // Add margin in perp account (convert from Core to EVM decimals)
         PrecompileLib.AccountMarginSummary memory marginSummary = PrecompileLib
             .accountMarginSummary(0, address(this));
         if (marginSummary.accountValue > 0) {
-            totalValue += uint256(uint64(marginSummary.accountValue));
+            totalValue += HLConversions.weiToEvm(USDC_TOKEN_ID, uint64(marginSummary.accountValue));
         }
 
         return totalValue;

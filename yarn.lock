@@ -9622,7 +9622,7 @@ viem@2.23.2:
     ox "0.6.7"
     ws "8.18.0"
 
-viem@2.37.7, viem@2.x, viem@>=2.29.0, viem@^2.1.1, viem@^2.27.2, viem@^2.31.7, viem@^2.37.7:
+viem@2.x, viem@>=2.29.0, viem@^2.1.1, viem@^2.27.2, viem@^2.31.7, viem@^2.37.7:
   version "2.37.7"
   resolved "https://registry.yarnpkg.com/viem/-/viem-2.37.7.tgz#1933b6780cbcf39c6a5eabc45fa3357b33448705"
   integrity sha512-KmTK/xc6790I0V9iaiJz8C3RdGevpU+fPvg53eOlfEfsfz0wCypXqOlOmCcjzkpmf2XFoEtu9MAxhMqk8YdNNA==

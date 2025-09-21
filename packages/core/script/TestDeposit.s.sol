@@ -9,10 +9,10 @@ import { IERC20 } from '@openzeppelin/contracts/token/ERC20/IERC20.sol';
 
 contract TestDepositScript is Script {
     // Latest testnet deployment addresses from 998.json
-    address constant VAULT = 0x5f021Bac59050C118429c19e55d508C66753Eb68;
-    address constant TELLER = 0x2AE0Db98b1D541D65327b323269b8dF7E157F3f0;
-    address constant ACCOUNTANT = 0x6353Bc733C18c74322B1AAEAa365A0B36b8c7cA8;
-    address constant MANAGER = 0xDa5Eb4Ca4d1E84245847368542143342A73FA9F6;
+    address constant VAULT = 0xe7A35E0003B6b02C07574464a5C832b147eA7AF7;
+    address constant TELLER = 0xFa77546D8D32C96936Cd0acbC03A858BFd42fae6;
+    address constant ACCOUNTANT = 0x6D254abb2b5e71Cb223d94B6E6FF8a4921E7a0a7;
+    address constant MANAGER = 0x033E25Fea72e025DeBaB55Ce481D3E40E50e4275;
     address constant USDT0 = 0x779Ded0c9e1022225f8E0630b35a9b54bE713736;
 
     function run() external {

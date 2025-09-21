@@ -172,7 +172,7 @@ contract CrestManager is Auth, ReentrancyGuard {
 
         // Check if we need to withdraw from Hyperdrive
         uint256 hyperdriveValue = vault.getHyperdriveValue();
-        if (hyperdriveValue > 0 && availableUsdt0 < 50e6) {
+        if (hyperdriveValue > 0) {
             // Withdraw all from Hyperdrive for allocation
             vault.withdrawFromHyperdrive(type(uint256).max);
             // Update vault balance after withdrawal

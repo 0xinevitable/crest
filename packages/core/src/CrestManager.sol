@@ -9,10 +9,8 @@ import { Auth, Authority } from "@solmate/auth/Auth.sol";
 import { ReentrancyGuard } from "@solmate/utils/ReentrancyGuard.sol";
 import { CrestVault } from "./CrestVault.sol";
 import { PrecompileLib } from "@hyper-evm-lib/src/PrecompileLib.sol";
-import { HLConstants } from "@hyper-evm-lib/src/common/HLConstants.sol";
 import { HLConversions } from "@hyper-evm-lib/src/common/HLConversions.sol";
 import { CoreWriterLib } from "@hyper-evm-lib/src/CoreWriterLib.sol";
-import { CustomPrecompileLib } from "./libraries/CustomPrecompileLib.sol";
 
 contract CrestManager is Auth, ReentrancyGuard {
     using SafeTransferLib for ERC20;
@@ -181,8 +179,8 @@ contract CrestManager is Auth, ReentrancyGuard {
             availableUsdt0 = usdt0.balanceOf(address(vault));
         }
 
-        // Minimum 40 USDT0 needed to meet Core's minimum order requirements (20 USDT0)
-        if (availableUsdt0 < 40e6) revert CrestManager__InsufficientBalance();
+        // Minimum 22 USDT0 needed to meet Core's minimum order requirements
+        if (availableUsdt0 < 22e6) revert CrestManager__InsufficientBalance();
 
         // Calculate allocations
         uint256 marginAmount = (availableUsdt0 * MARGIN_ALLOCATION_BPS) / 10000;
@@ -190,7 +188,10 @@ contract CrestManager is Auth, ReentrancyGuard {
         uint256 perpAmount = (availableUsdt0 * PERP_ALLOCATION_BPS) / 10000;
 
         // Get prices for calculations
-        (uint64 spotPrice, uint64 perpPrice) = _getMarketPrices(spotIndex, perpIndex);
+        (uint64 spotPrice, uint64 perpPrice) = _getMarketPrices(
+            spotIndex,
+            perpIndex
+        );
 
         // Transfer USDT0 from vault to this contract first
         bytes memory transferData = abi.encodeWithSelector(
@@ -356,7 +357,9 @@ contract CrestManager is Auth, ReentrancyGuard {
             );
 
             // Calculate PnL using spot price
-            uint64 currentSpotPrice = PrecompileLib.spotPx(uint64(currentSpotPosition.index));
+            uint64 currentSpotPrice = PrecompileLib.spotPx(
+                uint64(currentSpotPosition.index)
+            );
             int256 spotPnL;
             if (currentSpotPrice >= currentSpotPosition.entryPrice) {
                 spotPnL =
@@ -462,7 +465,10 @@ contract CrestManager is Auth, ReentrancyGuard {
         uint256 perpAmount = (totalUsdc * PERP_ALLOCATION_BPS) / 10000;
 
         // Get prices for rebalance orders
-        (uint64 spotPrice, uint64 perpPrice) = _getMarketPrices(spotIndex, perpIndex);
+        (uint64 spotPrice, uint64 perpPrice) = _getMarketPrices(
+            spotIndex,
+            perpIndex
+        );
 
         // Transfer margin to perp account
         // Convert USDC from EVM decimals to Core decimals
@@ -651,7 +657,9 @@ contract CrestManager is Auth, ReentrancyGuard {
                 .spotBalance(address(this), tokenId);
 
             if (spotBal.total > 0) {
-                uint64 currentSpotPrice = _getSpotMidPrice(currentSpotPosition.index);
+                uint64 currentSpotPrice = _getSpotMidPrice(
+                    currentSpotPosition.index
+                );
                 // spotBal.total is in Core decimals (8), price is in Core decimals (8)
                 // Result needs to be in USDT0 (6 decimals)
                 uint64 spotValueCore = uint64(
@@ -673,7 +681,9 @@ contract CrestManager is Auth, ReentrancyGuard {
 
             // szi is the signed size (negative for shorts)
             if (perpPos.szi != 0) {
-                uint64 currentPerpPrice = _getPerpMidPrice(currentPerpPosition.index);
+                uint64 currentPerpPrice = _getPerpMidPrice(
+                    currentPerpPosition.index
+                );
 
                 // Calculate notional value of position
                 // szi is signed, negative for shorts
@@ -738,22 +748,28 @@ contract CrestManager is Auth, ReentrancyGuard {
     /**
      * @notice Updates position data from on-chain state
      */
-    function _updatePositionsFromChain(uint32 spotIndex, uint32 perpIndex) internal {
+    function _updatePositionsFromChain(
+        uint32 spotIndex,
+        uint32 perpIndex
+    ) internal {
         // Update spot position from actual balance
         if (spotIndex > 0) {
-            PrecompileLib.SpotInfo memory spotInfo = PrecompileLib.spotInfo(spotIndex);
-            uint64 tokenId = spotInfo.tokens[0];
-            PrecompileLib.SpotBalance memory actualBalance = PrecompileLib.spotBalance(
-                address(this),
-                tokenId
+            PrecompileLib.SpotInfo memory spotInfo = PrecompileLib.spotInfo(
+                spotIndex
             );
+            uint64 tokenId = spotInfo.tokens[0];
+            PrecompileLib.SpotBalance memory actualBalance = PrecompileLib
+                .spotBalance(address(this), tokenId);
             currentSpotPosition.size = actualBalance.total;
 
             // Calculate entry price from total allocated
             if (actualBalance.total > 0 && totalAllocated > 0) {
-                uint256 spotAmount = (totalAllocated * SPOT_ALLOCATION_BPS) / 10000;
+                uint256 spotAmount = (totalAllocated * SPOT_ALLOCATION_BPS) /
+                    10000;
                 uint64 spotAmountCore = uint64(spotAmount) * 100;
-                currentSpotPosition.entryPrice = uint64((uint256(spotAmountCore) * 1e8) / actualBalance.total);
+                currentSpotPosition.entryPrice = uint64(
+                    (uint256(spotAmountCore) * 1e8) / actualBalance.total
+                );
             }
         }
 
@@ -766,13 +782,18 @@ contract CrestManager is Auth, ReentrancyGuard {
             if (perpPos.szi != 0 && perpPos.entryNtl > 0) {
                 uint64 absSize = uint64(-perpPos.szi);
                 currentPerpPosition.size = absSize;
-                currentPerpPosition.entryPrice = uint64((perpPos.entryNtl * 1e6) / uint256(absSize));
+                currentPerpPosition.entryPrice = uint64(
+                    (perpPos.entryNtl * 1e6) / uint256(absSize)
+                );
             }
         }
     }
 
     // Helper functions for price retrieval with BBO fallback
-    function _getMarketPrices(uint32 spotIndex, uint32 perpIndex) internal view virtual returns (uint64 spotPrice, uint64 perpPrice) {
+    function _getMarketPrices(
+        uint32 spotIndex,
+        uint32 perpIndex
+    ) internal view virtual returns (uint64 spotPrice, uint64 perpPrice) {
         // For production, use BBO. Tests can override if needed.
         PrecompileLib.Bbo memory spotBbo = PrecompileLib.bbo(uint64(spotIndex));
         PrecompileLib.Bbo memory perpBbo = PrecompileLib.bbo(uint64(perpIndex));
@@ -782,31 +803,43 @@ contract CrestManager is Auth, ReentrancyGuard {
     }
 
     function _getUsdt0BidPrice() internal view virtual returns (uint64) {
-        PrecompileLib.Bbo memory usdt0Bbo = PrecompileLib.bbo(uint64(usdt0SpotIndex()));
+        PrecompileLib.Bbo memory usdt0Bbo = PrecompileLib.bbo(
+            uint64(usdt0SpotIndex())
+        );
         return usdt0Bbo.bid;
     }
 
     function _getUsdt0AskPrice() internal view virtual returns (uint64) {
-        PrecompileLib.Bbo memory usdt0Bbo = PrecompileLib.bbo(uint64(usdt0SpotIndex()));
+        PrecompileLib.Bbo memory usdt0Bbo = PrecompileLib.bbo(
+            uint64(usdt0SpotIndex())
+        );
         return usdt0Bbo.ask;
     }
 
-    function _getSpotBidPrice(uint32 spotIndex) internal view virtual returns (uint64) {
+    function _getSpotBidPrice(
+        uint32 spotIndex
+    ) internal view virtual returns (uint64) {
         PrecompileLib.Bbo memory spotBbo = PrecompileLib.bbo(uint64(spotIndex));
         return spotBbo.bid;
     }
 
-    function _getPerpAskPrice(uint32 perpIndex) internal view virtual returns (uint64) {
+    function _getPerpAskPrice(
+        uint32 perpIndex
+    ) internal view virtual returns (uint64) {
         PrecompileLib.Bbo memory perpBbo = PrecompileLib.bbo(uint64(perpIndex));
         return perpBbo.ask;
     }
 
-    function _getSpotMidPrice(uint32 spotIndex) internal view virtual returns (uint64) {
+    function _getSpotMidPrice(
+        uint32 spotIndex
+    ) internal view virtual returns (uint64) {
         PrecompileLib.Bbo memory spotBbo = PrecompileLib.bbo(uint64(spotIndex));
         return (spotBbo.bid + spotBbo.ask) / 2;
     }
 
-    function _getPerpMidPrice(uint32 perpIndex) internal view virtual returns (uint64) {
+    function _getPerpMidPrice(
+        uint32 perpIndex
+    ) internal view virtual returns (uint64) {
         PrecompileLib.Bbo memory perpBbo = PrecompileLib.bbo(uint64(perpIndex));
         return (perpBbo.bid + perpBbo.ask) / 2;
     }

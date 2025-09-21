@@ -1,4 +1,4 @@
-import { readContract, readContracts } from '@wagmi/core';
+import { readContract } from '@wagmi/core';
 import { Address, ContractFunctionParameters } from 'viem';
 
 import { wagmiConfig } from '@/constants/config';

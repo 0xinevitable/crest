@@ -9,5 +9,9 @@
     "@types/node": "^24.5.1",
     "tsx": "^4.20.5",
     "typescript": "^5.9.2"
+  },
+  "dependencies": {
+    "@wagmi/cli": "^2.5.1",
+    "viem": "^2.37.7"
   }
 }

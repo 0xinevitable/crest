@@ -100,35 +100,63 @@ export const authorityAbi = [
 ] as const;
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-// BBOTester
+// BboPrecompileSim
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-export const bboTesterAbi = [
+export const bboPrecompileSimAbi = [
+  { type: 'fallback', stateMutability: 'payable' },
   {
     type: 'function',
-    inputs: [{ name: 'index', internalType: 'uint64', type: 'uint64' }],
-    name: 'testBBO',
-    outputs: [
+    inputs: [{ name: '', internalType: 'uint64', type: 'uint64' }],
+    name: 'asks',
+    outputs: [{ name: '', internalType: 'uint64', type: 'uint64' }],
+    stateMutability: 'view',
+  },
+  {
+    type: 'function',
+    inputs: [{ name: '', internalType: 'uint64', type: 'uint64' }],
+    name: 'bids',
+    outputs: [{ name: '', internalType: 'uint64', type: 'uint64' }],
+    stateMutability: 'view',
+  },
+  {
+    type: 'function',
+    inputs: [{ name: '', internalType: 'uint64', type: 'uint64' }],
+    name: 'isPriceSet',
+    outputs: [{ name: '', internalType: 'bool', type: 'bool' }],
+    stateMutability: 'view',
+  },
+  {
+    type: 'function',
+    inputs: [{ name: '', internalType: 'uint64', type: 'uint64' }],
+    name: 'isSpot',
+    outputs: [{ name: '', internalType: 'bool', type: 'bool' }],
+    stateMutability: 'view',
+  },
+  {
+    type: 'function',
+    inputs: [{ name: 'assetId', internalType: 'uint64', type: 'uint64' }],
+    name: 'setAsPerp',
+    outputs: [],
+    stateMutability: 'nonpayable',
+  },
+  {
+    type: 'function',
+    inputs: [{ name: 'assetId', internalType: 'uint64', type: 'uint64' }],
+    name: 'setAsSpot',
+    outputs: [],
+    stateMutability: 'nonpayable',
+  },
+  {
+    type: 'function',
+    inputs: [
+      { name: 'assetId', internalType: 'uint64', type: 'uint64' },
       { name: 'bid', internalType: 'uint64', type: 'uint64' },
       { name: 'ask', internalType: 'uint64', type: 'uint64' },
     ],
-    stateMutability: 'view',
-  },
-  {
-    type: 'function',
-    inputs: [{ name: 'perpIndex', internalType: 'uint32', type: 'uint32' }],
-    name: 'testNormalizedPerpBBO',
-    outputs: [
-      { name: 'bid', internalType: 'uint256', type: 'uint256' },
-      { name: 'ask', internalType: 'uint256', type: 'uint256' },
-    ],
-    stateMutability: 'view',
-  },
-  { type: 'error', inputs: [], name: 'PrecompileLib__BboPrecompileFailed' },
-  {
-    type: 'error',
-    inputs: [],
-    name: 'PrecompileLib__PerpAssetInfoPrecompileFailed',
+    name: 'setBbo',
+    outputs: [],
+    stateMutability: 'nonpayable',
   },
 ] as const;
 
@@ -2079,6 +2107,7 @@ export const crestManagerAbi = [
     name: 'PrecompileLib__AccountMarginSummaryPrecompileFailed',
   },
   { type: 'error', inputs: [], name: 'PrecompileLib__BboPrecompileFailed' },
+  { type: 'error', inputs: [], name: 'PrecompileLib__MarkPxPrecompileFailed' },
   {
     type: 'error',
     inputs: [],
@@ -2094,6 +2123,7 @@ export const crestManagerAbi = [
     inputs: [],
     name: 'PrecompileLib__SpotInfoPrecompileFailed',
   },
+  { type: 'error', inputs: [], name: 'PrecompileLib__SpotPxPrecompileFailed' },
   {
     type: 'error',
     inputs: [],
@@ -3818,15 +3848,31 @@ export const crestVaultTestAbi = [
     ],
     name: 'logs',
   },
+  { type: 'error', inputs: [], name: 'PrecompileLib__BboPrecompileFailed' },
   { type: 'error', inputs: [], name: 'PrecompileLib__MarkPxPrecompileFailed' },
+  {
+    type: 'error',
+    inputs: [],
+    name: 'PrecompileLib__PositionPrecompileFailed',
+  },
+  {
+    type: 'error',
+    inputs: [],
+    name: 'PrecompileLib__SpotBalancePrecompileFailed',
+  },
+  {
+    type: 'error',
+    inputs: [],
+    name: 'PrecompileLib__SpotInfoPrecompileFailed',
+  },
   { type: 'error', inputs: [], name: 'PrecompileLib__SpotPxPrecompileFailed' },
 ] as const;
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-// DebugAllocationScript
+// DeployAndTestBBOScript
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-export const debugAllocationScriptAbi = [
+export const deployAndTestBboScriptAbi = [
   {
     type: 'function',
     inputs: [],
@@ -3841,488 +3887,13 @@ export const debugAllocationScriptAbi = [
     outputs: [],
     stateMutability: 'nonpayable',
   },
-  {
-    type: 'error',
-    inputs: [],
-    name: 'PrecompileLib__AccountMarginSummaryPrecompileFailed',
-  },
-  {
-    type: 'error',
-    inputs: [],
-    name: 'PrecompileLib__PositionPrecompileFailed',
-  },
-  {
-    type: 'error',
-    inputs: [],
-    name: 'PrecompileLib__SpotBalancePrecompileFailed',
-  },
 ] as const;
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-// DebugAllocationTest
+// DeployHypeTradingContract
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-export const debugAllocationTestAbi = [
-  {
-    type: 'function',
-    inputs: [],
-    name: 'IS_TEST',
-    outputs: [{ name: '', internalType: 'bool', type: 'bool' }],
-    stateMutability: 'view',
-  },
-  {
-    type: 'function',
-    inputs: [],
-    name: 'excludeArtifacts',
-    outputs: [
-      {
-        name: 'excludedArtifacts_',
-        internalType: 'string[]',
-        type: 'string[]',
-      },
-    ],
-    stateMutability: 'view',
-  },
-  {
-    type: 'function',
-    inputs: [],
-    name: 'excludeContracts',
-    outputs: [
-      {
-        name: 'excludedContracts_',
-        internalType: 'address[]',
-        type: 'address[]',
-      },
-    ],
-    stateMutability: 'view',
-  },
-  {
-    type: 'function',
-    inputs: [],
-    name: 'excludeSelectors',
-    outputs: [
-      {
-        name: 'excludedSelectors_',
-        internalType: 'struct StdInvariant.FuzzSelector[]',
-        type: 'tuple[]',
-        components: [
-          { name: 'addr', internalType: 'address', type: 'address' },
-          { name: 'selectors', internalType: 'bytes4[]', type: 'bytes4[]' },
-        ],
-      },
-    ],
-    stateMutability: 'view',
-  },
-  {
-    type: 'function',
-    inputs: [],
-    name: 'excludeSenders',
-    outputs: [
-      {
-        name: 'excludedSenders_',
-        internalType: 'address[]',
-        type: 'address[]',
-      },
-    ],
-    stateMutability: 'view',
-  },
-  {
-    type: 'function',
-    inputs: [],
-    name: 'failed',
-    outputs: [{ name: '', internalType: 'bool', type: 'bool' }],
-    stateMutability: 'view',
-  },
-  {
-    type: 'function',
-    inputs: [],
-    name: 'setUp',
-    outputs: [],
-    stateMutability: 'nonpayable',
-  },
-  {
-    type: 'function',
-    inputs: [],
-    name: 'targetArtifactSelectors',
-    outputs: [
-      {
-        name: 'targetedArtifactSelectors_',
-        internalType: 'struct StdInvariant.FuzzArtifactSelector[]',
-        type: 'tuple[]',
-        components: [
-          { name: 'artifact', internalType: 'string', type: 'string' },
-          { name: 'selectors', internalType: 'bytes4[]', type: 'bytes4[]' },
-        ],
-      },
-    ],
-    stateMutability: 'view',
-  },
-  {
-    type: 'function',
-    inputs: [],
-    name: 'targetArtifacts',
-    outputs: [
-      {
-        name: 'targetedArtifacts_',
-        internalType: 'string[]',
-        type: 'string[]',
-      },
-    ],
-    stateMutability: 'view',
-  },
-  {
-    type: 'function',
-    inputs: [],
-    name: 'targetContracts',
-    outputs: [
-      {
-        name: 'targetedContracts_',
-        internalType: 'address[]',
-        type: 'address[]',
-      },
-    ],
-    stateMutability: 'view',
-  },
-  {
-    type: 'function',
-    inputs: [],
-    name: 'targetInterfaces',
-    outputs: [
-      {
-        name: 'targetedInterfaces_',
-        internalType: 'struct StdInvariant.FuzzInterface[]',
-        type: 'tuple[]',
-        components: [
-          { name: 'addr', internalType: 'address', type: 'address' },
-          { name: 'artifacts', internalType: 'string[]', type: 'string[]' },
-        ],
-      },
-    ],
-    stateMutability: 'view',
-  },
-  {
-    type: 'function',
-    inputs: [],
-    name: 'targetSelectors',
-    outputs: [
-      {
-        name: 'targetedSelectors_',
-        internalType: 'struct StdInvariant.FuzzSelector[]',
-        type: 'tuple[]',
-        components: [
-          { name: 'addr', internalType: 'address', type: 'address' },
-          { name: 'selectors', internalType: 'bytes4[]', type: 'bytes4[]' },
-        ],
-      },
-    ],
-    stateMutability: 'view',
-  },
-  {
-    type: 'function',
-    inputs: [],
-    name: 'targetSenders',
-    outputs: [
-      {
-        name: 'targetedSenders_',
-        internalType: 'address[]',
-        type: 'address[]',
-      },
-    ],
-    stateMutability: 'view',
-  },
-  {
-    type: 'function',
-    inputs: [],
-    name: 'testDebugAllocation',
-    outputs: [],
-    stateMutability: 'nonpayable',
-  },
-  {
-    type: 'event',
-    anonymous: false,
-    inputs: [
-      { name: 'who', internalType: 'address', type: 'address', indexed: false },
-      { name: 'fsig', internalType: 'bytes4', type: 'bytes4', indexed: false },
-      {
-        name: 'keysHash',
-        internalType: 'bytes32',
-        type: 'bytes32',
-        indexed: false,
-      },
-      {
-        name: 'slot',
-        internalType: 'uint256',
-        type: 'uint256',
-        indexed: false,
-      },
-    ],
-    name: 'SlotFound',
-  },
-  {
-    type: 'event',
-    anonymous: false,
-    inputs: [
-      { name: 'who', internalType: 'address', type: 'address', indexed: false },
-      {
-        name: 'slot',
-        internalType: 'uint256',
-        type: 'uint256',
-        indexed: false,
-      },
-    ],
-    name: 'WARNING_UninitedSlot',
-  },
-  {
-    type: 'event',
-    anonymous: false,
-    inputs: [
-      { name: '', internalType: 'string', type: 'string', indexed: false },
-    ],
-    name: 'log',
-  },
-  {
-    type: 'event',
-    anonymous: false,
-    inputs: [
-      { name: '', internalType: 'address', type: 'address', indexed: false },
-    ],
-    name: 'log_address',
-  },
-  {
-    type: 'event',
-    anonymous: false,
-    inputs: [
-      {
-        name: 'val',
-        internalType: 'uint256[]',
-        type: 'uint256[]',
-        indexed: false,
-      },
-    ],
-    name: 'log_array',
-  },
-  {
-    type: 'event',
-    anonymous: false,
-    inputs: [
-      {
-        name: 'val',
-        internalType: 'int256[]',
-        type: 'int256[]',
-        indexed: false,
-      },
-    ],
-    name: 'log_array',
-  },
-  {
-    type: 'event',
-    anonymous: false,
-    inputs: [
-      {
-        name: 'val',
-        internalType: 'address[]',
-        type: 'address[]',
-        indexed: false,
-      },
-    ],
-    name: 'log_array',
-  },
-  {
-    type: 'event',
-    anonymous: false,
-    inputs: [
-      { name: '', internalType: 'bytes', type: 'bytes', indexed: false },
-    ],
-    name: 'log_bytes',
-  },
-  {
-    type: 'event',
-    anonymous: false,
-    inputs: [
-      { name: '', internalType: 'bytes32', type: 'bytes32', indexed: false },
-    ],
-    name: 'log_bytes32',
-  },
-  {
-    type: 'event',
-    anonymous: false,
-    inputs: [
-      { name: '', internalType: 'int256', type: 'int256', indexed: false },
-    ],
-    name: 'log_int',
-  },
-  {
-    type: 'event',
-    anonymous: false,
-    inputs: [
-      { name: 'key', internalType: 'string', type: 'string', indexed: false },
-      { name: 'val', internalType: 'address', type: 'address', indexed: false },
-    ],
-    name: 'log_named_address',
-  },
-  {
-    type: 'event',
-    anonymous: false,
-    inputs: [
-      { name: 'key', internalType: 'string', type: 'string', indexed: false },
-      {
-        name: 'val',
-        internalType: 'uint256[]',
-        type: 'uint256[]',
-        indexed: false,
-      },
-    ],
-    name: 'log_named_array',
-  },
-  {
-    type: 'event',
-    anonymous: false,
-    inputs: [
-      { name: 'key', internalType: 'string', type: 'string', indexed: false },
-      {
-        name: 'val',
-        internalType: 'int256[]',
-        type: 'int256[]',
-        indexed: false,
-      },
-    ],
-    name: 'log_named_array',
-  },
-  {
-    type: 'event',
-    anonymous: false,
-    inputs: [
-      { name: 'key', internalType: 'string', type: 'string', indexed: false },
-      {
-        name: 'val',
-        internalType: 'address[]',
-        type: 'address[]',
-        indexed: false,
-      },
-    ],
-    name: 'log_named_array',
-  },
-  {
-    type: 'event',
-    anonymous: false,
-    inputs: [
-      { name: 'key', internalType: 'string', type: 'string', indexed: false },
-      { name: 'val', internalType: 'bytes', type: 'bytes', indexed: false },
-    ],
-    name: 'log_named_bytes',
-  },
-  {
-    type: 'event',
-    anonymous: false,
-    inputs: [
-      { name: 'key', internalType: 'string', type: 'string', indexed: false },
-      { name: 'val', internalType: 'bytes32', type: 'bytes32', indexed: false },
-    ],
-    name: 'log_named_bytes32',
-  },
-  {
-    type: 'event',
-    anonymous: false,
-    inputs: [
-      { name: 'key', internalType: 'string', type: 'string', indexed: false },
-      { name: 'val', internalType: 'int256', type: 'int256', indexed: false },
-      {
-        name: 'decimals',
-        internalType: 'uint256',
-        type: 'uint256',
-        indexed: false,
-      },
-    ],
-    name: 'log_named_decimal_int',
-  },
-  {
-    type: 'event',
-    anonymous: false,
-    inputs: [
-      { name: 'key', internalType: 'string', type: 'string', indexed: false },
-      { name: 'val', internalType: 'uint256', type: 'uint256', indexed: false },
-      {
-        name: 'decimals',
-        internalType: 'uint256',
-        type: 'uint256',
-        indexed: false,
-      },
-    ],
-    name: 'log_named_decimal_uint',
-  },
-  {
-    type: 'event',
-    anonymous: false,
-    inputs: [
-      { name: 'key', internalType: 'string', type: 'string', indexed: false },
-      { name: 'val', internalType: 'int256', type: 'int256', indexed: false },
-    ],
-    name: 'log_named_int',
-  },
-  {
-    type: 'event',
-    anonymous: false,
-    inputs: [
-      { name: 'key', internalType: 'string', type: 'string', indexed: false },
-      { name: 'val', internalType: 'string', type: 'string', indexed: false },
-    ],
-    name: 'log_named_string',
-  },
-  {
-    type: 'event',
-    anonymous: false,
-    inputs: [
-      { name: 'key', internalType: 'string', type: 'string', indexed: false },
-      { name: 'val', internalType: 'uint256', type: 'uint256', indexed: false },
-    ],
-    name: 'log_named_uint',
-  },
-  {
-    type: 'event',
-    anonymous: false,
-    inputs: [
-      { name: '', internalType: 'string', type: 'string', indexed: false },
-    ],
-    name: 'log_string',
-  },
-  {
-    type: 'event',
-    anonymous: false,
-    inputs: [
-      { name: '', internalType: 'uint256', type: 'uint256', indexed: false },
-    ],
-    name: 'log_uint',
-  },
-  {
-    type: 'event',
-    anonymous: false,
-    inputs: [
-      { name: '', internalType: 'bytes', type: 'bytes', indexed: false },
-    ],
-    name: 'logs',
-  },
-  {
-    type: 'error',
-    inputs: [],
-    name: 'PrecompileLib__AccountMarginSummaryPrecompileFailed',
-  },
-  {
-    type: 'error',
-    inputs: [],
-    name: 'PrecompileLib__PositionPrecompileFailed',
-  },
-  {
-    type: 'error',
-    inputs: [],
-    name: 'PrecompileLib__SpotBalancePrecompileFailed',
-  },
-] as const;
-
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-// DeployAndTestBBOScript
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-export const deployAndTestBboScriptAbi = [
+export const deployHypeTradingContractAbi = [
   {
     type: 'function',
     inputs: [],
@@ -4834,6 +4405,163 @@ export const hlConversionsAbi = [
 
 export const hypeSystemContractAbi = [
   { type: 'receive', stateMutability: 'payable' },
+] as const;
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// HypeTradingContract
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+export const hypeTradingContractAbi = [
+  {
+    type: 'constructor',
+    inputs: [{ name: '_owner', internalType: 'address', type: 'address' }],
+    stateMutability: 'nonpayable',
+  },
+  {
+    type: 'function',
+    inputs: [
+      { name: 'perpId', internalType: 'uint32', type: 'uint32' },
+      { name: 'cloid', internalType: 'uint128', type: 'uint128' },
+    ],
+    name: 'cancelOrder',
+    outputs: [],
+    stateMutability: 'nonpayable',
+  },
+  {
+    type: 'function',
+    inputs: [
+      { name: 'perpId', internalType: 'uint32', type: 'uint32' },
+      { name: 'isBuy', internalType: 'bool', type: 'bool' },
+      { name: 'limitPx', internalType: 'uint64', type: 'uint64' },
+      { name: 'sz', internalType: 'uint64', type: 'uint64' },
+      { name: 'reduceOnly', internalType: 'bool', type: 'bool' },
+      { name: 'cloid', internalType: 'uint128', type: 'uint128' },
+    ],
+    name: 'createLimitOrder',
+    outputs: [],
+    stateMutability: 'nonpayable',
+  },
+  {
+    type: 'function',
+    inputs: [{ name: 'user', internalType: 'address', type: 'address' }],
+    name: 'getAccountMarginSummary',
+    outputs: [
+      {
+        name: 'marginSummary',
+        internalType: 'struct PrecompileLib.AccountMarginSummary',
+        type: 'tuple',
+        components: [
+          { name: 'accountValue', internalType: 'int64', type: 'int64' },
+          { name: 'marginUsed', internalType: 'uint64', type: 'uint64' },
+          { name: 'ntlPos', internalType: 'uint64', type: 'uint64' },
+          { name: 'rawUsd', internalType: 'int64', type: 'int64' },
+        ],
+      },
+    ],
+    stateMutability: 'view',
+  },
+  {
+    type: 'function',
+    inputs: [],
+    name: 'getHypeTokenIndex',
+    outputs: [{ name: '', internalType: 'uint64', type: 'uint64' }],
+    stateMutability: 'view',
+  },
+  {
+    type: 'function',
+    inputs: [
+      { name: 'user', internalType: 'address', type: 'address' },
+      { name: 'perpIndex', internalType: 'uint16', type: 'uint16' },
+    ],
+    name: 'getPosition',
+    outputs: [
+      {
+        name: 'position',
+        internalType: 'struct PrecompileLib.Position',
+        type: 'tuple',
+        components: [
+          { name: 'szi', internalType: 'int64', type: 'int64' },
+          { name: 'entryNtl', internalType: 'uint64', type: 'uint64' },
+          { name: 'isolatedRawUsd', internalType: 'int64', type: 'int64' },
+          { name: 'leverage', internalType: 'uint32', type: 'uint32' },
+          { name: 'isIsolated', internalType: 'bool', type: 'bool' },
+        ],
+      },
+    ],
+    stateMutability: 'view',
+  },
+  {
+    type: 'function',
+    inputs: [
+      { name: 'user', internalType: 'address', type: 'address' },
+      { name: 'perpIndex', internalType: 'uint16', type: 'uint16' },
+    ],
+    name: 'getUserPosition',
+    outputs: [
+      {
+        name: 'position',
+        internalType: 'struct PrecompileLib.Position',
+        type: 'tuple',
+        components: [
+          { name: 'szi', internalType: 'int64', type: 'int64' },
+          { name: 'entryNtl', internalType: 'uint64', type: 'uint64' },
+          { name: 'isolatedRawUsd', internalType: 'int64', type: 'int64' },
+          { name: 'leverage', internalType: 'uint32', type: 'uint32' },
+          { name: 'isIsolated', internalType: 'bool', type: 'bool' },
+        ],
+      },
+    ],
+    stateMutability: 'view',
+  },
+  {
+    type: 'function',
+    inputs: [],
+    name: 'owner',
+    outputs: [{ name: '', internalType: 'address', type: 'address' }],
+    stateMutability: 'view',
+  },
+  {
+    type: 'function',
+    inputs: [
+      { name: 'to', internalType: 'address', type: 'address' },
+      { name: 'token', internalType: 'uint64', type: 'uint64' },
+      { name: 'coreAmount', internalType: 'uint64', type: 'uint64' },
+    ],
+    name: 'spotSend',
+    outputs: [],
+    stateMutability: 'nonpayable',
+  },
+  {
+    type: 'function',
+    inputs: [
+      { name: 'to', internalType: 'address', type: 'address' },
+      { name: 'coreAmount', internalType: 'uint64', type: 'uint64' },
+    ],
+    name: 'spotSendUsdc',
+    outputs: [],
+    stateMutability: 'nonpayable',
+  },
+  {
+    type: 'function',
+    inputs: [
+      { name: 'ntl', internalType: 'uint64', type: 'uint64' },
+      { name: 'toPerp', internalType: 'bool', type: 'bool' },
+    ],
+    name: 'transferUsdClass',
+    outputs: [],
+    stateMutability: 'nonpayable',
+  },
+  { type: 'error', inputs: [], name: 'CoreWriterLib__CannotSelfTransfer' },
+  {
+    type: 'error',
+    inputs: [],
+    name: 'PrecompileLib__AccountMarginSummaryPrecompileFailed',
+  },
+  {
+    type: 'error',
+    inputs: [],
+    name: 'PrecompileLib__PositionPrecompileFailed',
+  },
 ] as const;
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -6798,28 +6526,6 @@ export const scriptAbi = [
 ] as const;
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-// SimpleSpotTestScript
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-export const simpleSpotTestScriptAbi = [
-  {
-    type: 'function',
-    inputs: [],
-    name: 'IS_SCRIPT',
-    outputs: [{ name: '', internalType: 'bool', type: 'bool' }],
-    stateMutability: 'view',
-  },
-  {
-    type: 'function',
-    inputs: [],
-    name: 'run',
-    outputs: [],
-    stateMutability: 'nonpayable',
-  },
-  { type: 'error', inputs: [], name: 'PrecompileLib__BboPrecompileFailed' },
-] as const;
-
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // StdAssertions
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -7612,124 +7318,1313 @@ export const testAbi = [
 ] as const;
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-// TestBBOScript
+// TestCoreExecution
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-export const testBboScriptAbi = [
+export const testCoreExecutionAbi = [
   {
     type: 'function',
     inputs: [],
-    name: 'IS_SCRIPT',
-    outputs: [{ name: '', internalType: 'bool', type: 'bool' }],
+    name: 'HYPE_TOKEN_INDEX',
+    outputs: [{ name: '', internalType: 'uint64', type: 'uint64' }],
     stateMutability: 'view',
   },
   {
     type: 'function',
     inputs: [],
-    name: 'run',
+    name: 'USDC_TOKEN_INDEX',
+    outputs: [{ name: '', internalType: 'uint64', type: 'uint64' }],
+    stateMutability: 'view',
+  },
+  {
+    type: 'function',
+    inputs: [{ name: 'perpIndex', internalType: 'uint16', type: 'uint16' }],
+    name: '_getMaxLeverage',
+    outputs: [{ name: '', internalType: 'uint32', type: 'uint32' }],
+    stateMutability: 'view',
+  },
+  {
+    type: 'function',
+    inputs: [{ name: 'user', internalType: 'address', type: 'address' }],
+    name: '_liquidateUser',
     outputs: [],
     stateMutability: 'nonpayable',
+  },
+  {
+    type: 'function',
+    inputs: [{ name: 'account', internalType: 'address', type: 'address' }],
+    name: 'coreUserExists',
+    outputs: [{ name: '', internalType: 'bool', type: 'bool' }],
+    stateMutability: 'nonpayable',
+  },
+  {
+    type: 'function',
+    inputs: [
+      { name: '', internalType: 'address', type: 'address' },
+      { name: 'from', internalType: 'address', type: 'address' },
+      { name: 'value', internalType: 'uint256', type: 'uint256' },
+    ],
+    name: 'executeNativeTransfer',
+    outputs: [],
+    stateMutability: 'payable',
+  },
+  {
+    type: 'function',
+    inputs: [
+      { name: 'sender', internalType: 'address', type: 'address' },
+      {
+        name: 'action',
+        internalType: 'struct CoreState.LimitOrderAction',
+        type: 'tuple',
+        components: [
+          { name: 'asset', internalType: 'uint32', type: 'uint32' },
+          { name: 'isBuy', internalType: 'bool', type: 'bool' },
+          { name: 'limitPx', internalType: 'uint64', type: 'uint64' },
+          { name: 'sz', internalType: 'uint64', type: 'uint64' },
+          { name: 'reduceOnly', internalType: 'bool', type: 'bool' },
+          { name: 'encodedTif', internalType: 'uint8', type: 'uint8' },
+          { name: 'cloid', internalType: 'uint128', type: 'uint128' },
+        ],
+      },
+    ],
+    name: 'executePerpLimitOrder',
+    outputs: [],
+    stateMutability: 'nonpayable',
+  },
+  {
+    type: 'function',
+    inputs: [
+      { name: 'sender', internalType: 'address', type: 'address' },
+      {
+        name: 'action',
+        internalType: 'struct CoreState.LimitOrderAction',
+        type: 'tuple',
+        components: [
+          { name: 'asset', internalType: 'uint32', type: 'uint32' },
+          { name: 'isBuy', internalType: 'bool', type: 'bool' },
+          { name: 'limitPx', internalType: 'uint64', type: 'uint64' },
+          { name: 'sz', internalType: 'uint64', type: 'uint64' },
+          { name: 'reduceOnly', internalType: 'bool', type: 'bool' },
+          { name: 'encodedTif', internalType: 'uint8', type: 'uint8' },
+          { name: 'cloid', internalType: 'uint128', type: 'uint128' },
+        ],
+      },
+    ],
+    name: 'executeSpotLimitOrder',
+    outputs: [],
+    stateMutability: 'nonpayable',
+  },
+  {
+    type: 'function',
+    inputs: [
+      { name: 'sender', internalType: 'address', type: 'address' },
+      {
+        name: 'action',
+        internalType: 'struct CoreState.SpotSendAction',
+        type: 'tuple',
+        components: [
+          { name: 'destination', internalType: 'address', type: 'address' },
+          { name: 'token', internalType: 'uint64', type: 'uint64' },
+          { name: '_wei', internalType: 'uint64', type: 'uint64' },
+        ],
+      },
+    ],
+    name: 'executeSpotSend',
+    outputs: [],
+    stateMutability: 'nonpayable',
+  },
+  {
+    type: 'function',
+    inputs: [
+      { name: 'sender', internalType: 'address', type: 'address' },
+      {
+        name: 'action',
+        internalType: 'struct CoreState.StakingDepositAction',
+        type: 'tuple',
+        components: [{ name: '_wei', internalType: 'uint64', type: 'uint64' }],
+      },
+    ],
+    name: 'executeStakingDeposit',
+    outputs: [],
+    stateMutability: 'nonpayable',
+  },
+  {
+    type: 'function',
+    inputs: [
+      { name: 'sender', internalType: 'address', type: 'address' },
+      {
+        name: 'action',
+        internalType: 'struct CoreState.StakingWithdrawAction',
+        type: 'tuple',
+        components: [{ name: '_wei', internalType: 'uint64', type: 'uint64' }],
+      },
+    ],
+    name: 'executeStakingWithdraw',
+    outputs: [],
+    stateMutability: 'nonpayable',
+  },
+  {
+    type: 'function',
+    inputs: [
+      { name: 'sender', internalType: 'address', type: 'address' },
+      {
+        name: 'action',
+        internalType: 'struct CoreState.TokenDelegateAction',
+        type: 'tuple',
+        components: [
+          { name: 'validator', internalType: 'address', type: 'address' },
+          { name: '_wei', internalType: 'uint64', type: 'uint64' },
+          { name: 'isUndelegate', internalType: 'bool', type: 'bool' },
+        ],
+      },
+    ],
+    name: 'executeTokenDelegate',
+    outputs: [],
+    stateMutability: 'nonpayable',
+  },
+  {
+    type: 'function',
+    inputs: [
+      { name: '', internalType: 'address', type: 'address' },
+      { name: 'token', internalType: 'uint64', type: 'uint64' },
+      { name: 'from', internalType: 'address', type: 'address' },
+      { name: 'value', internalType: 'uint256', type: 'uint256' },
+    ],
+    name: 'executeTokenTransfer',
+    outputs: [],
+    stateMutability: 'payable',
+  },
+  {
+    type: 'function',
+    inputs: [
+      { name: 'sender', internalType: 'address', type: 'address' },
+      {
+        name: 'action',
+        internalType: 'struct CoreState.UsdClassTransferAction',
+        type: 'tuple',
+        components: [
+          { name: 'ntl', internalType: 'uint64', type: 'uint64' },
+          { name: 'toPerp', internalType: 'bool', type: 'bool' },
+        ],
+      },
+    ],
+    name: 'executeUsdClassTransfer',
+    outputs: [],
+    stateMutability: 'nonpayable',
+  },
+  {
+    type: 'function',
+    inputs: [
+      { name: 'sender', internalType: 'address', type: 'address' },
+      {
+        name: 'action',
+        internalType: 'struct CoreState.VaultTransferAction',
+        type: 'tuple',
+        components: [
+          { name: 'vault', internalType: 'address', type: 'address' },
+          { name: 'isDeposit', internalType: 'bool', type: 'bool' },
+          { name: 'usd', internalType: 'uint64', type: 'uint64' },
+        ],
+      },
+    ],
+    name: 'executeVaultTransfer',
+    outputs: [],
+    stateMutability: 'nonpayable',
+  },
+  {
+    type: 'function',
+    inputs: [{ name: 'account', internalType: 'address', type: 'address' }],
+    name: 'forceAccountActivation',
+    outputs: [],
+    stateMutability: 'nonpayable',
+  },
+  {
+    type: 'function',
+    inputs: [
+      { name: 'account', internalType: 'address', type: 'address' },
+      { name: 'validator', internalType: 'address', type: 'address' },
+      { name: 'amount', internalType: 'uint64', type: 'uint64' },
+      { name: 'lockedUntilTimestamp', internalType: 'uint64', type: 'uint64' },
+    ],
+    name: 'forceDelegation',
+    outputs: [],
+    stateMutability: 'nonpayable',
+  },
+  {
+    type: 'function',
+    inputs: [
+      { name: 'account', internalType: 'address', type: 'address' },
+      { name: 'usd', internalType: 'uint64', type: 'uint64' },
+    ],
+    name: 'forcePerpBalance',
+    outputs: [],
+    stateMutability: 'payable',
+  },
+  {
+    type: 'function',
+    inputs: [
+      { name: 'account', internalType: 'address', type: 'address' },
+      { name: 'perpIndex', internalType: 'uint16', type: 'uint16' },
+      { name: 'szi', internalType: 'int64', type: 'int64' },
+      { name: 'entryNtl', internalType: 'uint64', type: 'uint64' },
+    ],
+    name: 'forcePosition',
+    outputs: [],
+    stateMutability: 'nonpayable',
+  },
+  {
+    type: 'function',
+    inputs: [
+      { name: 'account', internalType: 'address', type: 'address' },
+      { name: 'token', internalType: 'uint64', type: 'uint64' },
+      { name: '_wei', internalType: 'uint64', type: 'uint64' },
+    ],
+    name: 'forceSpotBalance',
+    outputs: [],
+    stateMutability: 'payable',
+  },
+  {
+    type: 'function',
+    inputs: [
+      { name: 'account', internalType: 'address', type: 'address' },
+      { name: '_wei', internalType: 'uint64', type: 'uint64' },
+    ],
+    name: 'forceStakingBalance',
+    outputs: [],
+    stateMutability: 'payable',
+  },
+  {
+    type: 'function',
+    inputs: [
+      { name: 'account', internalType: 'address', type: 'address' },
+      { name: 'vault', internalType: 'address', type: 'address' },
+      { name: 'usd', internalType: 'uint64', type: 'uint64' },
+      { name: 'lockedUntilTimestamp', internalType: 'uint64', type: 'uint64' },
+    ],
+    name: 'forceVaultEquity',
+    outputs: [],
+    stateMutability: 'payable',
+  },
+  {
+    type: 'function',
+    inputs: [{ name: 'user', internalType: 'address', type: 'address' }],
+    name: 'isLiquidatable',
+    outputs: [{ name: '', internalType: 'bool', type: 'bool' }],
+    stateMutability: 'nonpayable',
+  },
+  {
+    type: 'function',
+    inputs: [],
+    name: 'liquidatePositions',
+    outputs: [],
+    stateMutability: 'nonpayable',
+  },
+  {
+    type: 'function',
+    inputs: [],
+    name: 'processPendingOrders',
+    outputs: [],
+    stateMutability: 'nonpayable',
+  },
+  {
+    type: 'function',
+    inputs: [{ name: 'user', internalType: 'address', type: 'address' }],
+    name: 'readAccountMarginSummary',
+    outputs: [
+      {
+        name: '',
+        internalType: 'struct PrecompileLib.AccountMarginSummary',
+        type: 'tuple',
+        components: [
+          { name: 'accountValue', internalType: 'int64', type: 'int64' },
+          { name: 'marginUsed', internalType: 'uint64', type: 'uint64' },
+          { name: 'ntlPos', internalType: 'uint64', type: 'uint64' },
+          { name: 'rawUsd', internalType: 'int64', type: 'int64' },
+        ],
+      },
+    ],
+    stateMutability: 'view',
+  },
+  {
+    type: 'function',
+    inputs: [
+      { name: 'user', internalType: 'address', type: 'address' },
+      { name: 'validator', internalType: 'address', type: 'address' },
+    ],
+    name: 'readDelegation',
+    outputs: [
+      {
+        name: 'delegation',
+        internalType: 'struct PrecompileLib.Delegation',
+        type: 'tuple',
+        components: [
+          { name: 'validator', internalType: 'address', type: 'address' },
+          { name: 'amount', internalType: 'uint64', type: 'uint64' },
+          {
+            name: 'lockedUntilTimestamp',
+            internalType: 'uint64',
+            type: 'uint64',
+          },
+        ],
+      },
+    ],
+    stateMutability: 'view',
+  },
+  {
+    type: 'function',
+    inputs: [{ name: 'user', internalType: 'address', type: 'address' }],
+    name: 'readDelegations',
+    outputs: [
+      {
+        name: 'userDelegations',
+        internalType: 'struct PrecompileLib.Delegation[]',
+        type: 'tuple[]',
+        components: [
+          { name: 'validator', internalType: 'address', type: 'address' },
+          { name: 'amount', internalType: 'uint64', type: 'uint64' },
+          {
+            name: 'lockedUntilTimestamp',
+            internalType: 'uint64',
+            type: 'uint64',
+          },
+        ],
+      },
+    ],
+    stateMutability: 'view',
+  },
+  {
+    type: 'function',
+    inputs: [{ name: 'user', internalType: 'address', type: 'address' }],
+    name: 'readDelegatorSummary',
+    outputs: [
+      {
+        name: 'summary',
+        internalType: 'struct PrecompileLib.DelegatorSummary',
+        type: 'tuple',
+        components: [
+          { name: 'delegated', internalType: 'uint64', type: 'uint64' },
+          { name: 'undelegated', internalType: 'uint64', type: 'uint64' },
+          {
+            name: 'totalPendingWithdrawal',
+            internalType: 'uint64',
+            type: 'uint64',
+          },
+          {
+            name: 'nPendingWithdrawals',
+            internalType: 'uint64',
+            type: 'uint64',
+          },
+        ],
+      },
+    ],
+    stateMutability: 'view',
+  },
+  {
+    type: 'function',
+    inputs: [{ name: 'perp', internalType: 'uint32', type: 'uint32' }],
+    name: 'readMarkPx',
+    outputs: [{ name: '', internalType: 'uint64', type: 'uint64' }],
+    stateMutability: 'nonpayable',
+  },
+  {
+    type: 'function',
+    inputs: [
+      { name: 'user', internalType: 'address', type: 'address' },
+      { name: 'perp', internalType: 'uint16', type: 'uint16' },
+    ],
+    name: 'readPosition',
+    outputs: [
+      {
+        name: '',
+        internalType: 'struct PrecompileLib.Position',
+        type: 'tuple',
+        components: [
+          { name: 'szi', internalType: 'int64', type: 'int64' },
+          { name: 'entryNtl', internalType: 'uint64', type: 'uint64' },
+          { name: 'isolatedRawUsd', internalType: 'int64', type: 'int64' },
+          { name: 'leverage', internalType: 'uint32', type: 'uint32' },
+          { name: 'isIsolated', internalType: 'bool', type: 'bool' },
+        ],
+      },
+    ],
+    stateMutability: 'view',
+  },
+  {
+    type: 'function',
+    inputs: [
+      { name: 'account', internalType: 'address', type: 'address' },
+      { name: 'token', internalType: 'uint64', type: 'uint64' },
+    ],
+    name: 'readSpotBalance',
+    outputs: [
+      {
+        name: '',
+        internalType: 'struct PrecompileLib.SpotBalance',
+        type: 'tuple',
+        components: [
+          { name: 'total', internalType: 'uint64', type: 'uint64' },
+          { name: 'hold', internalType: 'uint64', type: 'uint64' },
+          { name: 'entryNtl', internalType: 'uint64', type: 'uint64' },
+        ],
+      },
+    ],
+    stateMutability: 'nonpayable',
+  },
+  {
+    type: 'function',
+    inputs: [{ name: 'spotMarketId', internalType: 'uint32', type: 'uint32' }],
+    name: 'readSpotPx',
+    outputs: [{ name: '', internalType: 'uint64', type: 'uint64' }],
+    stateMutability: 'view',
+  },
+  {
+    type: 'function',
+    inputs: [
+      { name: 'user', internalType: 'address', type: 'address' },
+      { name: 'vault', internalType: 'address', type: 'address' },
+    ],
+    name: 'readUserVaultEquity',
+    outputs: [
+      {
+        name: '',
+        internalType: 'struct PrecompileLib.UserVaultEquity',
+        type: 'tuple',
+        components: [
+          { name: 'equity', internalType: 'uint64', type: 'uint64' },
+          {
+            name: 'lockedUntilTimestamp',
+            internalType: 'uint64',
+            type: 'uint64',
+          },
+        ],
+      },
+    ],
+    stateMutability: 'view',
+  },
+  {
+    type: 'function',
+    inputs: [{ name: 'account', internalType: 'address', type: 'address' }],
+    name: 'readWithdrawable',
+    outputs: [
+      {
+        name: '',
+        internalType: 'struct PrecompileLib.Withdrawable',
+        type: 'tuple',
+        components: [
+          { name: 'withdrawable', internalType: 'uint64', type: 'uint64' },
+        ],
+      },
+    ],
+    stateMutability: 'nonpayable',
+  },
+  {
+    type: 'function',
+    inputs: [{ name: 'index', internalType: 'uint64', type: 'uint64' }],
+    name: 'registerTokenInfo',
+    outputs: [],
+    stateMutability: 'nonpayable',
+  },
+  {
+    type: 'function',
+    inputs: [{ name: 'validator', internalType: 'address', type: 'address' }],
+    name: 'registerValidator',
+    outputs: [],
+    stateMutability: 'nonpayable',
+  },
+  {
+    type: 'function',
+    inputs: [
+      { name: 'perp', internalType: 'uint32', type: 'uint32' },
+      { name: 'priceDiffBps', internalType: 'uint64', type: 'uint64' },
+      { name: 'isIncrease', internalType: 'bool', type: 'bool' },
+    ],
+    name: 'setMarkPx',
+    outputs: [],
+    stateMutability: 'nonpayable',
+  },
+  {
+    type: 'function',
+    inputs: [
+      { name: 'perp', internalType: 'uint32', type: 'uint32' },
+      { name: 'markPx', internalType: 'uint64', type: 'uint64' },
+    ],
+    name: 'setMarkPx',
+    outputs: [],
+    stateMutability: 'nonpayable',
+  },
+  {
+    type: 'function',
+    inputs: [
+      { name: 'spotMarketId', internalType: 'uint32', type: 'uint32' },
+      { name: 'spotPx', internalType: 'uint64', type: 'uint64' },
+    ],
+    name: 'setSpotPx',
+    outputs: [],
+    stateMutability: 'nonpayable',
+  },
+  {
+    type: 'function',
+    inputs: [
+      { name: 'spotMarketId', internalType: 'uint32', type: 'uint32' },
+      { name: 'priceDiffBps', internalType: 'uint64', type: 'uint64' },
+      { name: 'isIncrease', internalType: 'bool', type: 'bool' },
+    ],
+    name: 'setSpotPx',
+    outputs: [],
+    stateMutability: 'nonpayable',
+  },
+  {
+    type: 'function',
+    inputs: [{ name: 'multiplier', internalType: 'uint256', type: 'uint256' }],
+    name: 'setStakingYieldIndex',
+    outputs: [],
+    stateMutability: 'nonpayable',
+  },
+  {
+    type: 'function',
+    inputs: [
+      { name: 'vault', internalType: 'address', type: 'address' },
+      { name: 'multiplier', internalType: 'uint256', type: 'uint256' },
+    ],
+    name: 'setVaultMultiplier',
+    outputs: [],
+    stateMutability: 'nonpayable',
+  },
+  {
+    type: 'function',
+    inputs: [{ name: 'token', internalType: 'uint32', type: 'uint32' }],
+    name: 'tokenExists',
+    outputs: [{ name: '', internalType: 'bool', type: 'bool' }],
+    stateMutability: 'view',
+  },
+  {
+    type: 'event',
+    anonymous: false,
+    inputs: [
+      { name: 'who', internalType: 'address', type: 'address', indexed: false },
+      { name: 'fsig', internalType: 'bytes4', type: 'bytes4', indexed: false },
+      {
+        name: 'keysHash',
+        internalType: 'bytes32',
+        type: 'bytes32',
+        indexed: false,
+      },
+      {
+        name: 'slot',
+        internalType: 'uint256',
+        type: 'uint256',
+        indexed: false,
+      },
+    ],
+    name: 'SlotFound',
+  },
+  {
+    type: 'event',
+    anonymous: false,
+    inputs: [
+      { name: 'who', internalType: 'address', type: 'address', indexed: false },
+      {
+        name: 'slot',
+        internalType: 'uint256',
+        type: 'uint256',
+        indexed: false,
+      },
+    ],
+    name: 'WARNING_UninitedSlot',
+  },
+  {
+    type: 'error',
+    inputs: [],
+    name: 'PrecompileLib__AccountMarginSummaryPrecompileFailed',
+  },
+  { type: 'error', inputs: [], name: 'PrecompileLib__MarkPxPrecompileFailed' },
+  {
+    type: 'error',
+    inputs: [],
+    name: 'PrecompileLib__SpotInfoPrecompileFailed',
+  },
+  { type: 'error', inputs: [], name: 'PrecompileLib__SpotPxPrecompileFailed' },
+  {
+    type: 'error',
+    inputs: [
+      { name: 'bits', internalType: 'uint8', type: 'uint8' },
+      { name: 'value', internalType: 'uint256', type: 'uint256' },
+    ],
+    name: 'SafeCastOverflowedUintDowncast',
+  },
+  {
+    type: 'error',
+    inputs: [{ name: 'token', internalType: 'address', type: 'address' }],
+    name: 'SafeERC20FailedOperation',
   },
 ] as const;
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-// TestDepositScript
+// TestHypeSystemContract
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-export const testDepositScriptAbi = [
+export const testHypeSystemContractAbi = [
+  { type: 'receive', stateMutability: 'payable' },
+] as const;
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// TestHyperCore
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+export const testHyperCoreAbi = [
   {
     type: 'function',
     inputs: [],
-    name: 'IS_SCRIPT',
-    outputs: [{ name: '', internalType: 'bool', type: 'bool' }],
+    name: 'HYPE_TOKEN_INDEX',
+    outputs: [{ name: '', internalType: 'uint64', type: 'uint64' }],
     stateMutability: 'view',
   },
   {
     type: 'function',
     inputs: [],
-    name: 'run',
-    outputs: [],
-    stateMutability: 'nonpayable',
-  },
-] as const;
-
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-// TestExchangeRateScript
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-export const testExchangeRateScriptAbi = [
-  {
-    type: 'function',
-    inputs: [],
-    name: 'IS_SCRIPT',
-    outputs: [{ name: '', internalType: 'bool', type: 'bool' }],
+    name: 'USDC_TOKEN_INDEX',
+    outputs: [{ name: '', internalType: 'uint64', type: 'uint64' }],
     stateMutability: 'view',
   },
   {
     type: 'function',
-    inputs: [],
-    name: 'run',
-    outputs: [],
-    stateMutability: 'nonpayable',
-  },
-] as const;
-
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-// TestNewDeploymentScript
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-export const testNewDeploymentScriptAbi = [
-  {
-    type: 'function',
-    inputs: [],
-    name: 'IS_SCRIPT',
-    outputs: [{ name: '', internalType: 'bool', type: 'bool' }],
+    inputs: [{ name: 'perpIndex', internalType: 'uint16', type: 'uint16' }],
+    name: '_getMaxLeverage',
+    outputs: [{ name: '', internalType: 'uint32', type: 'uint32' }],
     stateMutability: 'view',
   },
   {
     type: 'function',
-    inputs: [],
-    name: 'run',
+    inputs: [{ name: 'user', internalType: 'address', type: 'address' }],
+    name: '_liquidateUser',
     outputs: [],
     stateMutability: 'nonpayable',
   },
-] as const;
-
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-// TestPerpContract
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-export const testPerpContractAbi = [
   {
     type: 'function',
-    inputs: [],
-    name: 'testPerpWithBBO',
-    outputs: [],
-    stateMutability: 'nonpayable',
-  },
-  { type: 'error', inputs: [], name: 'PrecompileLib__BboPrecompileFailed' },
-] as const;
-
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-// TestSpotOrderScript
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-export const testSpotOrderScriptAbi = [
-  {
-    type: 'function',
-    inputs: [],
-    name: 'IS_SCRIPT',
+    inputs: [{ name: 'account', internalType: 'address', type: 'address' }],
+    name: 'coreUserExists',
     outputs: [{ name: '', internalType: 'bool', type: 'bool' }],
+    stateMutability: 'nonpayable',
+  },
+  {
+    type: 'function',
+    inputs: [
+      { name: '', internalType: 'address', type: 'address' },
+      { name: 'from', internalType: 'address', type: 'address' },
+      { name: 'value', internalType: 'uint256', type: 'uint256' },
+    ],
+    name: 'executeNativeTransfer',
+    outputs: [],
+    stateMutability: 'payable',
+  },
+  {
+    type: 'function',
+    inputs: [
+      { name: 'sender', internalType: 'address', type: 'address' },
+      {
+        name: 'action',
+        internalType: 'struct CoreState.LimitOrderAction',
+        type: 'tuple',
+        components: [
+          { name: 'asset', internalType: 'uint32', type: 'uint32' },
+          { name: 'isBuy', internalType: 'bool', type: 'bool' },
+          { name: 'limitPx', internalType: 'uint64', type: 'uint64' },
+          { name: 'sz', internalType: 'uint64', type: 'uint64' },
+          { name: 'reduceOnly', internalType: 'bool', type: 'bool' },
+          { name: 'encodedTif', internalType: 'uint8', type: 'uint8' },
+          { name: 'cloid', internalType: 'uint128', type: 'uint128' },
+        ],
+      },
+    ],
+    name: 'executePerpLimitOrder',
+    outputs: [],
+    stateMutability: 'nonpayable',
+  },
+  {
+    type: 'function',
+    inputs: [
+      { name: 'sender', internalType: 'address', type: 'address' },
+      { name: 'kind', internalType: 'uint24', type: 'uint24' },
+      { name: 'data', internalType: 'bytes', type: 'bytes' },
+    ],
+    name: 'executeRawAction',
+    outputs: [],
+    stateMutability: 'payable',
+  },
+  {
+    type: 'function',
+    inputs: [
+      { name: 'sender', internalType: 'address', type: 'address' },
+      {
+        name: 'action',
+        internalType: 'struct CoreState.LimitOrderAction',
+        type: 'tuple',
+        components: [
+          { name: 'asset', internalType: 'uint32', type: 'uint32' },
+          { name: 'isBuy', internalType: 'bool', type: 'bool' },
+          { name: 'limitPx', internalType: 'uint64', type: 'uint64' },
+          { name: 'sz', internalType: 'uint64', type: 'uint64' },
+          { name: 'reduceOnly', internalType: 'bool', type: 'bool' },
+          { name: 'encodedTif', internalType: 'uint8', type: 'uint8' },
+          { name: 'cloid', internalType: 'uint128', type: 'uint128' },
+        ],
+      },
+    ],
+    name: 'executeSpotLimitOrder',
+    outputs: [],
+    stateMutability: 'nonpayable',
+  },
+  {
+    type: 'function',
+    inputs: [
+      { name: 'sender', internalType: 'address', type: 'address' },
+      {
+        name: 'action',
+        internalType: 'struct CoreState.SpotSendAction',
+        type: 'tuple',
+        components: [
+          { name: 'destination', internalType: 'address', type: 'address' },
+          { name: 'token', internalType: 'uint64', type: 'uint64' },
+          { name: '_wei', internalType: 'uint64', type: 'uint64' },
+        ],
+      },
+    ],
+    name: 'executeSpotSend',
+    outputs: [],
+    stateMutability: 'nonpayable',
+  },
+  {
+    type: 'function',
+    inputs: [
+      { name: 'sender', internalType: 'address', type: 'address' },
+      {
+        name: 'action',
+        internalType: 'struct CoreState.StakingDepositAction',
+        type: 'tuple',
+        components: [{ name: '_wei', internalType: 'uint64', type: 'uint64' }],
+      },
+    ],
+    name: 'executeStakingDeposit',
+    outputs: [],
+    stateMutability: 'nonpayable',
+  },
+  {
+    type: 'function',
+    inputs: [
+      { name: 'sender', internalType: 'address', type: 'address' },
+      {
+        name: 'action',
+        internalType: 'struct CoreState.StakingWithdrawAction',
+        type: 'tuple',
+        components: [{ name: '_wei', internalType: 'uint64', type: 'uint64' }],
+      },
+    ],
+    name: 'executeStakingWithdraw',
+    outputs: [],
+    stateMutability: 'nonpayable',
+  },
+  {
+    type: 'function',
+    inputs: [
+      { name: 'sender', internalType: 'address', type: 'address' },
+      {
+        name: 'action',
+        internalType: 'struct CoreState.TokenDelegateAction',
+        type: 'tuple',
+        components: [
+          { name: 'validator', internalType: 'address', type: 'address' },
+          { name: '_wei', internalType: 'uint64', type: 'uint64' },
+          { name: 'isUndelegate', internalType: 'bool', type: 'bool' },
+        ],
+      },
+    ],
+    name: 'executeTokenDelegate',
+    outputs: [],
+    stateMutability: 'nonpayable',
+  },
+  {
+    type: 'function',
+    inputs: [
+      { name: '', internalType: 'address', type: 'address' },
+      { name: 'token', internalType: 'uint64', type: 'uint64' },
+      { name: 'from', internalType: 'address', type: 'address' },
+      { name: 'value', internalType: 'uint256', type: 'uint256' },
+    ],
+    name: 'executeTokenTransfer',
+    outputs: [],
+    stateMutability: 'payable',
+  },
+  {
+    type: 'function',
+    inputs: [
+      { name: 'sender', internalType: 'address', type: 'address' },
+      {
+        name: 'action',
+        internalType: 'struct CoreState.UsdClassTransferAction',
+        type: 'tuple',
+        components: [
+          { name: 'ntl', internalType: 'uint64', type: 'uint64' },
+          { name: 'toPerp', internalType: 'bool', type: 'bool' },
+        ],
+      },
+    ],
+    name: 'executeUsdClassTransfer',
+    outputs: [],
+    stateMutability: 'nonpayable',
+  },
+  {
+    type: 'function',
+    inputs: [
+      { name: 'sender', internalType: 'address', type: 'address' },
+      {
+        name: 'action',
+        internalType: 'struct CoreState.VaultTransferAction',
+        type: 'tuple',
+        components: [
+          { name: 'vault', internalType: 'address', type: 'address' },
+          { name: 'isDeposit', internalType: 'bool', type: 'bool' },
+          { name: 'usd', internalType: 'uint64', type: 'uint64' },
+        ],
+      },
+    ],
+    name: 'executeVaultTransfer',
+    outputs: [],
+    stateMutability: 'nonpayable',
+  },
+  {
+    type: 'function',
+    inputs: [{ name: 'account', internalType: 'address', type: 'address' }],
+    name: 'forceAccountActivation',
+    outputs: [],
+    stateMutability: 'nonpayable',
+  },
+  {
+    type: 'function',
+    inputs: [
+      { name: 'account', internalType: 'address', type: 'address' },
+      { name: 'validator', internalType: 'address', type: 'address' },
+      { name: 'amount', internalType: 'uint64', type: 'uint64' },
+      { name: 'lockedUntilTimestamp', internalType: 'uint64', type: 'uint64' },
+    ],
+    name: 'forceDelegation',
+    outputs: [],
+    stateMutability: 'nonpayable',
+  },
+  {
+    type: 'function',
+    inputs: [
+      { name: 'account', internalType: 'address', type: 'address' },
+      { name: 'usd', internalType: 'uint64', type: 'uint64' },
+    ],
+    name: 'forcePerpBalance',
+    outputs: [],
+    stateMutability: 'payable',
+  },
+  {
+    type: 'function',
+    inputs: [
+      { name: 'account', internalType: 'address', type: 'address' },
+      { name: 'perpIndex', internalType: 'uint16', type: 'uint16' },
+      { name: 'szi', internalType: 'int64', type: 'int64' },
+      { name: 'entryNtl', internalType: 'uint64', type: 'uint64' },
+    ],
+    name: 'forcePosition',
+    outputs: [],
+    stateMutability: 'nonpayable',
+  },
+  {
+    type: 'function',
+    inputs: [
+      { name: 'account', internalType: 'address', type: 'address' },
+      { name: 'token', internalType: 'uint64', type: 'uint64' },
+      { name: '_wei', internalType: 'uint64', type: 'uint64' },
+    ],
+    name: 'forceSpotBalance',
+    outputs: [],
+    stateMutability: 'payable',
+  },
+  {
+    type: 'function',
+    inputs: [
+      { name: 'account', internalType: 'address', type: 'address' },
+      { name: '_wei', internalType: 'uint64', type: 'uint64' },
+    ],
+    name: 'forceStakingBalance',
+    outputs: [],
+    stateMutability: 'payable',
+  },
+  {
+    type: 'function',
+    inputs: [
+      { name: 'account', internalType: 'address', type: 'address' },
+      { name: 'vault', internalType: 'address', type: 'address' },
+      { name: 'usd', internalType: 'uint64', type: 'uint64' },
+      { name: 'lockedUntilTimestamp', internalType: 'uint64', type: 'uint64' },
+    ],
+    name: 'forceVaultEquity',
+    outputs: [],
+    stateMutability: 'payable',
+  },
+  {
+    type: 'function',
+    inputs: [{ name: 'user', internalType: 'address', type: 'address' }],
+    name: 'isLiquidatable',
+    outputs: [{ name: '', internalType: 'bool', type: 'bool' }],
+    stateMutability: 'nonpayable',
+  },
+  {
+    type: 'function',
+    inputs: [],
+    name: 'liquidatePositions',
+    outputs: [],
+    stateMutability: 'nonpayable',
+  },
+  {
+    type: 'function',
+    inputs: [],
+    name: 'processPendingOrders',
+    outputs: [],
+    stateMutability: 'nonpayable',
+  },
+  {
+    type: 'function',
+    inputs: [],
+    name: 'processStakingWithdrawals',
+    outputs: [],
+    stateMutability: 'nonpayable',
+  },
+  {
+    type: 'function',
+    inputs: [{ name: 'user', internalType: 'address', type: 'address' }],
+    name: 'readAccountMarginSummary',
+    outputs: [
+      {
+        name: '',
+        internalType: 'struct PrecompileLib.AccountMarginSummary',
+        type: 'tuple',
+        components: [
+          { name: 'accountValue', internalType: 'int64', type: 'int64' },
+          { name: 'marginUsed', internalType: 'uint64', type: 'uint64' },
+          { name: 'ntlPos', internalType: 'uint64', type: 'uint64' },
+          { name: 'rawUsd', internalType: 'int64', type: 'int64' },
+        ],
+      },
+    ],
     stateMutability: 'view',
   },
   {
     type: 'function',
-    inputs: [],
-    name: 'run',
+    inputs: [
+      { name: 'user', internalType: 'address', type: 'address' },
+      { name: 'validator', internalType: 'address', type: 'address' },
+    ],
+    name: 'readDelegation',
+    outputs: [
+      {
+        name: 'delegation',
+        internalType: 'struct PrecompileLib.Delegation',
+        type: 'tuple',
+        components: [
+          { name: 'validator', internalType: 'address', type: 'address' },
+          { name: 'amount', internalType: 'uint64', type: 'uint64' },
+          {
+            name: 'lockedUntilTimestamp',
+            internalType: 'uint64',
+            type: 'uint64',
+          },
+        ],
+      },
+    ],
+    stateMutability: 'view',
+  },
+  {
+    type: 'function',
+    inputs: [{ name: 'user', internalType: 'address', type: 'address' }],
+    name: 'readDelegations',
+    outputs: [
+      {
+        name: 'userDelegations',
+        internalType: 'struct PrecompileLib.Delegation[]',
+        type: 'tuple[]',
+        components: [
+          { name: 'validator', internalType: 'address', type: 'address' },
+          { name: 'amount', internalType: 'uint64', type: 'uint64' },
+          {
+            name: 'lockedUntilTimestamp',
+            internalType: 'uint64',
+            type: 'uint64',
+          },
+        ],
+      },
+    ],
+    stateMutability: 'view',
+  },
+  {
+    type: 'function',
+    inputs: [{ name: 'user', internalType: 'address', type: 'address' }],
+    name: 'readDelegatorSummary',
+    outputs: [
+      {
+        name: 'summary',
+        internalType: 'struct PrecompileLib.DelegatorSummary',
+        type: 'tuple',
+        components: [
+          { name: 'delegated', internalType: 'uint64', type: 'uint64' },
+          { name: 'undelegated', internalType: 'uint64', type: 'uint64' },
+          {
+            name: 'totalPendingWithdrawal',
+            internalType: 'uint64',
+            type: 'uint64',
+          },
+          {
+            name: 'nPendingWithdrawals',
+            internalType: 'uint64',
+            type: 'uint64',
+          },
+        ],
+      },
+    ],
+    stateMutability: 'view',
+  },
+  {
+    type: 'function',
+    inputs: [{ name: 'perp', internalType: 'uint32', type: 'uint32' }],
+    name: 'readMarkPx',
+    outputs: [{ name: '', internalType: 'uint64', type: 'uint64' }],
+    stateMutability: 'nonpayable',
+  },
+  {
+    type: 'function',
+    inputs: [
+      { name: 'user', internalType: 'address', type: 'address' },
+      { name: 'perp', internalType: 'uint16', type: 'uint16' },
+    ],
+    name: 'readPosition',
+    outputs: [
+      {
+        name: '',
+        internalType: 'struct PrecompileLib.Position',
+        type: 'tuple',
+        components: [
+          { name: 'szi', internalType: 'int64', type: 'int64' },
+          { name: 'entryNtl', internalType: 'uint64', type: 'uint64' },
+          { name: 'isolatedRawUsd', internalType: 'int64', type: 'int64' },
+          { name: 'leverage', internalType: 'uint32', type: 'uint32' },
+          { name: 'isIsolated', internalType: 'bool', type: 'bool' },
+        ],
+      },
+    ],
+    stateMutability: 'view',
+  },
+  {
+    type: 'function',
+    inputs: [
+      { name: 'account', internalType: 'address', type: 'address' },
+      { name: 'token', internalType: 'uint64', type: 'uint64' },
+    ],
+    name: 'readSpotBalance',
+    outputs: [
+      {
+        name: '',
+        internalType: 'struct PrecompileLib.SpotBalance',
+        type: 'tuple',
+        components: [
+          { name: 'total', internalType: 'uint64', type: 'uint64' },
+          { name: 'hold', internalType: 'uint64', type: 'uint64' },
+          { name: 'entryNtl', internalType: 'uint64', type: 'uint64' },
+        ],
+      },
+    ],
+    stateMutability: 'nonpayable',
+  },
+  {
+    type: 'function',
+    inputs: [{ name: 'spotMarketId', internalType: 'uint32', type: 'uint32' }],
+    name: 'readSpotPx',
+    outputs: [{ name: '', internalType: 'uint64', type: 'uint64' }],
+    stateMutability: 'view',
+  },
+  {
+    type: 'function',
+    inputs: [
+      { name: 'user', internalType: 'address', type: 'address' },
+      { name: 'vault', internalType: 'address', type: 'address' },
+    ],
+    name: 'readUserVaultEquity',
+    outputs: [
+      {
+        name: '',
+        internalType: 'struct PrecompileLib.UserVaultEquity',
+        type: 'tuple',
+        components: [
+          { name: 'equity', internalType: 'uint64', type: 'uint64' },
+          {
+            name: 'lockedUntilTimestamp',
+            internalType: 'uint64',
+            type: 'uint64',
+          },
+        ],
+      },
+    ],
+    stateMutability: 'view',
+  },
+  {
+    type: 'function',
+    inputs: [{ name: 'account', internalType: 'address', type: 'address' }],
+    name: 'readWithdrawable',
+    outputs: [
+      {
+        name: '',
+        internalType: 'struct PrecompileLib.Withdrawable',
+        type: 'tuple',
+        components: [
+          { name: 'withdrawable', internalType: 'uint64', type: 'uint64' },
+        ],
+      },
+    ],
+    stateMutability: 'nonpayable',
+  },
+  {
+    type: 'function',
+    inputs: [{ name: 'index', internalType: 'uint64', type: 'uint64' }],
+    name: 'registerTokenInfo',
     outputs: [],
     stateMutability: 'nonpayable',
   },
-  { type: 'error', inputs: [], name: 'PrecompileLib__BboPrecompileFailed' },
+  {
+    type: 'function',
+    inputs: [{ name: 'validator', internalType: 'address', type: 'address' }],
+    name: 'registerValidator',
+    outputs: [],
+    stateMutability: 'nonpayable',
+  },
+  {
+    type: 'function',
+    inputs: [
+      { name: 'perp', internalType: 'uint32', type: 'uint32' },
+      { name: 'priceDiffBps', internalType: 'uint64', type: 'uint64' },
+      { name: 'isIncrease', internalType: 'bool', type: 'bool' },
+    ],
+    name: 'setMarkPx',
+    outputs: [],
+    stateMutability: 'nonpayable',
+  },
+  {
+    type: 'function',
+    inputs: [
+      { name: 'perp', internalType: 'uint32', type: 'uint32' },
+      { name: 'markPx', internalType: 'uint64', type: 'uint64' },
+    ],
+    name: 'setMarkPx',
+    outputs: [],
+    stateMutability: 'nonpayable',
+  },
+  {
+    type: 'function',
+    inputs: [
+      { name: 'spotMarketId', internalType: 'uint32', type: 'uint32' },
+      { name: 'spotPx', internalType: 'uint64', type: 'uint64' },
+    ],
+    name: 'setSpotPx',
+    outputs: [],
+    stateMutability: 'nonpayable',
+  },
+  {
+    type: 'function',
+    inputs: [
+      { name: 'spotMarketId', internalType: 'uint32', type: 'uint32' },
+      { name: 'priceDiffBps', internalType: 'uint64', type: 'uint64' },
+      { name: 'isIncrease', internalType: 'bool', type: 'bool' },
+    ],
+    name: 'setSpotPx',
+    outputs: [],
+    stateMutability: 'nonpayable',
+  },
+  {
+    type: 'function',
+    inputs: [{ name: 'multiplier', internalType: 'uint256', type: 'uint256' }],
+    name: 'setStakingYieldIndex',
+    outputs: [],
+    stateMutability: 'nonpayable',
+  },
+  {
+    type: 'function',
+    inputs: [
+      { name: 'vault', internalType: 'address', type: 'address' },
+      { name: 'multiplier', internalType: 'uint256', type: 'uint256' },
+    ],
+    name: 'setVaultMultiplier',
+    outputs: [],
+    stateMutability: 'nonpayable',
+  },
+  {
+    type: 'function',
+    inputs: [{ name: 'token', internalType: 'uint32', type: 'uint32' }],
+    name: 'tokenExists',
+    outputs: [{ name: '', internalType: 'bool', type: 'bool' }],
+    stateMutability: 'view',
+  },
+  {
+    type: 'event',
+    anonymous: false,
+    inputs: [
+      { name: 'who', internalType: 'address', type: 'address', indexed: false },
+      { name: 'fsig', internalType: 'bytes4', type: 'bytes4', indexed: false },
+      {
+        name: 'keysHash',
+        internalType: 'bytes32',
+        type: 'bytes32',
+        indexed: false,
+      },
+      {
+        name: 'slot',
+        internalType: 'uint256',
+        type: 'uint256',
+        indexed: false,
+      },
+    ],
+    name: 'SlotFound',
+  },
+  {
+    type: 'event',
+    anonymous: false,
+    inputs: [
+      { name: 'who', internalType: 'address', type: 'address', indexed: false },
+      {
+        name: 'slot',
+        internalType: 'uint256',
+        type: 'uint256',
+        indexed: false,
+      },
+    ],
+    name: 'WARNING_UninitedSlot',
+  },
+  {
+    type: 'error',
+    inputs: [],
+    name: 'PrecompileLib__AccountMarginSummaryPrecompileFailed',
+  },
+  { type: 'error', inputs: [], name: 'PrecompileLib__MarkPxPrecompileFailed' },
+  {
+    type: 'error',
+    inputs: [],
+    name: 'PrecompileLib__SpotInfoPrecompileFailed',
+  },
+  { type: 'error', inputs: [], name: 'PrecompileLib__SpotPxPrecompileFailed' },
+  {
+    type: 'error',
+    inputs: [
+      { name: 'bits', internalType: 'uint8', type: 'uint8' },
+      { name: 'value', internalType: 'uint256', type: 'uint256' },
+    ],
+    name: 'SafeCastOverflowedUintDowncast',
+  },
+  {
+    type: 'error',
+    inputs: [{ name: 'token', internalType: 'address', type: 'address' }],
+    name: 'SafeERC20FailedOperation',
+  },
 ] as const;
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

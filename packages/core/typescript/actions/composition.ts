@@ -13,7 +13,11 @@ import { privateKeyToAccount } from 'viem/accounts';
 
 import _contracts from '../../deployments/998.json';
 import { hyperliquidEvmTestnet } from '../constants/chain';
-import { crestManagerAbi, crestVaultAbi } from '../generated';
+import {
+  crestManagerAbi,
+  crestVaultAbi,
+  hypeTradingContractAbi,
+} from '../generated';
 
 const contracts = _contracts as Record<keyof typeof _contracts, Address>;
 
@@ -65,6 +69,13 @@ const main = async () => {
   });
   console.log({ ldleUsdt0Balance });
 
+  const totalAllocated = await publicClient.readContract({
+    address: contracts.manager,
+    abi: crestManagerAbi,
+    functionName: 'totalAllocated',
+  });
+  console.log({ totalAllocated });
+
   const positionValue = await publicClient.readContract({
     address: contracts.manager,
     abi: crestManagerAbi,
@@ -78,6 +89,17 @@ const main = async () => {
     functionName: 'getHyperdriveValue',
   });
   console.log({ hyperdriveValue });
+
+  const hypeTradingContractAddress =
+    '0x0FA2b5d19d6BF4FC87a83E0B268F0357dbB4be07';
+
+  const pos1 = await publicClient.readContract({
+    address: hypeTradingContractAddress,
+    abi: hypeTradingContractAbi,
+    functionName: 'getUserPosition',
+    args: [contracts.manager, 135],
+  });
+  console.log(pos1);
 };
 
 main();

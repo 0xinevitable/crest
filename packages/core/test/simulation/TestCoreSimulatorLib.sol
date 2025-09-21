@@ -15,7 +15,7 @@ CoreWriterSim constant coreWriter = CoreWriterSim(
     0x3333333333333333333333333333333333333333
 );
 
-contract HypeSystemContract {
+contract TestHypeSystemContract {
     receive() external payable {
         coreWriter.nativeTransferCallback{ value: msg.value }(
             msg.sender,
@@ -67,7 +67,7 @@ library TestCoreSimulatorLib {
         address hypeSystemAddress = address(
             0x2222222222222222222222222222222222222222
         );
-        vm.etch(hypeSystemAddress, type(HypeSystemContract).runtimeCode);
+        vm.etch(hypeSystemAddress, type(TestHypeSystemContract).runtimeCode);
 
         // Start recording logs for token transfer tracking
         vm.recordLogs();

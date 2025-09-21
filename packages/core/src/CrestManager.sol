@@ -622,7 +622,42 @@ contract CrestManager is Auth, ReentrancyGuard {
         view
         returns (Position memory spot, Position memory perp)
     {
-        return (currentSpotPosition, currentPerpPosition);
+        // Start with cached positions (they have the correct indices and timestamps)
+        spot = currentSpotPosition;
+        perp = currentPerpPosition;
+
+        // Query actual spot balance from precompile if we have a position
+        if (spot.index > 0) {
+            PrecompileLib.SpotInfo memory spotInfo = PrecompileLib.spotInfo(spot.index);
+            uint64 tokenId = spotInfo.tokens[0];
+            PrecompileLib.SpotBalance memory actualBalance = PrecompileLib.spotBalance(
+                address(this),
+                tokenId
+            );
+            spot.size = actualBalance.total;
+
+            // Recalculate entry price if we have a position
+            if (actualBalance.total > 0 && totalAllocated > 0) {
+                uint256 spotAmount = (totalAllocated * SPOT_ALLOCATION_BPS) / 10000;
+                uint64 spotAmountCore = uint64(spotAmount) * 100;
+                spot.entryPrice = uint64((uint256(spotAmountCore) * 1e8) / actualBalance.total);
+            }
+        }
+
+        // Query actual perp position from precompile if we have a position
+        if (perp.index > 0) {
+            PrecompileLib.Position memory perpPos = PrecompileLib.position(
+                address(this),
+                uint16(perp.index)
+            );
+            if (perpPos.szi != 0) {
+                uint64 absSize = uint64(-perpPos.szi);
+                perp.size = absSize;
+                perp.entryPrice = uint64((perpPos.entryNtl * 1e6) / uint256(absSize));
+            }
+        }
+
+        return (spot, perp);
     }
 
     /**

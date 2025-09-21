@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.21;
 
-import { Script, console } from 'forge-std/Script.sol';
-import { CrestTeller } from '../src/CrestTeller.sol';
-import { CrestAccountant } from '../src/CrestAccountant.sol';
-import { CrestVault } from '../src/CrestVault.sol';
-import { IERC20 } from '@openzeppelin/contracts/token/ERC20/IERC20.sol';
+import { Script, console } from "forge-std/Script.sol";
+import { CrestTeller } from "../src/CrestTeller.sol";
+import { CrestAccountant } from "../src/CrestAccountant.sol";
+import { CrestVault } from "../src/CrestVault.sol";
+import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 contract TestDepositScript is Script {
     // Latest testnet deployment addresses from 998.json
@@ -16,11 +16,11 @@ contract TestDepositScript is Script {
     address constant USDT0 = 0x779Ded0c9e1022225f8E0630b35a9b54bE713736;
 
     function run() external {
-        uint256 deployerPrivateKey = vm.envUint('PRIVATE_KEY');
+        uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
         address deployer = vm.addr(deployerPrivateKey);
 
-        console.log('=== TEST DEPOSIT ON TESTNET ===');
-        console.log('Deployer:', deployer);
+        console.log("=== TEST DEPOSIT ON TESTNET ===");
+        console.log("Deployer:", deployer);
 
         // Get contracts
         CrestTeller teller = CrestTeller(TELLER);
@@ -35,15 +35,15 @@ contract TestDepositScript is Script {
         uint256 exchangeRate = accountant.exchangeRate();
         uint256 totalAssets = accountant.getTotalAssets();
 
-        console.log('\n=== BEFORE DEPOSIT ===');
-        console.log('Deployer USDT0:', usdt0Balance);
-        console.log('Vault USDT0:', vaultBalance);
-        console.log('Vault shares supply:', totalSupply);
-        console.log('Exchange rate:', exchangeRate);
-        console.log('Total assets:', totalAssets);
+        console.log("\n=== BEFORE DEPOSIT ===");
+        console.log("Deployer USDT0:", usdt0Balance);
+        console.log("Vault USDT0:", vaultBalance);
+        console.log("Vault shares supply:", totalSupply);
+        console.log("Exchange rate:", exchangeRate);
+        console.log("Total assets:", totalAssets);
 
         if (usdt0Balance == 0) {
-            console.log('ERROR: No USDT0 balance!');
+            console.log("ERROR: No USDT0 balance!");
             return;
         }
 
@@ -53,23 +53,23 @@ contract TestDepositScript is Script {
         vm.startBroadcast(deployerPrivateKey);
 
         // Approve and deposit
-        console.log('\n=== EXECUTING DEPOSIT ===');
-        console.log('Approving', depositAmount, 'USDT0...');
+        console.log("\n=== EXECUTING DEPOSIT ===");
+        console.log("Approving", depositAmount, "USDT0...");
         usdt0.approve(address(teller), depositAmount);
 
-        console.log('Depositing...');
+        console.log("Depositing...");
         uint256 sharesReceived = teller.deposit(depositAmount, deployer);
-        console.log('Shares received:', sharesReceived);
+        console.log("Shares received:", sharesReceived);
 
         vm.stopBroadcast();
 
         // Check final state
-        console.log('\n=== AFTER DEPOSIT ===');
-        console.log('Deployer USDT0:', usdt0.balanceOf(deployer));
-        console.log('Vault USDT0:', usdt0.balanceOf(address(vault)));
-        console.log('Vault shares supply:', vault.totalSupply());
-        console.log('Exchange rate:', accountant.exchangeRate());
+        console.log("\n=== AFTER DEPOSIT ===");
+        console.log("Deployer USDT0:", usdt0.balanceOf(deployer));
+        console.log("Vault USDT0:", usdt0.balanceOf(address(vault)));
+        console.log("Vault shares supply:", vault.totalSupply());
+        console.log("Exchange rate:", accountant.exchangeRate());
 
-        console.log('\nScript complete!');
+        console.log("\nScript complete!");
     }
 }

@@ -13,9 +13,7 @@ module.exports = {
   overrides: [
     {
       files: '*.sol',
-      options: {
-        tabWidth: 4,
-      },
+      options: { tabWidth: 4, singleQuote: false },
     },
   ],
   importOrder: ['<THIRD_PARTY_MODULES>', '@/(.*)$', '^[./](.*)$'],

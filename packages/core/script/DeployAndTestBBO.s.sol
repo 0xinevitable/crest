@@ -12,7 +12,7 @@ import { PrecompileLib } from "@hyper-evm-lib/src/PrecompileLib.sol";
 contract DeployAndTestBBOScript is Script {
     address constant USDT0 = 0x779Ded0c9e1022225f8E0630b35a9b54bE713736;
     uint32 constant HYPE_SPOT_INDEX = 1035; // HYPE/USDC on testnet
-    uint32 constant HYPE_PERP_INDEX = 135;  // HYPE-USD perp on testnet
+    uint32 constant HYPE_PERP_INDEX = 135; // HYPE-USD perp on testnet
 
     function run() external {
         uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
@@ -86,10 +86,17 @@ contract DeployAndTestBBOScript is Script {
         console.log("\n=== TRANSFERRING TO MANAGER ===");
         vault.manage(
             address(usdt0),
-            abi.encodeWithSignature("transfer(address,uint256)", address(manager), depositAmount),
+            abi.encodeWithSignature(
+                "transfer(address,uint256)",
+                address(manager),
+                depositAmount
+            ),
             0
         );
-        console.log("Manager USDT0 balance:", usdt0.balanceOf(address(manager)));
+        console.log(
+            "Manager USDT0 balance:",
+            usdt0.balanceOf(address(manager))
+        );
 
         // Now test allocation with BBO
         console.log("\n=== TESTING ALLOCATION WITH BBO ===");

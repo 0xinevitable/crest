@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.21;
 
-import { Script, console } from 'forge-std/Script.sol';
-import { CrestManager } from '../src/CrestManager.sol';
-import { CrestVault } from '../src/CrestVault.sol';
-import { CrestTeller } from '../src/CrestTeller.sol';
-import { CrestAccountant } from '../src/CrestAccountant.sol';
-import { IERC20 } from '@openzeppelin/contracts/token/ERC20/IERC20.sol';
+import { Script, console } from "forge-std/Script.sol";
+import { CrestManager } from "../src/CrestManager.sol";
+import { CrestVault } from "../src/CrestVault.sol";
+import { CrestTeller } from "../src/CrestTeller.sol";
+import { CrestAccountant } from "../src/CrestAccountant.sol";
+import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 contract TestExchangeRateScript is Script {
     // Latest testnet deployment addresses from 998.json
@@ -21,11 +21,11 @@ contract TestExchangeRateScript is Script {
     uint32 constant HYPE_PERP_INDEX = 135;
 
     function run() external {
-        uint256 deployerPrivateKey = vm.envUint('PRIVATE_KEY');
+        uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
         address deployer = vm.addr(deployerPrivateKey);
 
-        console.log('=== TESTING EXCHANGE RATE WITH UPDATED ACCOUNTANT ===');
-        console.log('Deployer:', deployer);
+        console.log("=== TESTING EXCHANGE RATE WITH UPDATED ACCOUNTANT ===");
+        console.log("Deployer:", deployer);
 
         // Get contracts
         CrestManager manager = CrestManager(MANAGER);
@@ -39,77 +39,77 @@ contract TestExchangeRateScript is Script {
         uint256 vaultBalance = usdt0.balanceOf(address(vault));
         uint256 totalSupply = vault.totalSupply();
 
-        console.log('\n=== INITIAL STATE ===');
-        console.log('User USDT0:', userBalance);
-        console.log('Vault USDT0:', vaultBalance);
-        console.log('Vault shares:', totalSupply);
-        console.log('Exchange rate:', accountant.exchangeRate());
-        console.log('Total assets:', accountant.getTotalAssets());
-        console.log('Manager allocated:', manager.totalAllocated());
+        console.log("\n=== INITIAL STATE ===");
+        console.log("User USDT0:", userBalance);
+        console.log("Vault USDT0:", vaultBalance);
+        console.log("Vault shares:", totalSupply);
+        console.log("Exchange rate:", accountant.exchangeRate());
+        console.log("Total assets:", accountant.getTotalAssets());
+        console.log("Manager allocated:", manager.totalAllocated());
 
         // Deposit if vault is empty
         if (totalSupply == 0 && userBalance >= 100e6) {
-            console.log('\n=== DEPOSITING 100 USDT0 ===');
+            console.log("\n=== DEPOSITING 100 USDT0 ===");
 
             vm.startBroadcast(deployerPrivateKey);
             usdt0.approve(address(teller), 100e6);
             uint256 shares = teller.deposit(100e6, deployer);
             vm.stopBroadcast();
 
-            console.log('Shares received:', shares);
+            console.log("Shares received:", shares);
             console.log(
-                'Exchange rate after deposit:',
+                "Exchange rate after deposit:",
                 accountant.exchangeRate()
             );
             console.log(
-                'Total assets after deposit:',
+                "Total assets after deposit:",
                 accountant.getTotalAssets()
             );
         }
 
         // Show current state
-        console.log('\n=== CURRENT STATE ===');
-        console.log('Vault USDT0:', usdt0.balanceOf(address(vault)));
-        console.log('Vault shares:', vault.totalSupply());
-        console.log('Manager allocated:', manager.totalAllocated());
-        console.log('Total assets:', accountant.getTotalAssets());
-        console.log('Exchange rate:', accountant.exchangeRate());
+        console.log("\n=== CURRENT STATE ===");
+        console.log("Vault USDT0:", usdt0.balanceOf(address(vault)));
+        console.log("Vault shares:", vault.totalSupply());
+        console.log("Manager allocated:", manager.totalAllocated());
+        console.log("Total assets:", accountant.getTotalAssets());
+        console.log("Exchange rate:", accountant.exchangeRate());
 
         // Show allocation command if funds available
         if (usdt0.balanceOf(address(vault)) >= 50e6) {
-            console.log('\n=== READY TO ALLOCATE ===');
-            console.log('Run this command to allocate:');
+            console.log("\n=== READY TO ALLOCATE ===");
+            console.log("Run this command to allocate:");
             console.log(
                 'cast send 0x1013c950B41025A0495C48EdAFAccd7e235A4a8B "allocate(uint32,uint32)" 1035 135'
             );
             console.log(
-                '  --private-key $PRIVATE_KEY --rpc-url https://rpc.hyperliquid-testnet.xyz/evm'
+                "  --private-key $PRIVATE_KEY --rpc-url https://rpc.hyperliquid-testnet.xyz/evm"
             );
 
             console.log(
-                '\nAfter allocation, run this script again to see the exchange rate update!'
+                "\nAfter allocation, run this script again to see the exchange rate update!"
             );
         } else if (manager.totalAllocated() > 0) {
-            console.log('\n=== FUNDS ALREADY ALLOCATED ===');
-            console.log('Total allocated:', manager.totalAllocated());
+            console.log("\n=== FUNDS ALREADY ALLOCATED ===");
+            console.log("Total allocated:", manager.totalAllocated());
             console.log(
-                'Exchange rate WITH Core positions:',
+                "Exchange rate WITH Core positions:",
                 accountant.exchangeRate()
             );
-            console.log('Expected rate: 1e6 (1:1) if no profits/losses');
+            console.log("Expected rate: 1e6 (1:1) if no profits/losses");
 
             uint256 currentRate = accountant.exchangeRate();
             if (currentRate == 1e6) {
-                console.log('SUCCESS: Exchange rate is correct!');
+                console.log("SUCCESS: Exchange rate is correct!");
             } else if (currentRate == 0) {
                 console.log(
-                    'ERROR: Exchange rate is still 0 - getTotalAssets might not be reading Manager correctly'
+                    "ERROR: Exchange rate is still 0 - getTotalAssets might not be reading Manager correctly"
                 );
             } else {
-                console.log('Exchange rate reflects profit/loss');
+                console.log("Exchange rate reflects profit/loss");
             }
         }
 
-        console.log('\nScript complete!');
+        console.log("\nScript complete!");
     }
 }

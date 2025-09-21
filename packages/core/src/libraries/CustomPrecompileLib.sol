@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.21;
 
-import { PrecompileLib } from '@hyper-evm-lib/src/PrecompileLib.sol';
+import { PrecompileLib } from "@hyper-evm-lib/src/PrecompileLib.sol";
 
 library CustomPrecompileLib {
     struct NormalizedBbo {

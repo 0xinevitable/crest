@@ -1,17 +1,17 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.21;
 
-import { ERC20 } from '@solmate/tokens/ERC20.sol';
-import { IERC20 } from '@openzeppelin/contracts/token/ERC20/IERC20.sol';
-import { SafeTransferLib } from '@solmate/utils/SafeTransferLib.sol';
-import { FixedPointMathLib } from '@solmate/utils/FixedPointMathLib.sol';
-import { Auth, Authority } from '@solmate/auth/Auth.sol';
-import { ReentrancyGuard } from '@solmate/utils/ReentrancyGuard.sol';
-import { CrestVault } from './CrestVault.sol';
-import { PrecompileLib } from '@hyper-evm-lib/src/PrecompileLib.sol';
-import { HLConstants } from '@hyper-evm-lib/src/common/HLConstants.sol';
-import { HLConversions } from '@hyper-evm-lib/src/common/HLConversions.sol';
-import { CoreWriterLib } from '@hyper-evm-lib/src/CoreWriterLib.sol';
+import { ERC20 } from "@solmate/tokens/ERC20.sol";
+import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import { SafeTransferLib } from "@solmate/utils/SafeTransferLib.sol";
+import { FixedPointMathLib } from "@solmate/utils/FixedPointMathLib.sol";
+import { Auth, Authority } from "@solmate/auth/Auth.sol";
+import { ReentrancyGuard } from "@solmate/utils/ReentrancyGuard.sol";
+import { CrestVault } from "./CrestVault.sol";
+import { PrecompileLib } from "@hyper-evm-lib/src/PrecompileLib.sol";
+import { HLConstants } from "@hyper-evm-lib/src/common/HLConstants.sol";
+import { HLConversions } from "@hyper-evm-lib/src/common/HLConversions.sol";
+import { CoreWriterLib } from "@hyper-evm-lib/src/CoreWriterLib.sol";
 import { CustomPrecompileLib } from "./libraries/CustomPrecompileLib.sol";
 
 contract CrestManager is Auth, ReentrancyGuard {
@@ -245,7 +245,9 @@ contract CrestManager is Auth, ReentrancyGuard {
 
             // Place spot buy order at ask price (for immediate fill)
             // Get raw BBO for spot (not normalized)
-            PrecompileLib.Bbo memory spotBboRaw = PrecompileLib.bbo(uint64(spotIndex));
+            PrecompileLib.Bbo memory spotBboRaw = PrecompileLib.bbo(
+                uint64(spotIndex)
+            );
             CoreWriterLib.placeLimitOrder(
                 spotIndex,
                 true, // isBuy
@@ -276,7 +278,9 @@ contract CrestManager is Auth, ReentrancyGuard {
 
             // Place perp short order at bid price (for immediate fill)
             // Get raw BBO for perp (not normalized)
-            PrecompileLib.Bbo memory perpBboRaw = PrecompileLib.bbo(uint64(perpIndex));
+            PrecompileLib.Bbo memory perpBboRaw = PrecompileLib.bbo(
+                uint64(perpIndex)
+            );
             CoreWriterLib.placeLimitOrder(
                 perpIndex,
                 false, // isBuy (short)
@@ -376,7 +380,9 @@ contract CrestManager is Auth, ReentrancyGuard {
 
             // Calculate PnL
             // Use spot price for PnL calculation
-            uint64 currentSpotPrice = PrecompileLib.spotPx(uint64(currentSpotPosition.index));
+            uint64 currentSpotPrice = PrecompileLib.spotPx(
+                uint64(currentSpotPosition.index)
+            );
             int256 spotPnL;
             if (currentSpotPrice >= currentSpotPosition.entryPrice) {
                 spotPnL =
@@ -427,16 +433,12 @@ contract CrestManager is Auth, ReentrancyGuard {
             if (currentPerpPosition.entryPrice >= markPrice) {
                 perpPnL =
                     (int256(
-                        uint256(
-                            currentPerpPosition.entryPrice - markPrice
-                        )
+                        uint256(currentPerpPosition.entryPrice - markPrice)
                     ) * int256(uint256(currentPerpPosition.size))) / 1e6;
             } else {
                 perpPnL =
                     (-int256(
-                        uint256(
-                            markPrice - currentPerpPosition.entryPrice
-                        )
+                        uint256(markPrice - currentPerpPosition.entryPrice)
                     ) * int256(uint256(currentPerpPosition.size))) / 1e6;
             }
 
@@ -478,7 +480,10 @@ contract CrestManager is Auth, ReentrancyGuard {
         if (usdcBalance.total == 0) return;
 
         // Convert USDC balance from Core to EVM decimals
-        uint256 totalUsdc = HLConversions.weiToEvm(USDC_TOKEN_ID, uint64(usdcBalance.total));
+        uint256 totalUsdc = HLConversions.weiToEvm(
+            USDC_TOKEN_ID,
+            uint64(usdcBalance.total)
+        );
         uint256 marginAmount = (totalUsdc * MARGIN_ALLOCATION_BPS) / 10000;
         uint256 spotAmount = (totalUsdc * SPOT_ALLOCATION_BPS) / 10000;
         uint256 perpAmount = (totalUsdc * PERP_ALLOCATION_BPS) / 10000;
@@ -489,12 +494,18 @@ contract CrestManager is Auth, ReentrancyGuard {
 
         // Transfer margin to perp account
         // Convert USDC from EVM decimals to Core decimals
-        uint64 marginCoreAmount = HLConversions.evmToWei(USDC_TOKEN_ID, marginAmount);
+        uint64 marginCoreAmount = HLConversions.evmToWei(
+            USDC_TOKEN_ID,
+            marginAmount
+        );
         CoreWriterLib.transferUsdClass(marginCoreAmount, true);
 
         // Place spot buy order
         // Convert USDC from EVM decimals to Core decimals
-        uint64 spotSizeCoreAmount = HLConversions.evmToWei(USDC_TOKEN_ID, spotAmount);
+        uint64 spotSizeCoreAmount = HLConversions.evmToWei(
+            USDC_TOKEN_ID,
+            spotAmount
+        );
         // Use spot price for size calculation
         uint64 spotSizeInAsset = uint64(
             (uint256(spotSizeCoreAmount) * 1e8) / spotPrice
@@ -516,7 +527,10 @@ contract CrestManager is Auth, ReentrancyGuard {
 
         // Place perp short order
         // Convert USDC from EVM decimals to Core decimals
-        uint64 perpSizeCoreAmount = HLConversions.evmToWei(USDC_TOKEN_ID, perpAmount);
+        uint64 perpSizeCoreAmount = HLConversions.evmToWei(
+            USDC_TOKEN_ID,
+            perpAmount
+        );
         // Use bid price for size calculation
         uint64 perpSizeInAsset = uint64(
             (uint256(perpSizeCoreAmount) * 1e8) / perpPrice
@@ -654,14 +668,14 @@ contract CrestManager is Auth, ReentrancyGuard {
         // For spot positions, we check the actual token balance (e.g., HYPE)
         if (currentSpotPosition.index > 0) {
             // Get the token ID from the spot market info
-            PrecompileLib.SpotInfo memory spotInfo = PrecompileLib.spotInfo(uint64(currentSpotPosition.index));
+            PrecompileLib.SpotInfo memory spotInfo = PrecompileLib.spotInfo(
+                uint64(currentSpotPosition.index)
+            );
             uint64 tokenId = spotInfo.tokens[0]; // First token is the base asset (e.g., HYPE)
 
             // Get actual spot balance for the asset
-            PrecompileLib.SpotBalance memory spotBal = PrecompileLib.spotBalance(
-                address(this),
-                tokenId
-            );
+            PrecompileLib.SpotBalance memory spotBal = PrecompileLib
+                .spotBalance(address(this), tokenId);
 
             if (spotBal.total > 0) {
                 uint64 currentSpotPrice = PrecompileLib.spotPx(
@@ -669,8 +683,13 @@ contract CrestManager is Auth, ReentrancyGuard {
                 );
                 // spotBal.total is in Core decimals (8), price is in Core decimals (8)
                 // Result needs to be in USDT0 (6 decimals)
-                uint64 spotValueCore = uint64((uint256(spotBal.total) * uint256(currentSpotPrice)) / 1e8);
-                totalValue += HLConversions.weiToEvm(USDC_TOKEN_ID, spotValueCore);
+                uint64 spotValueCore = uint64(
+                    (uint256(spotBal.total) * uint256(currentSpotPrice)) / 1e8
+                );
+                totalValue += HLConversions.weiToEvm(
+                    USDC_TOKEN_ID,
+                    spotValueCore
+                );
             }
         }
 
@@ -689,22 +708,31 @@ contract CrestManager is Auth, ReentrancyGuard {
 
                 // Calculate notional value of position
                 // szi is signed, negative for shorts
-                uint256 absSize = perpPos.szi < 0 ? uint256(uint64(-perpPos.szi)) : uint256(uint64(perpPos.szi));
+                uint256 absSize = perpPos.szi < 0
+                    ? uint256(uint64(-perpPos.szi))
+                    : uint256(uint64(perpPos.szi));
 
                 // Calculate position value based on entry notional and current price
                 // entryNtl is the entry notional value in Core decimals
                 // For shorts, profit when price goes down
-                if (perpPos.szi < 0) { // Short position
+                if (perpPos.szi < 0) {
+                    // Short position
                     // Calculate P&L for short
                     uint256 currentNtl = (absSize * currentPerpPrice) / 1e8;
                     if (perpPos.entryNtl > currentNtl) {
                         // Profit on short
                         uint256 profit = perpPos.entryNtl - currentNtl;
-                        totalValue += HLConversions.weiToEvm(USDC_TOKEN_ID, uint64(profit));
+                        totalValue += HLConversions.weiToEvm(
+                            USDC_TOKEN_ID,
+                            uint64(profit)
+                        );
                     } else {
                         // Loss on short
                         uint256 loss = currentNtl - perpPos.entryNtl;
-                        uint256 lossEvm = HLConversions.weiToEvm(USDC_TOKEN_ID, uint64(loss));
+                        uint256 lossEvm = HLConversions.weiToEvm(
+                            USDC_TOKEN_ID,
+                            uint64(loss)
+                        );
                         if (lossEvm < totalValue) {
                             totalValue -= lossEvm;
                         } else {
@@ -719,16 +747,20 @@ contract CrestManager is Auth, ReentrancyGuard {
         PrecompileLib.AccountMarginSummary memory marginSummary = PrecompileLib
             .accountMarginSummary(0, address(this));
         if (marginSummary.accountValue > 0) {
-            totalValue += HLConversions.weiToEvm(USDC_TOKEN_ID, uint64(marginSummary.accountValue));
+            totalValue += HLConversions.weiToEvm(
+                USDC_TOKEN_ID,
+                uint64(marginSummary.accountValue)
+            );
         }
 
         // Also check for any remaining USDC balance in spot account
-        PrecompileLib.SpotBalance memory usdcBalance = PrecompileLib.spotBalance(
-            address(this),
-            USDC_TOKEN_ID
-        );
+        PrecompileLib.SpotBalance memory usdcBalance = PrecompileLib
+            .spotBalance(address(this), USDC_TOKEN_ID);
         if (usdcBalance.total > 0) {
-            totalValue += HLConversions.weiToEvm(USDC_TOKEN_ID, uint64(usdcBalance.total));
+            totalValue += HLConversions.weiToEvm(
+                USDC_TOKEN_ID,
+                uint64(usdcBalance.total)
+            );
         }
 
         return totalValue;

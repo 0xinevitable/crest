@@ -162,11 +162,14 @@ contract CrestTeller is Auth, ReentrancyGuard {
             revert CrestTeller__MinimumSharesNotMet();
         }
 
-        // Transfer USDT0 from user
+        // Transfer USDT0 from user to vault
         usdt0.safeTransferFrom(msg.sender, address(vault), assets);
 
         // Mint shares through vault
         vault.enter(address(vault), usdt0, 0, receiver, shares);
+
+        // Vault will handle Hyperdrive deposit automatically
+        vault.depositToHyperdrive(usdt0, assets);
 
         // Set share lock
         shareUnlockTime[receiver] = block.timestamp + shareLockPeriod;
@@ -195,6 +198,12 @@ contract CrestTeller is Auth, ReentrancyGuard {
         // Calculate assets to withdraw
         assets = accountant.convertToAssets(shares);
         if (assets == 0) revert CrestTeller__ZeroAssets();
+
+        // Check if vault needs to withdraw from Hyperdrive
+        uint256 vaultBalance = usdt0.balanceOf(address(vault));
+        if (vaultBalance < assets) {
+            vault.withdrawFromHyperdrive(assets - vaultBalance);
+        }
 
         // Burn shares and transfer assets through vault
         vault.exit(receiver, usdt0, assets, msg.sender, shares);

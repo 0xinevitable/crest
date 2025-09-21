@@ -170,6 +170,16 @@ contract CrestManager is Auth, ReentrancyGuard {
 
         // Get available USDT0 balance
         uint256 availableUsdt0 = usdt0.balanceOf(address(vault));
+
+        // Check if we need to withdraw from Hyperdrive
+        uint256 hyperdriveValue = vault.getHyperdriveValue();
+        if (hyperdriveValue > 0 && availableUsdt0 < 50e6) {
+            // Withdraw all from Hyperdrive for allocation
+            vault.withdrawFromHyperdrive(type(uint256).max);
+            // Update vault balance after withdrawal
+            availableUsdt0 = usdt0.balanceOf(address(vault));
+        }
+
         // Minimum 50 USDT0 needed to meet Core's minimum order requirements (20 USDT0)
         if (availableUsdt0 < 50e6) revert CrestManager__InsufficientBalance();
 
@@ -215,15 +225,19 @@ contract CrestManager is Auth, ReentrancyGuard {
 
         // After swap, we have USDC in spot balance
         // Transfer margin to perp account
-        uint64 marginCoreAmount = uint64(marginAmount * 100); // USDC has 8 decimals in core, 6 on EVM
+        // USDC: 6 decimals on EVM, 8 decimals in Core
+        uint64 marginCoreAmount = uint64(marginAmount) * 100; // Convert 6 decimals to 8 decimals
         CoreWriterLib.transferUsdClass(
-            marginCoreAmount / 100, // weiToPerp: divide by 100 for USDC
-            true
+            marginCoreAmount, // In Core's 8 decimal format
+            true // to perp
         );
 
         // Place spot buy order
         {
-            uint64 spotSizeCoreAmount = uint64(spotAmount * 100); // USDC: 6 decimals EVM -> 8 decimals Core
+            // Convert spot amount from EVM to Core decimals
+            // USDC: 6 decimals on EVM, 8 decimals in Core
+            uint64 spotSizeCoreAmount = uint64(spotAmount) * 100;
+            // Calculate how many tokens we can buy with this USDC amount
             uint64 spotSizeInAsset = uint64(
                 (uint256(spotSizeCoreAmount) * 1e8) / spotPrice
             );
@@ -249,7 +263,10 @@ contract CrestManager is Auth, ReentrancyGuard {
 
         // Place perp short order
         {
-            uint64 perpSizeCoreAmount = uint64(perpAmount * 100); // USDC: 6 decimals EVM -> 8 decimals Core
+            // Convert perp amount from EVM to Core decimals
+            // USDC: 6 decimals on EVM, 8 decimals in Core
+            uint64 perpSizeCoreAmount = uint64(perpAmount) * 100;
+            // Calculate position size in contracts
             uint64 perpSizeInAsset = uint64(
                 (uint256(perpSizeCoreAmount) * 1e6) / perpPrice
             );
@@ -305,36 +322,37 @@ contract CrestManager is Auth, ReentrancyGuard {
         uint32 oldSpotIndex = currentSpotPosition.index;
         uint32 oldPerpIndex = currentPerpPosition.index;
 
-        // Close existing positions if they have size
+        // Close existing positions but keep funds in Core for reallocation
         if (currentSpotPosition.size > 0 || currentPerpPosition.size > 0) {
-            _closeAllPositions();
+            _closePositionsOnly();
         }
+
+        // Now reallocate to new positions (funds are still in Core as USDC)
+        _openPositions(newSpotIndex, newPerpIndex);
 
         // Update vault state
         vault.rebalance(newSpotIndex, newPerpIndex);
-
-        // Update manager's position tracking to new indexes
-        currentSpotPosition.index = newSpotIndex;
-        currentPerpPosition.index = newPerpIndex;
-        currentSpotPosition.size = 0; // Will be set when orders fill
-        currentPerpPosition.size = 0; // Will be set when orders fill
 
         emit Rebalanced(oldSpotIndex, oldPerpIndex, newSpotIndex, newPerpIndex);
     }
 
     /**
-     * @notice Closes all positions and withdraws funds back to vault
+     * @notice Exits all positions and bridges funds back to vault
      */
-    function closeAllPositions()
-        external
-        onlyCurator
-        whenNotPaused
-        nonReentrant
-    {
-        _closeAllPositions();
+    function exit() external onlyCurator whenNotPaused nonReentrant {
+        // Close all positions
+        _closePositionsOnly();
+
+        // Bridge everything back to EVM
+        _bridgeBackToVault();
+
+        totalAllocated = 0;
     }
 
-    function _closeAllPositions() internal {
+    /**
+     * @notice Internal function to close positions without bridging back
+     */
+    function _closePositionsOnly() internal {
         // Close spot position
         if (currentSpotPosition.size > 0) {
             // Get current spot price from precompile
@@ -377,7 +395,8 @@ contract CrestManager is Auth, ReentrancyGuard {
                 uint256(spotPnL > 0 ? spotPnL : -spotPnL)
             );
 
-            delete currentSpotPosition;
+            currentSpotPosition.size = 0;
+            currentSpotPosition.entryPrice = 0;
         }
 
         // Close perp position
@@ -422,11 +441,100 @@ contract CrestManager is Auth, ReentrancyGuard {
                 uint256(perpPnL > 0 ? perpPnL : -perpPnL)
             );
 
-            delete currentPerpPosition;
+            currentPerpPosition.size = 0;
+            currentPerpPosition.entryPrice = 0;
         }
 
-        // Query actual balances to bridge back
-        // Use perpDexIndex 0 for cross-margin account
+        // After closing positions, move any funds from perp back to spot account
+        // This is needed for rebalancing to have all USDC available in spot
+        PrecompileLib.AccountMarginSummary memory marginSummary = PrecompileLib
+            .accountMarginSummary(0, address(this));
+
+        if (marginSummary.accountValue > 0) {
+            uint64 perpUsdAmount = uint64(marginSummary.accountValue);
+            CoreWriterLib.transferUsdClass(perpUsdAmount, false); // from perp to spot
+        }
+    }
+
+    /**
+     * @notice Opens new positions with available USDC in Core
+     */
+    function _openPositions(uint32 spotIndex, uint32 perpIndex) internal {
+        // Always update indexes
+        currentSpotPosition.index = spotIndex;
+        currentPerpPosition.index = perpIndex;
+        currentSpotPosition.timestamp = block.timestamp;
+        currentPerpPosition.timestamp = block.timestamp;
+
+        // Get available USDC balance in Core
+        PrecompileLib.SpotBalance memory usdcBalance = PrecompileLib
+            .spotBalance(address(this), USDC_TOKEN_ID);
+
+        if (usdcBalance.total == 0) return;
+
+        // Convert USDC balance from Core to EVM decimals
+        uint256 totalUsdc = HLConversions.weiToEvm(USDC_TOKEN_ID, uint64(usdcBalance.total));
+        uint256 marginAmount = (totalUsdc * MARGIN_ALLOCATION_BPS) / 10000;
+        uint256 spotAmount = (totalUsdc * SPOT_ALLOCATION_BPS) / 10000;
+        uint256 perpAmount = (totalUsdc * PERP_ALLOCATION_BPS) / 10000;
+
+        // Get current prices
+        uint64 spotPrice = PrecompileLib.spotPx(uint64(spotIndex));
+        uint64 perpPrice = PrecompileLib.markPx(perpIndex);
+
+        // Transfer margin to perp account
+        // Convert USDC from EVM decimals to Core decimals
+        uint64 marginCoreAmount = HLConversions.evmToWei(USDC_TOKEN_ID, marginAmount);
+        CoreWriterLib.transferUsdClass(marginCoreAmount, true);
+
+        // Place spot buy order
+        // Convert USDC from EVM decimals to Core decimals
+        uint64 spotSizeCoreAmount = HLConversions.evmToWei(USDC_TOKEN_ID, spotAmount);
+        uint64 spotSizeInAsset = uint64(
+            (uint256(spotSizeCoreAmount) * 1e8) / spotPrice
+        );
+
+        CoreWriterLib.placeLimitOrder(
+            spotIndex,
+            true, // isBuy
+            spotPrice + ((spotPrice * 50) / 10000), // 0.5% slippage
+            spotSizeInAsset,
+            false, // reduceOnly
+            3, // IOC
+            uint128(block.timestamp << 32) + 10
+        );
+
+        currentSpotPosition.isLong = true;
+        currentSpotPosition.size = spotSizeInAsset;
+        currentSpotPosition.entryPrice = spotPrice;
+
+        // Place perp short order
+        // Convert USDC from EVM decimals to Core decimals
+        uint64 perpSizeCoreAmount = HLConversions.evmToWei(USDC_TOKEN_ID, perpAmount);
+        uint64 perpSizeInAsset = uint64(
+            (uint256(perpSizeCoreAmount) * 1e8) / perpPrice
+        );
+
+        CoreWriterLib.placeLimitOrder(
+            perpIndex,
+            false, // isBuy (short)
+            perpPrice - ((perpPrice * 50) / 10000), // 0.5% slippage
+            perpSizeInAsset,
+            false, // reduceOnly
+            3, // IOC
+            uint128(block.timestamp << 32) + 11
+        );
+
+        currentPerpPosition.isLong = false;
+        currentPerpPosition.size = perpSizeInAsset;
+        currentPerpPosition.entryPrice = perpPrice;
+    }
+
+    /**
+     * @notice Bridges all funds back to vault
+     */
+    function _bridgeBackToVault() internal {
+        // Query actual balances
         PrecompileLib.AccountMarginSummary memory marginSummary = PrecompileLib
             .accountMarginSummary(0, address(this));
         PrecompileLib.SpotBalance memory spotBalance = PrecompileLib
@@ -448,7 +556,7 @@ contract CrestManager is Auth, ReentrancyGuard {
                 spotBalance.total,
                 false,
                 3, // IOC
-                uint128(block.timestamp << 32) + 1
+                uint128(block.timestamp << 32) + 100
             );
 
             // Get USDT0 balance and bridge back
@@ -463,7 +571,11 @@ contract CrestManager is Auth, ReentrancyGuard {
             }
         }
 
-        totalAllocated = 0;
+        // Transfer all USDT0 from Manager back to Vault
+        uint256 managerBalance = usdt0.balanceOf(address(this));
+        if (managerBalance > 0) {
+            usdt0.safeTransfer(address(vault), managerBalance);
+        }
     }
 
     //============================== ADMIN FUNCTIONS ===============================
@@ -524,6 +636,11 @@ contract CrestManager is Auth, ReentrancyGuard {
      * @notice Estimates the current value of all positions
      */
     function estimatePositionValue() external view returns (uint256) {
+        // Return 0 if no positions allocated
+        if (totalAllocated == 0) {
+            return 0;
+        }
+
         uint256 totalValue = 0;
 
         // Add spot position value using real price
@@ -531,32 +648,45 @@ contract CrestManager is Auth, ReentrancyGuard {
             uint64 currentSpotPrice = PrecompileLib.spotPx(
                 uint64(currentSpotPosition.index)
             );
-            totalValue += (currentSpotPosition.size * currentSpotPrice) / 1e8;
+            // size is in asset units (Core decimals), price is in Core decimals
+            // Calculate value in Core decimals then convert to EVM
+            uint64 spotValueCore = uint64((uint256(currentSpotPosition.size) * uint256(currentSpotPrice)) / 1e8);
+            totalValue += HLConversions.weiToEvm(USDC_TOKEN_ID, spotValueCore);
         }
 
-        // Add perp position value using real mark price
+        // Add perp position value (initial margin + P&L)
         if (currentPerpPosition.size > 0) {
+            // Start with initial allocated amount for perp
+            totalValue += (totalAllocated * PERP_ALLOCATION_BPS) / 10000;
+
             uint64 currentPerpPrice = PrecompileLib.markPx(
                 currentPerpPosition.index
             );
             // For short position, calculate the P&L
-            int256 perpPnL = (int256(
-                uint256(currentPerpPosition.entryPrice - currentPerpPrice)
-            ) * int256(uint256(currentPerpPosition.size))) / 1e6;
-            if (perpPnL > 0) {
-                totalValue += uint256(perpPnL);
+            // Both price and size are in 8 decimal format
+            if (currentPerpPosition.entryPrice > currentPerpPrice) {
+                // Profit from short
+                uint256 priceDiff = currentPerpPosition.entryPrice - currentPerpPrice;
+                uint256 perpProfit = (priceDiff * currentPerpPosition.size) / 1e10;
+                totalValue += perpProfit;
+            } else if (currentPerpPrice > currentPerpPosition.entryPrice) {
+                // Loss from short
+                uint256 priceDiff = currentPerpPrice - currentPerpPosition.entryPrice;
+                uint256 perpLoss = (priceDiff * currentPerpPosition.size) / 1e10;
+                // Subtract loss but ensure we don't go negative
+                if (perpLoss < totalValue) {
+                    totalValue -= perpLoss;
+                } else {
+                    totalValue = 0;
+                }
             }
         }
 
-        // Add any unallocated USDT0 in the vault
-        uint256 vaultBalance = usdt0.balanceOf(address(vault));
-        totalValue += vaultBalance;
-
-        // Add margin in perp account
+        // Add margin in perp account (convert from Core to EVM decimals)
         PrecompileLib.AccountMarginSummary memory marginSummary = PrecompileLib
             .accountMarginSummary(0, address(this));
         if (marginSummary.accountValue > 0) {
-            totalValue += uint256(uint64(marginSummary.accountValue));
+            totalValue += HLConversions.weiToEvm(USDC_TOKEN_ID, uint64(marginSummary.accountValue));
         }
 
         return totalValue;

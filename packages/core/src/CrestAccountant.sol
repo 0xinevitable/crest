@@ -5,6 +5,7 @@ import { ERC20 } from '@solmate/tokens/ERC20.sol';
 import { FixedPointMathLib } from '@solmate/utils/FixedPointMathLib.sol';
 import { Auth, Authority } from '@solmate/auth/Auth.sol';
 import { CrestVault } from './CrestVault.sol';
+import { CrestManager } from './CrestManager.sol';
 
 contract CrestAccountant is Auth {
     using FixedPointMathLib for uint256;
@@ -17,10 +18,19 @@ contract CrestAccountant is Auth {
     CrestVault public immutable vault;
 
     /**
-     * @notice The current exchange rate (assets per share)
-     * @dev Stored with 6 decimals precision (1e6 = 1:1 rate)
+     * @notice The USDT0 token contract
      */
-    uint96 public exchangeRate = 1e6;
+    ERC20 public immutable usdt0;
+
+    /**
+     * @notice The CrestManager contract
+     */
+    CrestManager public immutable manager;
+
+    /**
+     * @notice Last recorded total assets for fee calculation
+     */
+    uint256 public lastTotalAssets;
 
     /**
      * @notice Platform fee in basis points (100 = 1%)
@@ -52,20 +62,6 @@ contract CrestAccountant is Auth {
      */
     address public feeRecipient;
 
-    /**
-     * @notice Maximum allowed exchange rate change per update (basis points)
-     */
-    uint16 public maxRateChangeBps = 1000; // 10%
-
-    /**
-     * @notice Minimum time between rate updates
-     */
-    uint64 public rateUpdateCooldown = 1 hours;
-
-    /**
-     * @notice Last rate update timestamp
-     */
-    uint64 public lastRateUpdate;
 
     /**
      * @notice Pauses exchange rate updates
@@ -89,18 +85,12 @@ contract CrestAccountant is Auth {
     );
     event Paused();
     event Unpaused();
-    event MaxRateChangeUpdated(uint16 bps);
-    event RateUpdateCooldownUpdated(uint64 cooldown);
 
     //============================== ERRORS ===============================
 
     error CrestAccountant__Paused();
-    error CrestAccountant__RateTooHigh();
-    error CrestAccountant__RateTooLow();
-    error CrestAccountant__CooldownNotMet();
     error CrestAccountant__NoFeeRecipient();
     error CrestAccountant__InvalidFee();
-    error CrestAccountant__RateChangeTooBig();
 
     //============================== MODIFIERS ===============================
 
@@ -113,81 +103,63 @@ contract CrestAccountant is Auth {
 
     constructor(
         address payable _vault,
+        address _usdt0,
+        address _manager,
         address _owner,
         address _feeRecipient
     ) Auth(_owner, Authority(address(0))) {
         vault = CrestVault(_vault);
+        usdt0 = ERC20(_usdt0);
+        manager = CrestManager(_manager);
         feeRecipient = _feeRecipient;
-        lastRateUpdate = uint64(block.timestamp);
+        lastTotalAssets = 0; // Initialize to 0
     }
 
     //============================== ADMIN FUNCTIONS ===============================
 
     /**
-     * @notice Updates the exchange rate based on current vault performance
-     * @param totalAssets The total value of assets in the vault (in USDC)
+     * @notice Updates fees based on current performance
+     * @dev Called automatically when calculating exchange rate if profit detected
      */
-    function updateExchangeRate(
-        uint256 totalAssets
-    ) external requiresAuth whenNotPaused {
-        if (block.timestamp < lastRateUpdate + rateUpdateCooldown) {
-            revert CrestAccountant__CooldownNotMet();
-        }
-
+    function _updateFees() internal {
         uint256 totalSupply = vault.totalSupply();
-        if (totalSupply == 0) {
-            // No shares minted yet, keep rate at 1:1
+        if (totalSupply == 0) return;
+
+        uint256 currentAssets = getTotalAssets();
+
+        // Initialize lastTotalAssets on first call
+        if (lastTotalAssets == 0) {
+            lastTotalAssets = currentAssets;
             return;
         }
 
-        // Calculate new rate
-        uint96 newRate = uint96((totalAssets * 1e6) / totalSupply);
-
-        // Check rate change limits
-        uint256 maxRate = (uint256(exchangeRate) * (10000 + maxRateChangeBps)) /
-            10000;
-        uint256 minRate = (uint256(exchangeRate) * (10000 - maxRateChangeBps)) /
-            10000;
-
-        if (newRate > maxRate) revert CrestAccountant__RateChangeTooBig();
-        if (newRate < minRate) revert CrestAccountant__RateChangeTooBig();
-
-        // Calculate fees if rate increased
-        uint256 platformFee = 0;
-        uint256 performanceFee = 0;
-
-        if (newRate > exchangeRate) {
-            uint256 profit = (uint256(newRate - exchangeRate) * totalSupply) /
-                1e6;
-
-            // Platform fee on all profit
-            platformFee = (profit * platformFeeBps) / 10000;
-
-            // Performance fee only on profit above high water mark
-            if (newRate > highWaterMark) {
-                uint256 outperformance = (uint256(newRate - highWaterMark) *
-                    totalSupply) / 1e6;
-                performanceFee = (outperformance * performanceFeeBps) / 10000;
-                highWaterMark = newRate;
-            }
-
-            // Deduct fees from new rate
-            uint256 totalFees = platformFee + performanceFee;
-            if (totalFees > 0) {
-                newRate = uint96(
-                    ((totalAssets - totalFees) * 1e6) / totalSupply
-                );
-            }
-
-            accumulatedPlatformFees += platformFee;
-            accumulatedPerformanceFees += performanceFee;
+        // Skip if no profit
+        if (currentAssets <= lastTotalAssets) {
+            lastTotalAssets = currentAssets;
+            return;
         }
 
-        uint96 oldRate = exchangeRate;
-        exchangeRate = newRate;
-        lastRateUpdate = uint64(block.timestamp);
+        uint256 profit = currentAssets - lastTotalAssets;
 
-        emit RateUpdated(oldRate, newRate, platformFee, performanceFee);
+        // Calculate current rate
+        uint96 currentRate = uint96((currentAssets * 1e6) / totalSupply);
+
+        // Platform fee on all profit
+        uint256 platformFee = (profit * platformFeeBps) / 10000;
+
+        // Performance fee only on profit above high water mark
+        uint256 performanceFee = 0;
+        if (currentRate > highWaterMark) {
+            uint256 outperformance = currentAssets - ((uint256(highWaterMark) * totalSupply) / 1e6);
+            performanceFee = (outperformance * performanceFeeBps) / 10000;
+            highWaterMark = currentRate;
+        }
+
+        accumulatedPlatformFees += platformFee;
+        accumulatedPerformanceFees += performanceFee;
+        lastTotalAssets = currentAssets;
+
+        emit RateUpdated(0, currentRate, platformFee, performanceFee);
     }
 
     /**
@@ -206,7 +178,7 @@ contract CrestAccountant is Auth {
         uint256 totalFees = platformFees + performanceFees;
         if (totalFees > 0) {
             // Mint fee shares to recipient
-            uint256 feeShares = (totalFees * 1e6) / exchangeRate;
+            uint256 feeShares = (totalFees * 1e6) / getRate();
             vault.enter(
                 address(vault),
                 ERC20(address(0)),
@@ -243,24 +215,6 @@ contract CrestAccountant is Auth {
         emit FeeRecipientUpdated(_feeRecipient);
     }
 
-    /**
-     * @notice Updates the maximum rate change allowed per update
-     */
-    function updateMaxRateChange(
-        uint16 _maxRateChangeBps
-    ) external requiresAuth {
-        if (_maxRateChangeBps > 2000) revert CrestAccountant__InvalidFee(); // Max 20%
-        maxRateChangeBps = _maxRateChangeBps;
-        emit MaxRateChangeUpdated(_maxRateChangeBps);
-    }
-
-    /**
-     * @notice Updates the rate update cooldown period
-     */
-    function updateRateUpdateCooldown(uint64 _cooldown) external requiresAuth {
-        rateUpdateCooldown = _cooldown;
-        emit RateUpdateCooldownUpdated(_cooldown);
-    }
 
     /**
      * @notice Pauses exchange rate updates
@@ -281,41 +235,72 @@ contract CrestAccountant is Auth {
     //============================== VIEW FUNCTIONS ===============================
 
     /**
+     * @notice Returns the total assets under management
+     */
+    function getTotalAssets() public view returns (uint256) {
+        // Get USDT0 balance in vault
+        uint256 vaultBalance = usdt0.balanceOf(address(vault));
+
+        // Add Hyperdrive value
+        uint256 hyperdriveValue = vault.getHyperdriveValue();
+
+        // Add Core position values from Manager
+        uint256 corePositionValue = 0;
+        if (address(manager) != address(0)) {
+            // Get the current USD-denominated value of Core positions
+            corePositionValue = manager.estimatePositionValue();
+        }
+
+        return vaultBalance + hyperdriveValue + corePositionValue;
+    }
+
+    /**
+     * @notice Returns the current exchange rate after fees
+     */
+    function getRate() public view returns (uint256) {
+        uint256 totalSupply = vault.totalSupply();
+        if (totalSupply == 0) return 1e6;
+
+        uint256 totalAssets = getTotalAssets();
+
+        // Deduct accumulated fees from assets
+        uint256 totalFees = accumulatedPlatformFees + accumulatedPerformanceFees;
+        if (totalAssets > totalFees) {
+            totalAssets -= totalFees;
+        }
+
+        return (totalAssets * 1e6) / totalSupply;
+    }
+
+    /**
+     * @notice Triggers fee update if there's unrealized profit
+     * @dev Anyone can call this to update fees
+     */
+    function updateFees() external whenNotPaused {
+        _updateFees();
+    }
+
+    /**
+     * @notice Returns the current exchange rate
+     */
+    function exchangeRate() external view returns (uint256) {
+        return getRate();
+    }
+
+    /**
      * @notice Converts assets to shares based on current exchange rate
      */
     function convertToShares(uint256 assets) public view returns (uint256) {
-        if (exchangeRate == 0) return 0;
-        return (assets * 1e6) / exchangeRate;
+        uint256 rate = getRate();
+        if (rate == 0) return 0;
+        return (assets * 1e6) / rate;
     }
 
     /**
      * @notice Converts shares to assets based on current exchange rate
      */
     function convertToAssets(uint256 shares) public view returns (uint256) {
-        return (shares * exchangeRate) / 1e6;
+        return (shares * getRate()) / 1e6;
     }
 
-    /**
-     * @notice Returns the current exchange rate with proper decimals
-     */
-    function getRate() external view returns (uint256) {
-        return exchangeRate;
-    }
-
-    /**
-     * @notice Returns whether rate update cooldown has passed
-     */
-    function canUpdateRate() external view returns (bool) {
-        return block.timestamp >= lastRateUpdate + rateUpdateCooldown;
-    }
-
-    /**
-     * @notice Returns time until next rate update is allowed
-     */
-    function timeUntilNextUpdate() external view returns (uint256) {
-        if (block.timestamp >= lastRateUpdate + rateUpdateCooldown) {
-            return 0;
-        }
-        return (lastRateUpdate + rateUpdateCooldown) - block.timestamp;
-    }
 }

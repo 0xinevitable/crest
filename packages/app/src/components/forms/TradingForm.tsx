@@ -1,7 +1,9 @@
 import styled from '@emotion/styled';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { formatUnits } from 'viem';
 
 import { OpticianSans } from '@/fonts';
+import { CrestClient } from '@/utils/contracts';
 
 import { AmountInputWithTokens } from '../ui/AmountInputWithTokens';
 import { FeeDisplay } from '../ui/FeeDisplay';
@@ -44,14 +46,67 @@ export const TradingForm: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'deposit' | 'withdraw'>('deposit');
   const [inputAmount, setInputAmount] = useState('0');
   const [outputAmount, setOutputAmount] = useState('0');
+  const [isCalculating, setIsCalculating] = useState(false);
+  const [exchangeRate, setExchangeRate] = useState<string>('1.00');
+
+  useEffect(() => {
+    const fetchExchangeRate = async () => {
+      try {
+        const client = new CrestClient();
+        setExchangeRate(
+          Number(formatUnits(await client.getExchangeRate(), 6)).toFixed(4),
+        );
+      } catch (error) {
+        console.error('Error fetching exchange rate:', error);
+      }
+    };
+
+    fetchExchangeRate();
+  }, []);
+
+  useEffect(() => {
+    const calculateShares = async () => {
+      if (!inputAmount || inputAmount === '0' || Number(inputAmount) <= 0) {
+        setOutputAmount('0');
+        return;
+      }
+
+      try {
+        setIsCalculating(true);
+        const client = new CrestClient();
+
+        const assetsInWei = BigInt(Math.floor(Number(inputAmount) * 1e6));
+
+        if (activeTab === 'deposit') {
+          setOutputAmount(
+            Number(
+              formatUnits(await client.convertToShares(assetsInWei), 6),
+            ).toFixed(6),
+          );
+        } else {
+          setOutputAmount(
+            Number(
+              formatUnits(await client.convertToAssets(assetsInWei), 6),
+            ).toFixed(6),
+          );
+        }
+      } catch (error) {
+        console.error('Error calculating conversion:', error);
+        setOutputAmount('0');
+      } finally {
+        setIsCalculating(false);
+      }
+    };
+
+    // Debounce the calculation
+    const timeoutId = setTimeout(calculateShares, 300);
+    return () => clearTimeout(timeoutId);
+  }, [inputAmount, activeTab]);
 
   return (
     <Container>
       <FormContent>
-        <DepositWithdrawTabs
-          activeTab={activeTab}
-          onTabChange={setActiveTab}
-        />
+        <DepositWithdrawTabs activeTab={activeTab} onTabChange={setActiveTab} />
 
         <AmountInputWithTokens
           label="You lock"
@@ -63,11 +118,13 @@ export const TradingForm: React.FC = () => {
         />
 
         <AmountInputWithTokens
-          label="You Receive"
+          label={`You Receive${isCalculating ? ' (calculating...)' : ''}`}
           value={outputAmount}
-          onChange={setOutputAmount}
+          onChange={() => {}} // Read-only
           tokens={OUTPUT_TOKENS}
-          onTokenSelect={(token) => console.log('Selected output token:', token)}
+          onTokenSelect={(token) =>
+            console.log('Selected output token:', token)
+          }
           variant="output"
         />
 
@@ -86,7 +143,7 @@ export const TradingForm: React.FC = () => {
           symbol: 'CREST',
           icon: '/assets/tokens/crest-icon.png',
         }}
-        rate="1 USDC ≈ 0.99 CREST"
+        rate={`1 USDC ≈ ${exchangeRate} CREST`}
       />
       <FeeDisplay fees={FEES} />
     </Container>

@@ -90,7 +90,7 @@ const AnimatedBlur = styled(motion.div)`
   height: 100%;
 
   background: rgba(11, 14, 21, 0.24);
-  backdrop-filter: none;
+  backdrop-filter: blur(8px);
 
   .dark & {
     background: rgba(11, 14, 21, 0.77);

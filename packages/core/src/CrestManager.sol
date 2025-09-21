@@ -189,13 +189,8 @@ contract CrestManager is Auth, ReentrancyGuard {
         uint256 spotAmount = (availableUsdt0 * SPOT_ALLOCATION_BPS) / 10000;
         uint256 perpAmount = (availableUsdt0 * PERP_ALLOCATION_BPS) / 10000;
 
-        // Get BBO for price calculations
-        PrecompileLib.Bbo memory spotBbo = PrecompileLib.bbo(uint64(spotIndex));
-        PrecompileLib.Bbo memory perpBbo = PrecompileLib.bbo(uint64(perpIndex));
-
-        // Use actual fill prices: ask for buying, bid for shorting
-        uint64 spotPrice = spotBbo.ask; // We buy at ask
-        uint64 perpPrice = perpBbo.bid; // We short at bid
+        // Get prices for calculations
+        (uint64 spotPrice, uint64 perpPrice) = _getMarketPrices(spotIndex, perpIndex);
 
         // Transfer USDT0 from vault to this contract first
         bytes memory transferData = abi.encodeWithSelector(
@@ -219,7 +214,7 @@ contract CrestManager is Auth, ReentrancyGuard {
 
         // Place market order to sell USDT0 for USDC
         {
-            uint64 usdt0Bid = PrecompileLib.bbo(uint64(usdt0SpotIndex())).bid;
+            uint64 usdt0Bid = _getUsdt0BidPrice();
             CoreWriterLib.placeLimitOrder(
                 usdt0SpotIndex(),
                 false, // sell USDT0
@@ -246,7 +241,7 @@ contract CrestManager is Auth, ReentrancyGuard {
             CoreWriterLib.placeLimitOrder(
                 spotIndex,
                 true, // isBuy
-                spotBbo.ask + ((spotBbo.ask * 100) / 10000), // Buy at ask + 1% slippage
+                spotPrice, // Already includes slippage
                 uint64((uint256(uint64(spotAmount) * 100) * 1e8) / spotPrice), // size calculation inline
                 false, // reduceOnly
                 3, // IOC (Immediate or Cancel)
@@ -265,7 +260,7 @@ contract CrestManager is Auth, ReentrancyGuard {
             CoreWriterLib.placeLimitOrder(
                 perpIndex,
                 false, // isBuy (short)
-                perpBbo.bid - ((perpBbo.bid * 100) / 10000), // Short at bid - 1% slippage
+                perpPrice, // Already includes slippage
                 uint64((uint256(uint64(perpAmount) * 100) * 1e6) / perpPrice), // size calculation inline
                 false, // reduceOnly
                 3, // IOC (Immediate or Cancel)
@@ -346,22 +341,22 @@ contract CrestManager is Auth, ReentrancyGuard {
     function _closePositionsOnly() internal {
         // Close spot position
         if (currentSpotPosition.size > 0) {
-            // Get BBO for spot closing
-            PrecompileLib.Bbo memory spotBbo = PrecompileLib.bbo(uint64(currentSpotPosition.index));
+            // Get price for spot closing
+            uint64 spotBid = _getSpotBidPrice(currentSpotPosition.index);
 
             // Sell with slippage for immediate execution
             CoreWriterLib.placeLimitOrder(
                 currentSpotPosition.index,
                 false, // isBuy (sell to close)
-                spotBbo.bid - ((spotBbo.bid * 100) / 10000), // Sell at bid - 1% slippage
+                spotBid - ((spotBid * 100) / 10000), // Sell at bid - 1% slippage
                 currentSpotPosition.size,
                 true, // reduceOnly
                 3, // IOC
                 uint128(block.timestamp + 2) // cloid
             );
 
-            // Calculate PnL using mid price
-            uint64 currentSpotPrice = (spotBbo.bid + spotBbo.ask) / 2;
+            // Calculate PnL using spot price
+            uint64 currentSpotPrice = PrecompileLib.spotPx(uint64(currentSpotPosition.index));
             int256 spotPnL;
             if (currentSpotPrice >= currentSpotPosition.entryPrice) {
                 spotPnL =
@@ -391,14 +386,14 @@ contract CrestManager is Auth, ReentrancyGuard {
 
         // Close perp position
         if (currentPerpPosition.size > 0) {
-            // Get BBO for perp closing
-            PrecompileLib.Bbo memory perpBbo = PrecompileLib.bbo(uint64(currentPerpPosition.index));
+            // Get price for perp closing
+            uint64 perpAsk = _getPerpAskPrice(currentPerpPosition.index);
 
             // Buy to close short with slippage for immediate execution
             CoreWriterLib.placeLimitOrder(
                 currentPerpPosition.index,
                 true, // isBuy (buy to close short)
-                perpBbo.ask + ((perpBbo.ask * 100) / 10000), // Buy at ask + 1% slippage
+                perpAsk + ((perpAsk * 100) / 10000), // Buy at ask + 1% slippage
                 currentPerpPosition.size,
                 true, // reduceOnly
                 3, // IOC
@@ -406,7 +401,7 @@ contract CrestManager is Auth, ReentrancyGuard {
             );
 
             // Calculate PnL (inverted for short) using mid price
-            uint64 markPrice = (perpBbo.bid + perpBbo.ask) / 2;
+            uint64 markPrice = PrecompileLib.markPx(currentPerpPosition.index);
             int256 perpPnL;
             if (currentPerpPosition.entryPrice >= markPrice) {
                 perpPnL =
@@ -466,13 +461,8 @@ contract CrestManager is Auth, ReentrancyGuard {
         uint256 spotAmount = (totalUsdc * SPOT_ALLOCATION_BPS) / 10000;
         uint256 perpAmount = (totalUsdc * PERP_ALLOCATION_BPS) / 10000;
 
-        // Get BBO for rebalance orders
-        PrecompileLib.Bbo memory spotBbo = PrecompileLib.bbo(uint64(spotIndex));
-        PrecompileLib.Bbo memory perpBbo = PrecompileLib.bbo(uint64(perpIndex));
-
-        // Use ask/bid prices for size estimation
-        uint64 spotPrice = spotBbo.ask; // We'll buy at ask
-        uint64 perpPrice = perpBbo.bid; // We'll short at bid
+        // Get prices for rebalance orders
+        (uint64 spotPrice, uint64 perpPrice) = _getMarketPrices(spotIndex, perpIndex);
 
         // Transfer margin to perp account
         // Convert USDC from EVM decimals to Core decimals
@@ -496,7 +486,7 @@ contract CrestManager is Auth, ReentrancyGuard {
         CoreWriterLib.placeLimitOrder(
             spotIndex,
             true, // isBuy
-            spotBbo.ask + ((spotBbo.ask * 100) / 10000), // Buy at ask + 1% slippage
+            spotPrice, // Already includes slippage
             spotSizeInAsset,
             false, // reduceOnly
             3, // IOC
@@ -521,7 +511,7 @@ contract CrestManager is Auth, ReentrancyGuard {
         CoreWriterLib.placeLimitOrder(
             perpIndex,
             false, // isBuy (short)
-            perpBbo.bid - ((perpBbo.bid * 100) / 10000), // Short at bid - 1% slippage
+            perpPrice, // Already includes slippage
             perpSizeInAsset,
             false, // reduceOnly
             3, // IOC
@@ -552,7 +542,7 @@ contract CrestManager is Auth, ReentrancyGuard {
         // First swap any USDC back to USDT0
         if (spotBalance.total > 0) {
             // Buy USDT0 with USDC
-            uint64 usdt0Ask = PrecompileLib.bbo(uint64(usdt0SpotIndex())).ask;
+            uint64 usdt0Ask = _getUsdt0AskPrice();
             CoreWriterLib.placeLimitOrder(
                 usdt0SpotIndex(),
                 true, // buy USDT0
@@ -661,10 +651,7 @@ contract CrestManager is Auth, ReentrancyGuard {
                 .spotBalance(address(this), tokenId);
 
             if (spotBal.total > 0) {
-                PrecompileLib.Bbo memory spotBboPrices = PrecompileLib.bbo(
-                    uint64(currentSpotPosition.index)
-                );
-                uint64 currentSpotPrice = (spotBboPrices.bid + spotBboPrices.ask) / 2;
+                uint64 currentSpotPrice = _getSpotMidPrice(currentSpotPosition.index);
                 // spotBal.total is in Core decimals (8), price is in Core decimals (8)
                 // Result needs to be in USDT0 (6 decimals)
                 uint64 spotValueCore = uint64(
@@ -686,10 +673,7 @@ contract CrestManager is Auth, ReentrancyGuard {
 
             // szi is the signed size (negative for shorts)
             if (perpPos.szi != 0) {
-                PrecompileLib.Bbo memory perpBboPrices = PrecompileLib.bbo(
-                    uint64(currentPerpPosition.index)
-                );
-                uint64 currentPerpPrice = (perpBboPrices.bid + perpBboPrices.ask) / 2;
+                uint64 currentPerpPrice = _getPerpMidPrice(currentPerpPosition.index);
 
                 // Calculate notional value of position
                 // szi is signed, negative for shorts
@@ -785,5 +769,45 @@ contract CrestManager is Auth, ReentrancyGuard {
                 currentPerpPosition.entryPrice = uint64((perpPos.entryNtl * 1e6) / uint256(absSize));
             }
         }
+    }
+
+    // Helper functions for price retrieval with BBO fallback
+    function _getMarketPrices(uint32 spotIndex, uint32 perpIndex) internal view virtual returns (uint64 spotPrice, uint64 perpPrice) {
+        // For production, use BBO. Tests can override if needed.
+        PrecompileLib.Bbo memory spotBbo = PrecompileLib.bbo(uint64(spotIndex));
+        PrecompileLib.Bbo memory perpBbo = PrecompileLib.bbo(uint64(perpIndex));
+
+        spotPrice = spotBbo.ask; // Buy at ask
+        perpPrice = perpBbo.bid; // Short at bid
+    }
+
+    function _getUsdt0BidPrice() internal view virtual returns (uint64) {
+        PrecompileLib.Bbo memory usdt0Bbo = PrecompileLib.bbo(uint64(usdt0SpotIndex()));
+        return usdt0Bbo.bid;
+    }
+
+    function _getUsdt0AskPrice() internal view virtual returns (uint64) {
+        PrecompileLib.Bbo memory usdt0Bbo = PrecompileLib.bbo(uint64(usdt0SpotIndex()));
+        return usdt0Bbo.ask;
+    }
+
+    function _getSpotBidPrice(uint32 spotIndex) internal view virtual returns (uint64) {
+        PrecompileLib.Bbo memory spotBbo = PrecompileLib.bbo(uint64(spotIndex));
+        return spotBbo.bid;
+    }
+
+    function _getPerpAskPrice(uint32 perpIndex) internal view virtual returns (uint64) {
+        PrecompileLib.Bbo memory perpBbo = PrecompileLib.bbo(uint64(perpIndex));
+        return perpBbo.ask;
+    }
+
+    function _getSpotMidPrice(uint32 spotIndex) internal view virtual returns (uint64) {
+        PrecompileLib.Bbo memory spotBbo = PrecompileLib.bbo(uint64(spotIndex));
+        return (spotBbo.bid + spotBbo.ask) / 2;
+    }
+
+    function _getPerpMidPrice(uint32 perpIndex) internal view virtual returns (uint64) {
+        PrecompileLib.Bbo memory perpBbo = PrecompileLib.bbo(uint64(perpIndex));
+        return (perpBbo.bid + perpBbo.ask) / 2;
     }
 }

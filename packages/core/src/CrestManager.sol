@@ -12,6 +12,7 @@ import { PrecompileLib } from '@hyper-evm-lib/src/PrecompileLib.sol';
 import { HLConstants } from '@hyper-evm-lib/src/common/HLConstants.sol';
 import { HLConversions } from '@hyper-evm-lib/src/common/HLConversions.sol';
 import { CoreWriterLib } from '@hyper-evm-lib/src/CoreWriterLib.sol';
+import { CustomPrecompileLib } from "./libraries/CustomPrecompileLib.sol";
 
 contract CrestManager is Auth, ReentrancyGuard {
     using SafeTransferLib for ERC20;
@@ -168,8 +169,8 @@ contract CrestManager is Auth, ReentrancyGuard {
             revert CrestManager__PositionAlreadyOpen();
         }
 
-        // Get available USDT0 balance
-        uint256 availableUsdt0 = usdt0.balanceOf(address(vault));
+        // Get available USDT0 balance (check manager balance)
+        uint256 availableUsdt0 = usdt0.balanceOf(address(this));
 
         // Check if we need to withdraw from Hyperdrive
         uint256 hyperdriveValue = vault.getHyperdriveValue();
@@ -180,15 +181,15 @@ contract CrestManager is Auth, ReentrancyGuard {
             availableUsdt0 = usdt0.balanceOf(address(vault));
         }
 
-        // Minimum 50 USDT0 needed to meet Core's minimum order requirements (20 USDT0)
-        if (availableUsdt0 < 50e6) revert CrestManager__InsufficientBalance();
+        // Minimum 40 USDT0 needed to meet Core's minimum order requirements (20 USDT0)
+        if (availableUsdt0 < 40e6) revert CrestManager__InsufficientBalance();
 
         // Calculate allocations
         uint256 marginAmount = (availableUsdt0 * MARGIN_ALLOCATION_BPS) / 10000;
         uint256 spotAmount = (availableUsdt0 * SPOT_ALLOCATION_BPS) / 10000;
         uint256 perpAmount = (availableUsdt0 * PERP_ALLOCATION_BPS) / 10000;
 
-        // Get current prices from Hyperliquid precompiles
+        // Use raw prices for calculations (not normalized)
         uint64 spotPrice = PrecompileLib.spotPx(uint64(spotIndex));
         uint64 perpPrice = PrecompileLib.markPx(perpIndex);
 
@@ -242,11 +243,13 @@ contract CrestManager is Auth, ReentrancyGuard {
                 (uint256(spotSizeCoreAmount) * 1e8) / spotPrice
             );
 
-            // Place spot buy order with slippage for immediate execution
+            // Place spot buy order at ask price (for immediate fill)
+            // Get raw BBO for spot (not normalized)
+            PrecompileLib.Bbo memory spotBboRaw = PrecompileLib.bbo(uint64(spotIndex));
             CoreWriterLib.placeLimitOrder(
                 spotIndex,
                 true, // isBuy
-                spotPrice + ((spotPrice * 50) / 10000), // 0.5% slippage
+                spotBboRaw.ask + ((spotBboRaw.ask * 10) / 10000), // Buy at ask + 0.1% slippage
                 spotSizeInAsset,
                 false, // reduceOnly
                 3, // IOC (Immediate or Cancel)
@@ -271,11 +274,13 @@ contract CrestManager is Auth, ReentrancyGuard {
                 (uint256(perpSizeCoreAmount) * 1e6) / perpPrice
             );
 
-            // Place perp short order with slippage for immediate execution
+            // Place perp short order at bid price (for immediate fill)
+            // Get raw BBO for perp (not normalized)
+            PrecompileLib.Bbo memory perpBboRaw = PrecompileLib.bbo(uint64(perpIndex));
             CoreWriterLib.placeLimitOrder(
                 perpIndex,
                 false, // isBuy (short)
-                perpPrice - ((perpPrice * 50) / 10000), // 0.5% slippage
+                perpBboRaw.bid - ((perpBboRaw.bid * 10) / 10000), // Short at bid - 0.1% slippage
                 perpSizeInAsset,
                 false, // reduceOnly
                 3, // IOC (Immediate or Cancel)
@@ -355,15 +360,14 @@ contract CrestManager is Auth, ReentrancyGuard {
     function _closePositionsOnly() internal {
         // Close spot position
         if (currentSpotPosition.size > 0) {
-            // Get order book prices for immediate close
-            PrecompileLib.Bbo memory spotBbo = PrecompileLib.bbo(uint64(currentSpotPosition.index));
+            // Get spot price (BBO precompile not working on testnet)
+            uint64 spotPrice = PrecompileLib.spotPx(currentSpotPosition.index);
 
             // Sell with slippage for immediate execution
-            // For selling, use bid price
             CoreWriterLib.placeLimitOrder(
                 currentSpotPosition.index,
                 false, // isBuy (sell to close)
-                spotBbo.bid - ((spotBbo.bid * 50) / 10000), // 0.5% below bid for immediate fill
+                spotPrice - ((spotPrice * 100) / 10000), // 1% below spot for immediate fill
                 currentSpotPosition.size,
                 true, // reduceOnly
                 3, // IOC
@@ -372,20 +376,20 @@ contract CrestManager is Auth, ReentrancyGuard {
 
             // Calculate PnL
             // Use spot price for PnL calculation
-            uint64 spotPrice = PrecompileLib.spotPx(uint64(currentSpotPosition.index));
+            uint64 currentSpotPrice = PrecompileLib.spotPx(uint64(currentSpotPosition.index));
             int256 spotPnL;
-            if (spotPrice >= currentSpotPosition.entryPrice) {
+            if (currentSpotPrice >= currentSpotPosition.entryPrice) {
                 spotPnL =
                     (int256(
                         uint256(
-                            spotPrice - currentSpotPosition.entryPrice
+                            currentSpotPrice - currentSpotPosition.entryPrice
                         )
                     ) * int256(uint256(currentSpotPosition.size))) / 1e8;
             } else {
                 spotPnL =
                     (-int256(
                         uint256(
-                            currentSpotPosition.entryPrice - spotPrice
+                            currentSpotPosition.entryPrice - currentSpotPrice
                         )
                     ) * int256(uint256(currentSpotPosition.size))) / 1e8;
             }
@@ -402,15 +406,14 @@ contract CrestManager is Auth, ReentrancyGuard {
 
         // Close perp position
         if (currentPerpPosition.size > 0) {
-            // Get order book prices for immediate close
-            PrecompileLib.Bbo memory perpBbo = PrecompileLib.bbo(uint64(currentPerpPosition.index));
+            // Get mark price (BBO precompile not working on testnet)
+            uint64 perpPrice = PrecompileLib.markPx(currentPerpPosition.index);
 
             // Buy to close short with slippage for immediate execution
-            // For closing short, we need to buy, so use ask price
             CoreWriterLib.placeLimitOrder(
                 currentPerpPosition.index,
                 true, // isBuy (buy to close short)
-                perpBbo.ask + ((perpBbo.ask * 50) / 10000), // 0.5% above ask for immediate fill
+                perpPrice + ((perpPrice * 100) / 10000), // 1% above mark for immediate fill
                 currentPerpPosition.size,
                 true, // reduceOnly
                 3, // IOC
@@ -480,11 +483,9 @@ contract CrestManager is Auth, ReentrancyGuard {
         uint256 spotAmount = (totalUsdc * SPOT_ALLOCATION_BPS) / 10000;
         uint256 perpAmount = (totalUsdc * PERP_ALLOCATION_BPS) / 10000;
 
-        // Get order book prices for immediate fills
-        // For spot: use ask price (we're buying)
-        PrecompileLib.Bbo memory spotBbo = PrecompileLib.bbo(uint64(spotIndex));
-        // For perp: use bid price (we're selling/shorting)
-        PrecompileLib.Bbo memory perpBbo = PrecompileLib.bbo(uint64(perpIndex));
+        // Get prices (BBO precompile not working on testnet)
+        uint64 spotPrice = PrecompileLib.spotPx(spotIndex);
+        uint64 perpPrice = PrecompileLib.markPx(perpIndex);
 
         // Transfer margin to perp account
         // Convert USDC from EVM decimals to Core decimals
@@ -494,15 +495,15 @@ contract CrestManager is Auth, ReentrancyGuard {
         // Place spot buy order
         // Convert USDC from EVM decimals to Core decimals
         uint64 spotSizeCoreAmount = HLConversions.evmToWei(USDC_TOKEN_ID, spotAmount);
-        // Use ask price for size calculation
+        // Use spot price for size calculation
         uint64 spotSizeInAsset = uint64(
-            (uint256(spotSizeCoreAmount) * 1e8) / spotBbo.ask
+            (uint256(spotSizeCoreAmount) * 1e8) / spotPrice
         );
 
         CoreWriterLib.placeLimitOrder(
             spotIndex,
             true, // isBuy
-            spotBbo.ask + ((spotBbo.ask * 100) / 10000), // 1% above ask for immediate fill
+            spotPrice + ((spotPrice * 100) / 10000), // 1% above spot for immediate fill
             spotSizeInAsset,
             false, // reduceOnly
             3, // IOC
@@ -511,20 +512,20 @@ contract CrestManager is Auth, ReentrancyGuard {
 
         currentSpotPosition.isLong = true;
         currentSpotPosition.size = spotSizeInAsset;
-        currentSpotPosition.entryPrice = spotBbo.ask;
+        currentSpotPosition.entryPrice = spotPrice;
 
         // Place perp short order
         // Convert USDC from EVM decimals to Core decimals
         uint64 perpSizeCoreAmount = HLConversions.evmToWei(USDC_TOKEN_ID, perpAmount);
         // Use bid price for size calculation
         uint64 perpSizeInAsset = uint64(
-            (uint256(perpSizeCoreAmount) * 1e8) / perpBbo.bid
+            (uint256(perpSizeCoreAmount) * 1e8) / perpPrice
         );
 
         CoreWriterLib.placeLimitOrder(
             perpIndex,
             false, // isBuy (short)
-            perpBbo.bid - ((perpBbo.bid * 100) / 10000), // 1% below bid for immediate fill
+            perpPrice - ((perpPrice * 100) / 10000), // 1% below mark for immediate fill
             perpSizeInAsset,
             false, // reduceOnly
             3, // IOC
@@ -533,7 +534,7 @@ contract CrestManager is Auth, ReentrancyGuard {
 
         currentPerpPosition.isLong = false;
         currentPerpPosition.size = perpSizeInAsset;
-        currentPerpPosition.entryPrice = perpBbo.bid;
+        currentPerpPosition.entryPrice = perpPrice;
     }
 
     /**

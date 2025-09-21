@@ -23,6 +23,7 @@ class HyperliquidAPI {
     }>({ type: 'spotMeta' });
 
     const token = tokens.find((token) => token.name === symbol);
+    console.log(tokens.find((v) => v.index === 1084));
     if (token?.index === undefined) {
       throw new Error(`Token ${symbol} not found`);
     }

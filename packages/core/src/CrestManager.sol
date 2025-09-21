@@ -225,15 +225,19 @@ contract CrestManager is Auth, ReentrancyGuard {
 
         // After swap, we have USDC in spot balance
         // Transfer margin to perp account
-        uint64 marginCoreAmount = uint64(marginAmount * 100); // USDC has 8 decimals in core, 6 on EVM
+        // USDC: 6 decimals on EVM, 8 decimals in Core
+        uint64 marginCoreAmount = uint64(marginAmount) * 100; // Convert 6 decimals to 8 decimals
         CoreWriterLib.transferUsdClass(
-            marginCoreAmount / 100, // weiToPerp: divide by 100 for USDC
-            true
+            marginCoreAmount, // In Core's 8 decimal format
+            true // to perp
         );
 
         // Place spot buy order
         {
-            uint64 spotSizeCoreAmount = uint64(spotAmount * 100); // USDC: 6 decimals EVM -> 8 decimals Core
+            // Convert spot amount from EVM to Core decimals
+            // USDC: 6 decimals on EVM, 8 decimals in Core
+            uint64 spotSizeCoreAmount = uint64(spotAmount) * 100;
+            // Calculate how many tokens we can buy with this USDC amount
             uint64 spotSizeInAsset = uint64(
                 (uint256(spotSizeCoreAmount) * 1e8) / spotPrice
             );
@@ -259,7 +263,10 @@ contract CrestManager is Auth, ReentrancyGuard {
 
         // Place perp short order
         {
-            uint64 perpSizeCoreAmount = uint64(perpAmount * 100); // USDC: 6 decimals EVM -> 8 decimals Core
+            // Convert perp amount from EVM to Core decimals
+            // USDC: 6 decimals on EVM, 8 decimals in Core
+            uint64 perpSizeCoreAmount = uint64(perpAmount) * 100;
+            // Calculate position size in contracts
             uint64 perpSizeInAsset = uint64(
                 (uint256(perpSizeCoreAmount) * 1e6) / perpPrice
             );
@@ -476,11 +483,13 @@ contract CrestManager is Auth, ReentrancyGuard {
         uint64 perpPrice = PrecompileLib.markPx(perpIndex);
 
         // Transfer margin to perp account
-        uint64 marginCoreAmount = uint64(marginAmount * 100);
-        CoreWriterLib.transferUsdClass(marginCoreAmount / 100, true);
+        // USDC: 6 decimals on EVM, 8 decimals in Core
+        uint64 marginCoreAmount = uint64(marginAmount) * 100;
+        CoreWriterLib.transferUsdClass(marginCoreAmount, true);
 
         // Place spot buy order
-        uint64 spotSizeCoreAmount = uint64(spotAmount * 100);
+        // USDC: 6 decimals on EVM, 8 decimals in Core
+        uint64 spotSizeCoreAmount = uint64(spotAmount) * 100;
         uint64 spotSizeInAsset = uint64(
             (uint256(spotSizeCoreAmount) * 1e8) / spotPrice
         );
@@ -500,7 +509,8 @@ contract CrestManager is Auth, ReentrancyGuard {
         currentSpotPosition.entryPrice = spotPrice;
 
         // Place perp short order
-        uint64 perpSizeCoreAmount = uint64(perpAmount * 100);
+        // USDC: 6 decimals on EVM, 8 decimals in Core
+        uint64 perpSizeCoreAmount = uint64(perpAmount) * 100;
         uint64 perpSizeInAsset = uint64(
             (uint256(perpSizeCoreAmount) * 1e6) / perpPrice
         );

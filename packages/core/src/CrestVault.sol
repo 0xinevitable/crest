@@ -9,6 +9,7 @@ import { SafeTransferLib } from '@solmate/utils/SafeTransferLib.sol';
 import { ERC20 } from '@solmate/tokens/ERC20.sol';
 import { Auth, Authority } from '@solmate/auth/Auth.sol';
 import { BeforeTransferHook } from './interfaces/BeforeTransferHook.sol';
+import { IHyperdriveMarket } from './interfaces/IHyperdriveMarket.sol';
 
 contract CrestVault is ERC20, Auth, ERC721Holder, ERC1155Holder {
     using Address for address;
@@ -27,6 +28,16 @@ contract CrestVault is ERC20, Auth, ERC721Holder, ERC1155Holder {
      */
     uint32 public currentSpotIndex;
     uint32 public currentPerpIndex;
+
+    /**
+     * @notice Hyperdrive market for USDT0 yield generation
+     */
+    IHyperdriveMarket public hyperdriveMarket;
+
+    /**
+     * @notice Tracks Hyperdrive shares owned by the vault
+     */
+    uint256 public hyperdriveShares;
 
     //============================== EVENTS ===============================
 
@@ -51,6 +62,9 @@ contract CrestVault is ERC20, Auth, ERC721Holder, ERC1155Holder {
         uint32 newSpotIndex,
         uint32 newPerpIndex
     );
+    event HyperdriveMarketUpdated(address indexed market);
+    event HyperdriveDeposit(uint256 assets, uint256 shares);
+    event HyperdriveWithdraw(uint256 assets, uint256 shares);
 
     //============================== CONSTRUCTOR ===============================
 
@@ -200,6 +214,81 @@ contract CrestVault is ERC20, Auth, ERC721Holder, ERC1155Holder {
         if (assetAmount > 0) asset.safeTransfer(to, assetAmount);
 
         emit Exit(to, address(asset), assetAmount, from, shareAmount);
+    }
+
+    //============================== HYPERDRIVE INTEGRATION ===============================
+
+    /**
+     * @notice Sets the Hyperdrive market contract
+     */
+    function setHyperdriveMarket(address _market) external requiresAuth {
+        // Withdraw from old market if exists
+        if (address(hyperdriveMarket) != address(0) && hyperdriveShares > 0) {
+            _withdrawFromHyperdrive(type(uint256).max);
+        }
+
+        hyperdriveMarket = IHyperdriveMarket(_market);
+        emit HyperdriveMarketUpdated(_market);
+    }
+
+    /**
+     * @notice Deposits idle USDT0 to Hyperdrive
+     */
+    function depositToHyperdrive(ERC20 usdt0, uint256 amount) external requiresAuth {
+        if (address(hyperdriveMarket) == address(0)) return;
+
+        // Approve Hyperdrive to spend USDT0
+        usdt0.approve(address(hyperdriveMarket), amount);
+
+        // Deposit to Hyperdrive
+        uint256 shares = hyperdriveMarket.deposit(amount, address(this));
+        hyperdriveShares += shares;
+
+        emit HyperdriveDeposit(amount, shares);
+    }
+
+    /**
+     * @notice Withdraws USDT0 from Hyperdrive
+     */
+    function withdrawFromHyperdrive(uint256 amount) external requiresAuth returns (uint256) {
+        return _withdrawFromHyperdrive(amount);
+    }
+
+    /**
+     * @notice Internal function to withdraw from Hyperdrive
+     */
+    function _withdrawFromHyperdrive(uint256 amount) internal returns (uint256 withdrawn) {
+        if (address(hyperdriveMarket) == address(0) || hyperdriveShares == 0) return 0;
+
+        uint256 sharesToBurn;
+
+        if (amount == type(uint256).max) {
+            // Withdraw all
+            sharesToBurn = hyperdriveShares;
+        } else {
+            // Calculate shares needed for specific amount
+            sharesToBurn = hyperdriveMarket.previewWithdraw(amount);
+            if (sharesToBurn > hyperdriveShares) {
+                sharesToBurn = hyperdriveShares;
+            }
+        }
+
+        // Withdraw from Hyperdrive
+        withdrawn = hyperdriveMarket.redeem(sharesToBurn, address(this), address(this));
+        hyperdriveShares -= sharesToBurn;
+
+        emit HyperdriveWithdraw(withdrawn, sharesToBurn);
+        return withdrawn;
+    }
+
+    /**
+     * @notice Returns the current value of Hyperdrive position
+     */
+    function getHyperdriveValue() external view returns (uint256) {
+        if (address(hyperdriveMarket) == address(0) || hyperdriveShares == 0) {
+            return 0;
+        }
+        return hyperdriveMarket.previewRedeem(hyperdriveShares);
     }
 
     //============================== BEFORE TRANSFER HOOK ===============================

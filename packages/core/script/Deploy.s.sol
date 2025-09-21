@@ -94,15 +94,9 @@ contract DeployScript is Script {
         // Configure Hyperdrive market for mainnet
         if (block.chainid != TESTNET_CHAINID) {
             address hyperdriveMarket = 0x260F5f56aD7D14789D43Fd538429d42Ff5b82B56;
-            teller.setHyperdriveMarket(hyperdriveMarket);
+            vault.setHyperdriveMarket(hyperdriveMarket);
             console.log('Hyperdrive Market configured:', hyperdriveMarket);
         }
-
-        // Configure manager
-        manager.setTeller(address(teller));
-
-        // Configure accountant
-        accountant.setTeller(address(teller));
 
         // Setup vault permissions
         vault.authorize(address(teller));

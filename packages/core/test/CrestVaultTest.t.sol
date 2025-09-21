@@ -17,6 +17,7 @@ import { PrecompileLib } from '@hyper-evm-lib/src/PrecompileLib.sol';
 import { HLConstants } from '@hyper-evm-lib/src/common/HLConstants.sol';
 import { HLConversions } from '@hyper-evm-lib/src/common/HLConversions.sol';
 import { CoreWriterLib } from '@hyper-evm-lib/src/CoreWriterLib.sol';
+import { IHyperdriveMarket } from '../src/interfaces/IHyperdriveMarket.sol';
 
 
 contract CrestVaultTest is Test {
@@ -25,6 +26,10 @@ contract CrestVaultTest is Test {
     CrestTeller public teller;
     CrestAccountant public accountant;
     CrestManager public manager;
+
+    // Real Hyperdrive market on mainnet
+    address public constant HYPERDRIVE_MARKET = 0x260F5f56aD7D14789D43Fd538429d42Ff5b82B56;
+    IHyperdriveMarket public hyperdriveMarket;
 
     // Real USDT0 from mainnet fork
     ERC20 public usdt0;
@@ -100,8 +105,12 @@ contract CrestVaultTest is Test {
             curator
         );
 
+        // Use real Hyperdrive market from mainnet fork
+        hyperdriveMarket = IHyperdriveMarket(HYPERDRIVE_MARKET);
+
         // Configure contracts
         teller.setAccountant(address(accountant));
+        vault.setHyperdriveMarket(HYPERDRIVE_MARKET);
         vault.authorize(address(teller));
         vault.authorize(address(manager));
         vault.authorize(address(accountant));
@@ -149,10 +158,22 @@ contract CrestVaultTest is Test {
             aliceBalanceBefore - depositAmount,
             'USDT0 transferred from Alice'
         );
+        // Note: With Hyperdrive integration, vault doesn't hold USDT0 directly
+        // USDT0 is deposited to Hyperdrive
         assertEq(
             usdt0.balanceOf(address(vault)),
-            depositAmount,
-            'Vault holds USDT0'
+            0,
+            'Vault should not hold USDT0 directly'
+        );
+        assertGt(
+            vault.hyperdriveShares(),
+            0,
+            'Vault should have Hyperdrive shares'
+        );
+        assertGt(
+            vault.getHyperdriveValue(),
+            0,
+            'Hyperdrive position should have value'
         );
         assertEq(
             vault.totalSupply(),
@@ -923,6 +944,147 @@ contract CrestVaultTest is Test {
             CrestAccountant.CrestAccountant__RateChangeTooBig.selector
         );
         accountant.updateExchangeRate(HUNDRED_THOUSAND_USDT0 * 2);
+    }
+
+    // ==================== HYPERDRIVE INTEGRATION TESTS ====================
+
+    function test_Hyperdrive_DepositToMoneyMarket() public {
+        // Given: Alice has USDT0
+        _fundUser(alice, MILLION_USDT0);
+        uint256 depositAmount = HUNDRED_THOUSAND_USDT0;
+
+        // When: Alice deposits to vault
+        vm.startPrank(alice);
+        teller.deposit(depositAmount, alice);
+        vm.stopPrank();
+
+        // Then: USDT0 is deposited to Hyperdrive
+        assertEq(
+            usdt0.balanceOf(address(vault)),
+            0,
+            'Vault should not hold USDT0'
+        );
+        assertGt(
+            vault.hyperdriveShares(),
+            0,
+            'Vault should have Hyperdrive shares'
+        );
+        assertApproxEqAbs(
+            vault.getHyperdriveValue(),
+            depositAmount,
+            100, // Small tolerance for rounding
+            'Hyperdrive value should match deposit'
+        );
+    }
+
+    function test_Hyperdrive_WithdrawFromMoneyMarket() public {
+        // Given: Alice has deposited and funds are in Hyperdrive
+        _fundUser(alice, MILLION_USDT0);
+        vm.startPrank(alice);
+        uint256 shares = teller.deposit(HUNDRED_THOUSAND_USDT0, alice);
+        vm.stopPrank();
+
+        // Wait for unlock period
+        vm.warp(block.timestamp + 1 days + 1);
+
+        // When: Alice withdraws half
+        vm.startPrank(alice);
+        uint256 assetsWithdrawn = teller.withdraw(shares / 2, alice);
+        vm.stopPrank();
+
+        // Then: Funds are withdrawn from Hyperdrive
+        assertApproxEqAbs(
+            assetsWithdrawn,
+            HUNDRED_THOUSAND_USDT0 / 2,
+            100,
+            'Should withdraw half'
+        );
+        assertApproxEqAbs(
+            vault.getHyperdriveValue(),
+            HUNDRED_THOUSAND_USDT0 / 2,
+            100,
+            'Half should remain in Hyperdrive'
+        );
+    }
+
+    function test_Hyperdrive_EmergencyWithdraw() public {
+        // Given: Funds are in Hyperdrive
+        _fundUser(alice, MILLION_USDT0);
+        vm.startPrank(alice);
+        teller.deposit(HUNDRED_THOUSAND_USDT0, alice);
+        vm.stopPrank();
+
+        uint256 hyperdriveValueBefore = vault.getHyperdriveValue();
+        assertGt(hyperdriveValueBefore, 0, 'Should have Hyperdrive value');
+
+        // When: Owner triggers emergency withdrawal
+        vm.prank(owner);
+        vault.withdrawFromHyperdrive(type(uint256).max);
+
+        // Then: All funds withdrawn from Hyperdrive to vault
+        assertEq(
+            vault.hyperdriveShares(),
+            0,
+            'No Hyperdrive shares should remain'
+        );
+        assertEq(
+            vault.getHyperdriveValue(),
+            0,
+            'No Hyperdrive value should remain'
+        );
+        assertApproxEqAbs(
+            usdt0.balanceOf(address(vault)),
+            hyperdriveValueBefore,
+            100,
+            'Vault should hold withdrawn USDT0'
+        );
+    }
+
+    function test_Hyperdrive_YieldAccrualInExchangeRate() public {
+        // Given: Initial deposit to establish rate
+        _fundUser(alice, MILLION_USDT0);
+        vm.startPrank(alice);
+        teller.deposit(HUNDRED_THOUSAND_USDT0, alice);
+        vm.stopPrank();
+
+        // Simulate time passing (Hyperdrive will accrue yield)
+        vm.warp(block.timestamp + 30 days);
+
+        // When: Update exchange rate to include Hyperdrive value
+        vm.prank(owner);
+        accountant.updateExchangeRate(0); // Pass 0 for vault balance, accountant will add Hyperdrive value
+
+        // Then: Exchange rate should reflect any yield
+        uint256 newRate = accountant.exchangeRate();
+        // Rate should be >= 1e6 (initial rate), any increase is from Hyperdrive yield
+        assertGe(
+            newRate,
+            1e6,
+            'Rate should not decrease'
+        );
+    }
+
+    function test_Hyperdrive_AllocationWithdrawsFromMarket() public {
+        // Given: Funds in Hyperdrive
+        _fundUser(alice, MILLION_USDT0);
+        vm.startPrank(alice);
+        teller.deposit(HUNDRED_THOUSAND_USDT0, alice);
+        vm.stopPrank();
+
+        // Verify funds are in Hyperdrive
+        assertGt(vault.getHyperdriveValue(), 0, 'Should have Hyperdrive value');
+
+        // When: Manager needs to allocate but vault has no direct USDT0
+        vm.prank(curator);
+        manager.allocate(HYPE_SPOT_INDEX, HYPE_PERP_INDEX);
+
+        // Then: Funds were withdrawn from Hyperdrive for allocation
+        // (Manager will call emergencyWithdrawFromHyperdrive if needed)
+        assertGt(
+            manager.totalAllocated(),
+            0,
+            'Should have allocated funds'
+        );
     }
 
     // ==================== AUTHORIZATION TESTS ====================

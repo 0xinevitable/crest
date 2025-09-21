@@ -8,7 +8,6 @@ import { FixedPointMathLib } from '@solmate/utils/FixedPointMathLib.sol';
 import { Auth, Authority } from '@solmate/auth/Auth.sol';
 import { ReentrancyGuard } from '@solmate/utils/ReentrancyGuard.sol';
 import { CrestVault } from './CrestVault.sol';
-import { CrestTeller } from './CrestTeller.sol';
 import { PrecompileLib } from '@hyper-evm-lib/src/PrecompileLib.sol';
 import { HLConstants } from '@hyper-evm-lib/src/common/HLConstants.sol';
 import { HLConversions } from '@hyper-evm-lib/src/common/HLConversions.sol';
@@ -95,11 +94,6 @@ contract CrestManager is Auth, ReentrancyGuard {
      */
     address public curator;
 
-    /**
-     * @notice Reference to teller for Hyperdrive withdrawals
-     */
-    CrestTeller public teller;
-
     //============================== EVENTS ===============================
 
     event Allocated(
@@ -119,7 +113,6 @@ contract CrestManager is Auth, ReentrancyGuard {
     event PositionClosed(bool isSpot, uint32 index, uint256 realizedPnL);
     event CuratorUpdated(address indexed curator);
     event MaxSlippageUpdated(uint16 bps);
-    event TellerUpdated(address indexed teller);
     event Paused();
     event Unpaused();
 
@@ -179,11 +172,12 @@ contract CrestManager is Auth, ReentrancyGuard {
         uint256 availableUsdt0 = usdt0.balanceOf(address(vault));
 
         // Check if we need to withdraw from Hyperdrive
-        if (address(teller) != address(0)) {
-            uint256 hyperdriveValue = teller.getHyperdriveValue();
-            if (hyperdriveValue > 0 && availableUsdt0 < 50e6) {
-                // Need to withdraw from Hyperdrive for allocation
-                teller.emergencyWithdrawFromHyperdrive();
+        uint256 hyperdriveValue = vault.getHyperdriveValue();
+        if (hyperdriveValue > 0 && availableUsdt0 < 50e6) {
+            // Need to withdraw from Hyperdrive for allocation
+            uint256 neededAmount = 50e6 > availableUsdt0 ? 50e6 - availableUsdt0 : 0;
+            if (neededAmount > 0) {
+                vault.withdrawFromHyperdrive(neededAmount);
                 // Update vault balance after withdrawal
                 availableUsdt0 = usdt0.balanceOf(address(vault));
             }
@@ -501,14 +495,6 @@ contract CrestManager is Auth, ReentrancyGuard {
     function updateMaxSlippage(uint16 _maxSlippageBps) external requiresAuth {
         maxSlippageBps = _maxSlippageBps;
         emit MaxSlippageUpdated(_maxSlippageBps);
-    }
-
-    /**
-     * @notice Sets the teller contract reference
-     */
-    function setTeller(address _teller) external requiresAuth {
-        teller = CrestTeller(_teller);
-        emit TellerUpdated(_teller);
     }
 
     /**

@@ -97,19 +97,25 @@ contract CrestVaultTest is Test {
         vm.startPrank(owner);
 
         vault = new CrestVault(owner, 'Crest Vault', 'cvUSDT0');
-        accountant = new CrestAccountant(
-            payable(address(vault)),
-            USDT0_ADDRESS,
-            owner,
-            feeRecipient
-        );
-        teller = new CrestTeller(payable(address(vault)), USDT0_ADDRESS, owner);
+
+        // Deploy manager first (before accountant)
         manager = new CrestManager(
             payable(address(vault)),
             USDT0_ADDRESS,
             owner,
             curator
         );
+
+        // Deploy accountant with manager address
+        accountant = new CrestAccountant(
+            payable(address(vault)),
+            USDT0_ADDRESS,
+            address(manager),
+            owner,
+            feeRecipient
+        );
+
+        teller = new CrestTeller(payable(address(vault)), USDT0_ADDRESS, owner);
 
         // Use real Hyperdrive market from mainnet fork
         hyperdriveMarket = IHyperdriveMarket(HYPERDRIVE_MARKET);

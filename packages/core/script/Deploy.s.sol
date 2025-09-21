@@ -66,10 +66,19 @@ contract DeployScript is Script {
         vm.startBroadcast(deployerPrivateKey);
         CrestVault vault = new CrestVault(deployer, 'Crest Vault', 'CREST');
 
-        // Deploy accountant
+        // Deploy manager first (before accountant)
+        CrestManager manager = new CrestManager(
+            payable(address(vault)),
+            usdt0Address(),
+            deployer,
+            curator
+        );
+
+        // Deploy accountant with manager address
         CrestAccountant accountant = new CrestAccountant(
             payable(address(vault)),
             usdt0Address(),
+            address(manager),
             deployer,
             feeRecipient
         );
@@ -79,14 +88,6 @@ contract DeployScript is Script {
             payable(address(vault)),
             usdt0Address(),
             deployer
-        );
-
-        // Deploy manager
-        CrestManager manager = new CrestManager(
-            payable(address(vault)),
-            usdt0Address(),
-            deployer,
-            curator
         );
 
         // Configure teller

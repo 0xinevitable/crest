@@ -5,6 +5,7 @@ import { ERC20 } from '@solmate/tokens/ERC20.sol';
 import { FixedPointMathLib } from '@solmate/utils/FixedPointMathLib.sol';
 import { Auth, Authority } from '@solmate/auth/Auth.sol';
 import { CrestVault } from './CrestVault.sol';
+import { CrestManager } from './CrestManager.sol';
 
 contract CrestAccountant is Auth {
     using FixedPointMathLib for uint256;
@@ -20,6 +21,11 @@ contract CrestAccountant is Auth {
      * @notice The USDT0 token contract
      */
     ERC20 public immutable usdt0;
+
+    /**
+     * @notice The CrestManager contract
+     */
+    CrestManager public immutable manager;
 
     /**
      * @notice Last recorded total assets for fee calculation
@@ -98,11 +104,13 @@ contract CrestAccountant is Auth {
     constructor(
         address payable _vault,
         address _usdt0,
+        address _manager,
         address _owner,
         address _feeRecipient
     ) Auth(_owner, Authority(address(0))) {
         vault = CrestVault(_vault);
         usdt0 = ERC20(_usdt0);
+        manager = CrestManager(_manager);
         feeRecipient = _feeRecipient;
         lastTotalAssets = 0; // Initialize to 0
     }
@@ -236,10 +244,14 @@ contract CrestAccountant is Auth {
         // Add Hyperdrive value
         uint256 hyperdriveValue = vault.getHyperdriveValue();
 
-        // TODO: Add Core position values from Manager if needed
-        // For now, we assume Manager properly returns funds to vault
+        // Add Core position values from Manager
+        uint256 corePositionValue = 0;
+        if (address(manager) != address(0)) {
+            // Get the current USD-denominated value of Core positions
+            corePositionValue = manager.estimatePositionValue();
+        }
 
-        return vaultBalance + hyperdriveValue;
+        return vaultBalance + hyperdriveValue + corePositionValue;
     }
 
     /**

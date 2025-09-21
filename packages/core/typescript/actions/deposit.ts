@@ -8,11 +8,12 @@ import {
   createWalletClient,
   erc20Abi,
   http,
+  parseUnits,
 } from 'viem';
 import { privateKeyToAccount } from 'viem/accounts';
-import { hyperliquidEvmTestnet } from 'viem/chains';
 
 import _contracts from '../../deployments/998.json';
+import { hyperliquidEvmTestnet } from '../constants/chain';
 import { crestTellerAbi, crestVaultAbi } from '../generated';
 
 const contracts = _contracts as Record<keyof typeof _contracts, Address>;
@@ -34,6 +35,9 @@ const main = async () => {
     throw new Error('Wallet account is not the deployer');
   }
 
+  const depositAmount = parseUnits('22', 6);
+  console.log({ depositAmount });
+
   const usdt0Balance = await publicClient.readContract({
     address: contracts.usdt0,
     abi: erc20Abi,
@@ -41,33 +45,40 @@ const main = async () => {
     args: [walletClient.account.address],
   });
   console.log({ usdt0Balance });
-  if (usdt0Balance === 0n) {
+  if (usdt0Balance === 0n || usdt0Balance < depositAmount) {
     throw new Error('Insufficient balance');
   }
-  const depositAmount = usdt0Balance / 2n;
-  console.log({ depositAmount });
 
   const usdt0Allowance = await publicClient.readContract({
     address: contracts.usdt0,
     abi: erc20Abi,
     functionName: 'allowance',
-    args: [walletClient.account.address, contracts.vault],
+    args: [walletClient.account.address, contracts.teller],
   });
   console.log({ usdt0Allowance });
 
   if (usdt0Allowance < depositAmount) {
-    // approve to vault
+    // approve to teller
     const hash = await walletClient.writeContract({
       address: contracts.usdt0,
       abi: erc20Abi,
       functionName: 'approve',
-      args: [contracts.vault, depositAmount],
+      args: [contracts.teller, depositAmount],
     });
     await publicClient.waitForTransactionReceipt({ hash });
+
+    // post allowance
+    const usdt0Allowance = await publicClient.readContract({
+      address: contracts.usdt0,
+      abi: erc20Abi,
+      functionName: 'allowance',
+      args: [walletClient.account.address, contracts.teller],
+    });
+    console.log({ usdt0Allowance });
   }
 
   const receiver = walletClient.account.address;
-  // deposit to vault
+  // deposit to teller
   {
     const hash = await walletClient.writeContract({
       address: contracts.teller,

@@ -180,7 +180,7 @@ contract CrestManager is Auth, ReentrancyGuard {
         }
 
         // Minimum 22 USDT0 needed to meet Core's minimum order requirements
-        if (availableUsdt0 < 22e6) revert CrestManager__InsufficientBalance();
+        // if (availableUsdt0 < 22e6) revert CrestManager__InsufficientBalance();
 
         // Calculate allocations
         uint256 marginAmount = (availableUsdt0 * MARGIN_ALLOCATION_BPS) / 10000;
@@ -207,89 +207,89 @@ contract CrestManager is Auth, ReentrancyGuard {
             marginAmount + spotAmount + perpAmount
         );
 
-        // Swap USDT0 to USDC on Hyperliquid
-        uint64 usdt0CoreAmount = HLConversions.evmToWei(
-            usdt0TokenId(),
-            marginAmount + spotAmount + perpAmount
-        );
+        // // Swap USDT0 to USDC on Hyperliquid
+        // uint64 usdt0CoreAmount = HLConversions.evmToWei(
+        //     usdt0TokenId(),
+        //     marginAmount + spotAmount + perpAmount
+        // );
 
-        // Place market order to sell USDT0 for USDC
-        {
-            uint64 usdt0Bid = _getUsdt0BidPrice();
-            CoreWriterLib.placeLimitOrder(
-                usdt0SpotIndex(),
-                false, // sell USDT0
-                usdt0Bid - ((usdt0Bid * 100) / 10000), // sell at bid - 1% slippage
-                usdt0CoreAmount,
-                false, // not reduce only
-                3, // IOC
-                uint128(block.timestamp << 32) // unique cloid
-            );
-        }
+        // // Place market order to sell USDT0 for USDC
+        // {
+        //     uint64 usdt0Bid = _getUsdt0BidPrice();
+        //     CoreWriterLib.placeLimitOrder(
+        //         usdt0SpotIndex(),
+        //         false, // sell USDT0
+        //         usdt0Bid - ((usdt0Bid * 100) / 10000), // sell at bid - 1% slippage
+        //         usdt0CoreAmount,
+        //         false, // not reduce only
+        //         3, // IOC
+        //         uint128(block.timestamp << 32) // unique cloid
+        //     );
+        // }
 
-        // After swap, we have USDC in spot balance
-        // Transfer margin to perp account
-        // USDC: 6 decimals on EVM, 8 decimals in Core
-        uint64 marginCoreAmount = uint64(marginAmount) * 100; // Convert 6 decimals to 8 decimals
-        CoreWriterLib.transferUsdClass(
-            marginCoreAmount, // In Core's 8 decimal format
-            true // to perp
-        );
+        // // After swap, we have USDC in spot balance
+        // // Transfer margin to perp account
+        // // USDC: 6 decimals on EVM, 8 decimals in Core
+        // uint64 marginCoreAmount = uint64(marginAmount) * 100; // Convert 6 decimals to 8 decimals
+        // CoreWriterLib.transferUsdClass(
+        //     marginCoreAmount, // In Core's 8 decimal format
+        //     true // to perp
+        // );
 
-        // Place spot buy order
-        {
-            // Place spot buy order at ask price (for immediate fill)
-            CoreWriterLib.placeLimitOrder(
-                spotIndex,
-                true, // isBuy
-                spotPrice, // Already includes slippage
-                uint64((uint256(uint64(spotAmount) * 100) * 1e8) / spotPrice), // size calculation inline
-                false, // reduceOnly
-                3, // IOC (Immediate or Cancel)
-                uint128(block.timestamp) // cloid
-            );
+        // // Place spot buy order
+        // {
+        //     // Place spot buy order at ask price (for immediate fill)
+        //     CoreWriterLib.placeLimitOrder(
+        //         spotIndex,
+        //         true, // isBuy
+        //         spotPrice, // Already includes slippage
+        //         uint64((uint256(uint64(spotAmount) * 100) * 1e8) / spotPrice), // size calculation inline
+        //         false, // reduceOnly
+        //         3, // IOC (Immediate or Cancel)
+        //         uint128(block.timestamp) // cloid
+        //     );
 
-            // Update spot position
-            currentSpotPosition.index = spotIndex;
-            currentSpotPosition.isLong = true;
-            currentSpotPosition.timestamp = block.timestamp;
-        }
+        //     // Update spot position
+        //     currentSpotPosition.index = spotIndex;
+        //     currentSpotPosition.isLong = true;
+        //     currentSpotPosition.timestamp = block.timestamp;
+        // }
 
-        // Place perp short order
-        {
-            // Place perp short order at bid price (for immediate fill)
-            CoreWriterLib.placeLimitOrder(
-                perpIndex,
-                false, // isBuy (short)
-                perpPrice, // Already includes slippage
-                uint64((uint256(uint64(perpAmount) * 100) * 1e6) / perpPrice), // size calculation inline
-                false, // reduceOnly
-                3, // IOC (Immediate or Cancel)
-                uint128(block.timestamp + 1) // cloid
-            );
+        // // Place perp short order
+        // {
+        //     // Place perp short order at bid price (for immediate fill)
+        //     CoreWriterLib.placeLimitOrder(
+        //         perpIndex,
+        //         false, // isBuy (short)
+        //         perpPrice, // Already includes slippage
+        //         uint64((uint256(uint64(perpAmount) * 100) * 1e6) / perpPrice), // size calculation inline
+        //         false, // reduceOnly
+        //         3, // IOC (Immediate or Cancel)
+        //         uint128(block.timestamp + 1) // cloid
+        //     );
 
-            // Update perp position
-            currentPerpPosition.index = perpIndex;
-            currentPerpPosition.isLong = false;
-            currentPerpPosition.timestamp = block.timestamp;
-        }
+        //     // Update perp position
+        //     currentPerpPosition.index = perpIndex;
+        //     currentPerpPosition.isLong = false;
+        //     currentPerpPosition.timestamp = block.timestamp;
+        // }
 
-        totalAllocated = marginAmount + spotAmount + perpAmount;
+        // totalAllocated = marginAmount + spotAmount + perpAmount;
 
-        // Query and update actual positions after orders are filled
-        _updatePositionsFromChain(spotIndex, perpIndex);
+        // // Query and update actual positions after orders are filled
+        // _updatePositionsFromChain(spotIndex, perpIndex);
 
-        // Update vault indexes
-        vault.allocate(spotIndex, perpIndex);
+        // // Update vault indexes
+        // vault.allocate(spotIndex, perpIndex);
 
-        emit Allocated(
-            spotIndex,
-            perpIndex,
-            totalAllocated,
-            marginAmount,
-            spotAmount,
-            perpAmount
-        );
+        // emit Allocated(
+        //     spotIndex,
+        //     perpIndex,
+        //     totalAllocated,
+        //     marginAmount,
+        //     spotAmount,
+        //     perpAmount
+        // );
     }
 
     /**
@@ -628,19 +628,22 @@ contract CrestManager is Auth, ReentrancyGuard {
 
         // Query actual spot balance from precompile if we have a position
         if (spot.index > 0) {
-            PrecompileLib.SpotInfo memory spotInfo = PrecompileLib.spotInfo(spot.index);
-            uint64 tokenId = spotInfo.tokens[0];
-            PrecompileLib.SpotBalance memory actualBalance = PrecompileLib.spotBalance(
-                address(this),
-                tokenId
+            PrecompileLib.SpotInfo memory spotInfo = PrecompileLib.spotInfo(
+                spot.index
             );
+            uint64 tokenId = spotInfo.tokens[0];
+            PrecompileLib.SpotBalance memory actualBalance = PrecompileLib
+                .spotBalance(address(this), tokenId);
             spot.size = actualBalance.total;
 
             // Recalculate entry price if we have a position
             if (actualBalance.total > 0 && totalAllocated > 0) {
-                uint256 spotAmount = (totalAllocated * SPOT_ALLOCATION_BPS) / 10000;
+                uint256 spotAmount = (totalAllocated * SPOT_ALLOCATION_BPS) /
+                    10000;
                 uint64 spotAmountCore = uint64(spotAmount) * 100;
-                spot.entryPrice = uint64((uint256(spotAmountCore) * 1e8) / actualBalance.total);
+                spot.entryPrice = uint64(
+                    (uint256(spotAmountCore) * 1e8) / actualBalance.total
+                );
             }
         }
 
@@ -653,7 +656,9 @@ contract CrestManager is Auth, ReentrancyGuard {
             if (perpPos.szi != 0) {
                 uint64 absSize = uint64(-perpPos.szi);
                 perp.size = absSize;
-                perp.entryPrice = uint64((perpPos.entryNtl * 1e6) / uint256(absSize));
+                perp.entryPrice = uint64(
+                    (perpPos.entryNtl * 1e6) / uint256(absSize)
+                );
             }
         }
 

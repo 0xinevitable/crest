@@ -4,8 +4,6 @@ import { Cell, Pie, PieChart, ResponsiveContainer } from 'recharts';
 import { BalanceItem } from '@/components/ui/BalanceItem';
 import { OpticianSans } from '@/fonts';
 
-
-
 interface BalanceData {
   title: string;
   subtitle: string;
@@ -94,6 +92,8 @@ const Container = styled.div`
   max-width: 1200px;
   margin: 0 auto;
   padding: 0 20px;
+
+  padding-bottom: 10rem;
 `;
 
 const Title = styled.h2`

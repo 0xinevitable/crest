@@ -2,10 +2,10 @@ import { Address } from 'viem';
 
 export const Contracts = {
   Crest: {
-    Vault: '0xCca1946A732E8a1400403A3061B9926C0B7C92ab' as Address,
-    Teller: '0x631001Ec262E0d59Dc9b420e7f18aeB87349F128' as Address,
-    Accountant: '0xe03bb63e59596Eb62696dadfAB49265AA464d888' as Address,
-    Manager: '0x27ABADC46074b85CD43B4bF0301a2843fA1ca86C' as Address,
+    Vault: '0xcC94F7f8C7e77b197ED0cb85f50997Bae7a49a8b' as Address,
+    Teller: '0x97e956869455bC59BCA559a130109A3D5aCc0049' as Address,
+    Accountant: '0x3bc8D1648F445b99A812B858E82786637dfC4d9D' as Address,
+    Manager: '0x36EBA6d5cd2d862deFE6E41FBF90EeB347594e4F' as Address,
     Curator: '0x02fD526263E6D3843fdefD945511aA83c78CcF35' as Address,
     Deployer: '0x02fD526263E6D3843fdefD945511aA83c78CcF35' as Address,
     FeeRecipient: '0x02fD526263E6D3843fdefD945511aA83c78CcF35' as Address,

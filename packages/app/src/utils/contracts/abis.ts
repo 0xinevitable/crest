@@ -13,12 +13,12 @@ export const ERC20_ABI_FRAGMENT = [
   'function name() view returns (string)',
   'function symbol() view returns (string)',
   'function decimals() view returns (uint8)',
-  
+
   // Write functions
   'function approve(address spender, uint256 amount) external returns (bool)',
   'function transfer(address to, uint256 amount) external returns (bool)',
   'function transferFrom(address from, address to, uint256 amount) external returns (bool)',
-  
+
   // Events
   'event Transfer(address indexed from, address indexed to, uint256 value)',
   'event Approval(address indexed owner, address indexed spender, uint256 value)',
@@ -30,11 +30,11 @@ export const ERC20_ABI_FRAGMENT = [
 export const PAUSABLE_ABI_FRAGMENT = [
   // State queries
   'function isPaused() view returns (bool)',
-  
+
   // Admin functions
   'function pause() external',
   'function unpause() external',
-  
+
   // Events
   'event Paused()',
   'event Unpaused()',
@@ -47,7 +47,7 @@ export const AUTHORIZATION_ABI_FRAGMENT = [
   // View functions
   'function owner() view returns (address)',
   'function authorized(address) view returns (bool)',
-  
+
   // Write functions
   'function authorize(address target) external',
   'function unauthorize(address target) external',
@@ -60,7 +60,7 @@ export const ALLOCATION_ABI_FRAGMENT = [
   // Core functions
   'function allocate(uint32 spotIndex, uint32 perpIndex) external',
   'function rebalance(uint32 newSpotIndex, uint32 newPerpIndex) external',
-  
+
   // Events
   'event Allocation(uint32 spotIndex, uint32 perpIndex, uint256 amount)',
   'event Rebalance(uint32 oldSpotIndex, uint32 oldPerpIndex, uint32 newSpotIndex, uint32 newPerpIndex)',
@@ -71,7 +71,9 @@ export const ALLOCATION_ABI_FRAGMENT = [
 /**
  * Combines multiple ABI fragments into a single parsed ABI
  */
-export function combineAbiFragments(...fragments: ReadonlyArray<readonly string[]>) {
+export function combineAbiFragments(
+  ...fragments: ReadonlyArray<readonly string[]>
+) {
   const combined = fragments.flat();
   return parseAbi(combined);
 }
@@ -79,7 +81,10 @@ export function combineAbiFragments(...fragments: ReadonlyArray<readonly string[
 /**
  * Creates a parsed ABI with specific fragments
  */
-export function createAbi(baseFragments: readonly string[], ...additionalFragments: ReadonlyArray<readonly string[]>) {
+export function createAbi(
+  baseFragments: readonly string[],
+  ...additionalFragments: ReadonlyArray<readonly string[]>
+) {
   return combineAbiFragments(baseFragments, ...additionalFragments);
 }
 
@@ -120,7 +125,10 @@ const TELLER_SPECIFIC_ABI = [
   'event ShareLockPeriodUpdated(uint64 period)',
 ] as const;
 
-export const CrestTellerAbi = createAbi(TELLER_SPECIFIC_ABI, PAUSABLE_ABI_FRAGMENT);
+export const CrestTellerAbi = createAbi(
+  TELLER_SPECIFIC_ABI,
+  PAUSABLE_ABI_FRAGMENT,
+);
 
 // ========================================= ACCOUNTANT ABI =========================================
 
@@ -168,7 +176,10 @@ const ACCOUNTANT_SPECIFIC_ABI = [
   'event RateUpdateCooldownUpdated(uint64 cooldown)',
 ] as const;
 
-export const CrestAccountantAbi = createAbi(ACCOUNTANT_SPECIFIC_ABI, PAUSABLE_ABI_FRAGMENT);
+export const CrestAccountantAbi = createAbi(
+  ACCOUNTANT_SPECIFIC_ABI,
+  PAUSABLE_ABI_FRAGMENT,
+);
 
 // ========================================= VAULT ABI =========================================
 
@@ -195,10 +206,10 @@ const VAULT_SPECIFIC_ABI = [
 ] as const;
 
 export const CrestVaultAbi = createAbi(
-  VAULT_SPECIFIC_ABI, 
-  ERC20_ABI_FRAGMENT, 
-  AUTHORIZATION_ABI_FRAGMENT, 
-  ALLOCATION_ABI_FRAGMENT
+  VAULT_SPECIFIC_ABI,
+  ERC20_ABI_FRAGMENT,
+  AUTHORIZATION_ABI_FRAGMENT,
+  ALLOCATION_ABI_FRAGMENT,
 );
 
 // ========================================= MANAGER ABI =========================================
@@ -242,8 +253,7 @@ const MANAGER_SPECIFIC_ABI = [
 ] as const;
 
 export const CrestManagerAbi = createAbi(
-  MANAGER_SPECIFIC_ABI, 
-  ALLOCATION_ABI_FRAGMENT, 
-  PAUSABLE_ABI_FRAGMENT
+  MANAGER_SPECIFIC_ABI,
+  ALLOCATION_ABI_FRAGMENT,
+  PAUSABLE_ABI_FRAGMENT,
 );
-

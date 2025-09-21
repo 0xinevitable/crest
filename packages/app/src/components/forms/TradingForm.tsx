@@ -84,7 +84,7 @@ export const TradingForm: React.FC = () => {
   const getButtonText = () => {
     // Prevent hydration mismatch by showing loading state until mounted
     if (!mounted) return 'Loading...';
-    
+
     if (!isConnected) return 'Connect Wallet';
 
     switch (status) {

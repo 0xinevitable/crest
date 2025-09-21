@@ -8,9 +8,7 @@ import { PrecompileSimulator } from "@hyper-evm-lib/test/utils/PrecompileSimulat
 
 contract HyperliquidTest is Test {
     function setUp() public {
-        vm.createSelectFork(
-            "https://evmrpc-jp.hyperpc.app/44557a3c9a204f279070ded2023ed874"
-        );
+        vm.createSelectFork("https://rpc.hyperliquid.xyz/evm");
 
         // initialize the HyperCore simulator
         CoreSimulatorLib.init();

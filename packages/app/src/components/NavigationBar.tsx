@@ -17,7 +17,7 @@ export const NavigationBar = () => {
     <Wrapper>
       <Container>
         <Link href="/" onClick={() => scrollToTop()}>
-          <Logo src="/assets/crest-logo.svg" />
+          <Logo src="/assets/logos/crest-logo.svg" />
         </Link>
 
         <NavigationList>

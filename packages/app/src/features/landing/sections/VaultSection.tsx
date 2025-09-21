@@ -1,12 +1,32 @@
 import styled from '@emotion/styled';
+import { useState } from 'react';
 
 import { OperationHistory } from '@/components/ui/OperationHistory';
+import { OperationHistoryModal } from '@/components/ui/OperationHistoryModal';
 import { OpportunityCard } from '@/components/ui/OpportunityCard';
 import { VaultMetrics } from '@/components/ui/VaultMetrics';
 import { TradingForm } from '@/components/forms/TradingForm';
 import { OpticianSans } from '@/fonts';
 
 export const VaultSection: React.FC = () => {
+  const [showOperationHistory, setShowOperationHistory] = useState(false);
+
+  const handleViewHistory = () => {
+    setShowOperationHistory(true);
+  };
+
+  const handleCloseHistory = () => {
+    setShowOperationHistory(false);
+  };
+
+  const handleRefresh = () => {
+    console.log('Refreshing operations...');
+  };
+
+  const handleViewAll = () => {
+    console.log('Viewing all operations...');
+  };
+
   return (
     <Container>
       <LeftColumn>
@@ -31,13 +51,23 @@ export const VaultSection: React.FC = () => {
           />
 
           <SectionTitle>OPERATIONS</SectionTitle>
-          <OperationHistory lastOperation="7h ago" />
+          <OperationHistory 
+            lastOperation="7h ago" 
+            onViewHistory={handleViewHistory}
+          />
         </VaultActions>
       </LeftColumn>
 
       <RightColumn>
         <TradingForm />
       </RightColumn>
+
+      <OperationHistoryModal
+        visible={showOperationHistory}
+        onClose={handleCloseHistory}
+        onRefresh={handleRefresh}
+        onViewAll={handleViewAll}
+      />
     </Container>
   );
 };

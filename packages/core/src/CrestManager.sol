@@ -167,8 +167,8 @@ contract CrestManager is Auth, ReentrancyGuard {
             revert CrestManager__PositionAlreadyOpen();
         }
 
-        // Get available USDT0 balance (check manager balance)
-        uint256 availableUsdt0 = usdt0.balanceOf(address(this));
+        // Get available USDT0 balance (check vault balance -> IDLE is deposited to vault)
+        uint256 availableUsdt0 = usdt0.balanceOf(address(vault));
 
         // Check if we need to withdraw from Hyperdrive
         uint256 hyperdriveValue = vault.getHyperdriveValue();

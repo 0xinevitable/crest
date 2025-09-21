@@ -1,6 +1,12 @@
 import styled from '@emotion/styled';
 
+
+
 import { OpticianSans } from '@/fonts';
+
+
+
+
 
 interface OperationHistoryProps {
   lastOperation: string;
@@ -40,18 +46,22 @@ const InfoContainer = styled.div`
   gap: 12px;
   align-items: flex-start;
   flex: 1;
+`;
+
+const Label = styled.div`
+  color: #879a98;
   font-family: ${OpticianSans.style.fontFamily};
   font-size: 24px;
   font-weight: 400;
   line-height: 1;
 `;
 
-const Label = styled.div`
-  color: #879a98;
-`;
-
 const Value = styled.div`
   color: #fff;
+  font-family: ${OpticianSans.style.fontFamily};
+  font-size: 24px;
+  font-weight: 400;
+  line-height: 1;
 `;
 
 const ViewHistoryButton = styled.button`
@@ -59,7 +69,7 @@ const ViewHistoryButton = styled.button`
   gap: 4px;
   align-items: center;
   justify-content: center;
-  padding: 5px 8px 5px 5px;
+  padding: 0.25rem 0.5rem;
   background: #121819;
   border-radius: 4px;
   border: none;

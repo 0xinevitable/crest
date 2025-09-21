@@ -1,5 +1,7 @@
+import { css } from '@emotion/react';
 import styled from '@emotion/styled';
 import Link from 'next/link';
+import { useEffect, useRef, useState } from 'react';
 
 import { OpticianSans } from '@/fonts';
 
@@ -13,8 +15,27 @@ const NAVIGATION_ITEMS = [
 export const NavigationBar = () => {
   const scrollToTop = () => window.scrollTo({ top: 0, behavior: 'smooth' });
 
+  const [isScrolled, setIsScrolled] = useState<boolean>(false);
+  const navRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const handleScroll = () => {
+      if (!navRef.current) {
+        return;
+      }
+      const navHeight = navRef.current.offsetHeight;
+      setIsScrolled(window.scrollY > navHeight);
+    };
+
+    window.addEventListener('scroll', handleScroll);
+    handleScroll();
+
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+    };
+  }, []);
+
   return (
-    <Wrapper>
+    <Wrapper ref={navRef} scrolled={isScrolled}>
       <Container>
         <Link href="/" onClick={() => scrollToTop()}>
           <Logo src="/assets/logos/crest-logo.svg" />
@@ -36,23 +57,36 @@ export const NavigationBar = () => {
   );
 };
 
-const Wrapper = styled.div`
+type WrapperProps = {
+  scrolled: boolean;
+};
+const Wrapper = styled.div<WrapperProps>`
   width: 100%;
   position: fixed;
   top: 0;
   left: 0;
   right: 0;
+
+  z-index: 100000;
+
+  ${({ scrolled }) =>
+    scrolled &&
+    css`
+      background-color: rgba(0, 0, 0, 0.1);
+      backdrop-filter: blur(0.5rem);
+      -webkit-backdrop-filter: blur(0.5rem);
+    `}
 `;
 const Container = styled.div`
   margin: 0 auto;
-  padding: 24px 20px;
+  padding: 1.5rem 1.25rem;
 
   width: 100%;
   max-width: 1200px;
 
   display: flex;
   align-items: center;
-  gap: 24px;
+  gap: 1.5rem;
 `;
 const Logo = styled.img`
   width: 124px;
@@ -63,23 +97,23 @@ const Logo = styled.img`
 const NavigationList = styled.nav`
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 0.5rem;
 `;
 const Button = styled.button`
   width: fit-content;
   display: flex;
-  padding: 4px 14px;
+  padding: 0.25rem 1rem;
   justify-content: center;
   align-items: center;
-  gap: 10px;
+  gap: 0.75rem;
 
-  border-radius: 8px;
+  border-radius: 0.5rem;
   background: #253738;
 
   color: #fff;
   text-align: center;
   font-family: ${OpticianSans.style.fontFamily};
-  font-size: 20px;
+  font-size: 1.25rem;
   font-style: normal;
   font-weight: 400;
   line-height: 100%;

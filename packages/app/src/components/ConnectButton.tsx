@@ -75,24 +75,24 @@ export const ConnectButton: React.FC = () => {
 const Button = styled.button`
   width: fit-content;
   display: flex;
-  padding: 4px 14px;
+  padding: 0.25rem 1rem;
   justify-content: center;
   align-items: center;
-  gap: 10px;
+  gap: 0.75rem;
 
-  border-radius: 8px;
+  border-radius: 0.5rem;
   background: #18edeb;
 
   color: #000;
   text-align: center;
   font-family: ${OpticianSans.style.fontFamily};
-  font-size: 20px;
+  font-size: 1.25rem;
   font-style: normal;
   font-weight: 400;
   line-height: 100%;
 `;
 const ConnectWalletButton = styled(Button)`
-  padding: 4px 16px;
+  padding: 0.25rem 1rem;
 `;
 
 const UserButton = styled(Button)`
@@ -105,7 +105,7 @@ const UserButton = styled(Button)`
 
   & > span {
     font-weight: 500;
-    font-size: 20px;
+    font-size: 1.25rem;
     line-height: 1;
     text-align: center;
     letter-spacing: -0.04em;
@@ -114,7 +114,7 @@ const UserButton = styled(Button)`
   span.balance {
     opacity: 0.7;
 
-    @media (max-width: 820px) {
+    @media (max-width: 51.25rem) {
       display: none;
     }
   }

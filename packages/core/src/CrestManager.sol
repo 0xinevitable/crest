@@ -795,7 +795,9 @@ contract CrestManager is Auth, ReentrancyGuard {
         uint32 perpIndex
     ) internal view virtual returns (uint64 spotPrice, uint64 perpPrice) {
         // For production, use BBO. Tests can override if needed.
-        PrecompileLib.Bbo memory spotBbo = PrecompileLib.bbo(uint64(spotIndex));
+        PrecompileLib.Bbo memory spotBbo = PrecompileLib.bbo(
+            uint64(spotIndex) + 10000
+        );
         PrecompileLib.Bbo memory perpBbo = PrecompileLib.bbo(uint64(perpIndex));
 
         spotPrice = spotBbo.ask; // Buy at ask
@@ -804,14 +806,14 @@ contract CrestManager is Auth, ReentrancyGuard {
 
     function _getUsdt0BidPrice() internal view virtual returns (uint64) {
         PrecompileLib.Bbo memory usdt0Bbo = PrecompileLib.bbo(
-            uint64(usdt0SpotIndex())
+            uint64(usdt0SpotIndex()) + 10000
         );
         return usdt0Bbo.bid;
     }
 
     function _getUsdt0AskPrice() internal view virtual returns (uint64) {
         PrecompileLib.Bbo memory usdt0Bbo = PrecompileLib.bbo(
-            uint64(usdt0SpotIndex())
+            uint64(usdt0SpotIndex()) + 10000
         );
         return usdt0Bbo.ask;
     }
@@ -819,7 +821,9 @@ contract CrestManager is Auth, ReentrancyGuard {
     function _getSpotBidPrice(
         uint32 spotIndex
     ) internal view virtual returns (uint64) {
-        PrecompileLib.Bbo memory spotBbo = PrecompileLib.bbo(uint64(spotIndex));
+        PrecompileLib.Bbo memory spotBbo = PrecompileLib.bbo(
+            uint64(spotIndex) + 10000
+        );
         return spotBbo.bid;
     }
 
@@ -833,7 +837,9 @@ contract CrestManager is Auth, ReentrancyGuard {
     function _getSpotMidPrice(
         uint32 spotIndex
     ) internal view virtual returns (uint64) {
-        PrecompileLib.Bbo memory spotBbo = PrecompileLib.bbo(uint64(spotIndex));
+        PrecompileLib.Bbo memory spotBbo = PrecompileLib.bbo(
+            uint64(spotIndex) + 10000
+        );
         return (spotBbo.bid + spotBbo.ask) / 2;
     }
 

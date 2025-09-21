@@ -7,12 +7,11 @@ import { CrestTeller } from "../src/CrestTeller.sol";
 import { CrestAccountant } from "../src/CrestAccountant.sol";
 import { CrestManager } from "../src/CrestManager.sol";
 import { TestCrestManager } from "./helpers/TestCrestManager.sol";
-import { MockBboPrecompile } from "./helpers/MockBboPrecompile.sol";
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { ERC20 } from "@solmate/tokens/ERC20.sol";
 
 // REAL Hyperliquid imports
-import { CoreSimulatorLib } from "@hyper-evm-lib/test/simulation/CoreSimulatorLib.sol";
+import { TestCoreSimulatorLib as CoreSimulatorLib } from "./simulation/TestCoreSimulatorLib.sol";
 import { HyperCore } from "@hyper-evm-lib/test/simulation/HyperCore.sol";
 import { PrecompileSimulator } from "@hyper-evm-lib/test/utils/PrecompileSimulator.sol";
 import { PrecompileLib } from "@hyper-evm-lib/src/PrecompileLib.sol";
@@ -72,17 +71,9 @@ contract CrestVaultTest is Test {
         // REAL HYPERLIQUID FORK
         vm.createSelectFork("https://rpc.hyperliquid.xyz/evm"); // mainnet fork
 
-        // Initialize REAL Hyperliquid simulation
-        CoreSimulatorLib.init();
+        // Initialize REAL Hyperliquid simulation with BBO support
         PrecompileSimulator.init();
-
-        // Deploy mock BBO precompile
-        MockBboPrecompile mockBbo = new MockBboPrecompile();
-        vm.etch(address(0x80e), address(mockBbo).code);
-
-        // Set default BBO prices for common indices
-        // USDT0/USDC spot
-        MockBboPrecompile(payable(address(0x80e))).setBbo(uint64(USDT0_USDC_SPOT_INDEX), 1e8 - 1e5, 1e8 + 1e5);
+        CoreSimulatorLib.init();
 
         // Setup actors
         owner = makeAddr("owner");
@@ -357,6 +348,10 @@ contract CrestVaultTest is Test {
         CoreSimulatorLib.setSpotPx(spotIndex, baseSpotPrice);
         CoreSimulatorLib.setMarkPx(perpIndex, basePerpPrice);
 
+        // Verify prices are set
+        console2.log("DEBUG: Set spotPx for index", spotIndex, "to", baseSpotPrice);
+        console2.log("DEBUG: Set markPx for index", perpIndex, "to", basePerpPrice);
+
         // Market Maker 1: Provides 80% liquidity at current price
         // For spot: Sell orders (for our buy to fill against)
         uint64 spotSellPrice80 = baseSpotPrice; // Exactly at market
@@ -431,25 +426,6 @@ contract CrestVaultTest is Test {
             uint128(block.timestamp << 32) + 4
         );
         vm.stopPrank();
-
-        // Set BBO prices
-        _setBboForMarket(spotIndex, perpIndex, baseSpotPrice, basePerpPrice);
-    }
-
-    function _setBboForMarket(uint32 spotIndex, uint32 perpIndex, uint64 baseSpotPrice, uint64 basePerpPrice) internal {
-        uint64 spotAsk = baseSpotPrice + ((baseSpotPrice * 25) / 10000);
-        MockBboPrecompile(payable(address(0x80e))).setBbo(
-            uint64(spotIndex),
-            baseSpotPrice,
-            spotAsk
-        );
-
-        uint64 perpBid = basePerpPrice - ((basePerpPrice * 25) / 10000);
-        MockBboPrecompile(payable(address(0x80e))).setBbo(
-            uint64(perpIndex),
-            perpBid,
-            basePerpPrice
-        );
     }
 
     // ==================== ALLOCATION TESTS ====================

@@ -6,13 +6,15 @@ import {
   Hex,
   createPublicClient,
   createWalletClient,
+  erc20Abi,
   http,
+  parseEventLogs,
 } from 'viem';
 import { privateKeyToAccount } from 'viem/accounts';
 import { hyperliquidEvmTestnet } from 'viem/chains';
 
 import _contracts from '../../deployments/998.json';
-import { crestManagerAbi } from '../generated';
+import { crestManagerAbi, crestVaultAbi } from '../generated';
 
 const contracts = _contracts as Record<keyof typeof _contracts, Address>;
 
@@ -52,6 +54,15 @@ const main = async () => {
     });
     const receipt = await publicClient.waitForTransactionReceipt({ hash });
     console.log(receipt);
+
+    const logs = parseEventLogs({
+      logs: receipt.logs,
+      abi: [...crestManagerAbi, ...crestVaultAbi, ...erc20Abi],
+    });
+
+    for (const log of logs) {
+      console.log(log);
+    }
   }
 };
 

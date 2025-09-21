@@ -69,6 +69,7 @@ contract DeployScript is Script {
         // Deploy accountant
         CrestAccountant accountant = new CrestAccountant(
             payable(address(vault)),
+            usdt0Address(),
             deployer,
             feeRecipient
         );

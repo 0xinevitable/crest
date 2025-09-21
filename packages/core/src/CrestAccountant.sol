@@ -17,10 +17,14 @@ contract CrestAccountant is Auth {
     CrestVault public immutable vault;
 
     /**
-     * @notice The current exchange rate (assets per share)
-     * @dev Stored with 6 decimals precision (1e6 = 1:1 rate)
+     * @notice The USDT0 token contract
      */
-    uint96 public exchangeRate = 1e6;
+    ERC20 public immutable usdt0;
+
+    /**
+     * @notice Last recorded total assets for fee calculation
+     */
+    uint256 public lastTotalAssets;
 
     /**
      * @notice Platform fee in basis points (100 = 1%)
@@ -93,69 +97,61 @@ contract CrestAccountant is Auth {
 
     constructor(
         address payable _vault,
+        address _usdt0,
         address _owner,
         address _feeRecipient
     ) Auth(_owner, Authority(address(0))) {
         vault = CrestVault(_vault);
+        usdt0 = ERC20(_usdt0);
         feeRecipient = _feeRecipient;
+        lastTotalAssets = 0; // Initialize to 0
     }
 
     //============================== ADMIN FUNCTIONS ===============================
 
     /**
-     * @notice Updates the exchange rate based on current vault performance
-     * @param totalAssets The total value of assets in the vault (in USDC)
+     * @notice Updates fees based on current performance
+     * @dev Called automatically when calculating exchange rate if profit detected
      */
-    function updateExchangeRate(
-        uint256 totalAssets
-    ) external requiresAuth whenNotPaused {
+    function _updateFees() internal {
         uint256 totalSupply = vault.totalSupply();
-        if (totalSupply == 0) {
-            // No shares minted yet, keep rate at 1:1
+        if (totalSupply == 0) return;
+
+        uint256 currentAssets = getTotalAssets();
+
+        // Initialize lastTotalAssets on first call
+        if (lastTotalAssets == 0) {
+            lastTotalAssets = currentAssets;
             return;
         }
 
-        // Add Hyperdrive value from vault
-        uint256 adjustedTotalAssets = totalAssets + vault.getHyperdriveValue();
-
-        // Calculate new rate
-        uint96 newRate = uint96((adjustedTotalAssets * 1e6) / totalSupply);
-
-        // Calculate fees if rate increased
-        uint256 platformFee = 0;
-        uint256 performanceFee = 0;
-
-        if (newRate > exchangeRate) {
-            uint256 profit = (uint256(newRate - exchangeRate) * totalSupply) /
-                1e6;
-
-            // Platform fee on all profit
-            platformFee = (profit * platformFeeBps) / 10000;
-
-            // Performance fee only on profit above high water mark
-            if (newRate > highWaterMark) {
-                uint256 outperformance = (uint256(newRate - highWaterMark) *
-                    totalSupply) / 1e6;
-                performanceFee = (outperformance * performanceFeeBps) / 10000;
-                highWaterMark = newRate;
-            }
-
-            // Deduct fees from new rate
-            uint256 totalFees = platformFee + performanceFee;
-            if (totalFees > 0) {
-                newRate = uint96(
-                    ((adjustedTotalAssets - totalFees) * 1e6) / totalSupply
-                );
-            }
-
-            accumulatedPlatformFees += platformFee;
-            accumulatedPerformanceFees += performanceFee;
+        // Skip if no profit
+        if (currentAssets <= lastTotalAssets) {
+            lastTotalAssets = currentAssets;
+            return;
         }
 
-        uint96 oldRate = exchangeRate;
-        exchangeRate = newRate;
+        uint256 profit = currentAssets - lastTotalAssets;
 
-        emit RateUpdated(oldRate, newRate, platformFee, performanceFee);
+        // Calculate current rate
+        uint96 currentRate = uint96((currentAssets * 1e6) / totalSupply);
+
+        // Platform fee on all profit
+        uint256 platformFee = (profit * platformFeeBps) / 10000;
+
+        // Performance fee only on profit above high water mark
+        uint256 performanceFee = 0;
+        if (currentRate > highWaterMark) {
+            uint256 outperformance = currentAssets - ((uint256(highWaterMark) * totalSupply) / 1e6);
+            performanceFee = (outperformance * performanceFeeBps) / 10000;
+            highWaterMark = currentRate;
+        }
+
+        accumulatedPlatformFees += platformFee;
+        accumulatedPerformanceFees += performanceFee;
+        lastTotalAssets = currentAssets;
+
+        emit RateUpdated(0, currentRate, platformFee, performanceFee);
     }
 
     /**
@@ -174,7 +170,7 @@ contract CrestAccountant is Auth {
         uint256 totalFees = platformFees + performanceFees;
         if (totalFees > 0) {
             // Mint fee shares to recipient
-            uint256 feeShares = (totalFees * 1e6) / exchangeRate;
+            uint256 feeShares = (totalFees * 1e6) / getRate();
             vault.enter(
                 address(vault),
                 ERC20(address(0)),
@@ -231,25 +227,68 @@ contract CrestAccountant is Auth {
     //============================== VIEW FUNCTIONS ===============================
 
     /**
+     * @notice Returns the total assets under management
+     */
+    function getTotalAssets() public view returns (uint256) {
+        // Get USDT0 balance in vault
+        uint256 vaultBalance = usdt0.balanceOf(address(vault));
+
+        // Add Hyperdrive value
+        uint256 hyperdriveValue = vault.getHyperdriveValue();
+
+        // TODO: Add Core position values from Manager if needed
+        // For now, we assume Manager properly returns funds to vault
+
+        return vaultBalance + hyperdriveValue;
+    }
+
+    /**
+     * @notice Returns the current exchange rate after fees
+     */
+    function getRate() public view returns (uint256) {
+        uint256 totalSupply = vault.totalSupply();
+        if (totalSupply == 0) return 1e6;
+
+        uint256 totalAssets = getTotalAssets();
+
+        // Deduct accumulated fees from assets
+        uint256 totalFees = accumulatedPlatformFees + accumulatedPerformanceFees;
+        if (totalAssets > totalFees) {
+            totalAssets -= totalFees;
+        }
+
+        return (totalAssets * 1e6) / totalSupply;
+    }
+
+    /**
+     * @notice Triggers fee update if there's unrealized profit
+     * @dev Anyone can call this to update fees
+     */
+    function updateFees() external whenNotPaused {
+        _updateFees();
+    }
+
+    /**
+     * @notice Returns the current exchange rate
+     */
+    function exchangeRate() external view returns (uint256) {
+        return getRate();
+    }
+
+    /**
      * @notice Converts assets to shares based on current exchange rate
      */
     function convertToShares(uint256 assets) public view returns (uint256) {
-        if (exchangeRate == 0) return 0;
-        return (assets * 1e6) / exchangeRate;
+        uint256 rate = getRate();
+        if (rate == 0) return 0;
+        return (assets * 1e6) / rate;
     }
 
     /**
      * @notice Converts shares to assets based on current exchange rate
      */
     function convertToAssets(uint256 shares) public view returns (uint256) {
-        return (shares * exchangeRate) / 1e6;
-    }
-
-    /**
-     * @notice Returns the current exchange rate with proper decimals
-     */
-    function getRate() external view returns (uint256) {
-        return exchangeRate;
+        return (shares * getRate()) / 1e6;
     }
 
 }

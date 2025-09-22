@@ -1,16 +1,24 @@
 import styled from '@emotion/styled';
 import { useEffect, useState } from 'react';
+import { toast } from 'react-toastify';
 import { formatUnits } from 'viem';
 import { useAccount } from 'wagmi';
+
+
 
 import { OpticianSans } from '@/fonts';
 import { useDeposit } from '@/hooks/useDeposit';
 import { useExchangeRate } from '@/hooks/useExchangeRate';
 
+
+
 import { AmountInputWithTokens } from '../ui/AmountInputWithTokens';
 import { FeeDisplay } from '../ui/FeeDisplay';
 import { DepositWithdrawTabs } from './DepositWithdrawTabs';
 import { PriceDisplay } from './PriceDisplay';
+
+
+
 
 const INPUT_TOKENS = [
   {
@@ -39,7 +47,7 @@ export const TradingForm: React.FC = () => {
   const [mounted, setMounted] = useState(false);
 
   const [activeTab, setActiveTab] = useState<'deposit' | 'withdraw'>('deposit');
-  const [inputAmount, setInputAmount] = useState('0');
+  const [inputAmount, setInputAmount] = useState('');
 
   useEffect(() => {
     setMounted(true);
@@ -50,7 +58,6 @@ export const TradingForm: React.FC = () => {
     isLoading,
     isCalculatingShares,
     needsApproval,
-    error,
     balance,
     shares,
     txHash,
@@ -69,12 +76,12 @@ export const TradingForm: React.FC = () => {
 
   const handleDeposit = async () => {
     if (!isConnected) {
-      alert('Please connect your wallet');
+      toast.error('Please connect your wallet');
       return;
     }
 
     if (!inputAmount || Number(inputAmount) <= 0) {
-      alert('Please enter a valid amount');
+      toast.error('Please enter a valid amount');
       return;
     }
 
@@ -82,9 +89,8 @@ export const TradingForm: React.FC = () => {
   };
 
   const getButtonText = () => {
-    // Prevent hydration mismatch by showing loading state until mounted
     if (!mounted) return 'Loading...';
-    
+
     if (!isConnected) return 'Connect Wallet';
 
     switch (status) {
@@ -147,9 +153,6 @@ export const TradingForm: React.FC = () => {
           }
           variant="output"
         />
-
-        {/* Error Display */}
-        {error && <ErrorMessage>{error}</ErrorMessage>}
 
         {/* Transaction Hash */}
         {txHash && (
@@ -243,14 +246,6 @@ const BalanceInfo = styled.div`
   margin-bottom: -0.5rem;
 `;
 
-const ErrorMessage = styled.div`
-  padding: 0.75rem;
-  background: rgba(248, 81, 73, 0.1);
-  border: 1px solid rgba(248, 81, 73, 0.3);
-  border-radius: 0.375rem;
-  color: #f85149;
-  font-size: 0.875rem;
-`;
 
 const TxHashDisplay = styled.div`
   padding: 0.75rem;

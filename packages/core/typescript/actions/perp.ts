@@ -6,15 +6,23 @@ import {
   Hex,
   createPublicClient,
   createWalletClient,
+  encodeFunctionData,
+  encodePacked,
   erc20Abi,
   http,
+  parseAbi,
+  parseAbiItem,
   parseUnits,
 } from 'viem';
 import { sendCalls } from 'viem/_types/actions/wallet/sendCalls';
 import { privateKeyToAccount } from 'viem/accounts';
 
 import { hyperliquidEvmMainnet } from '../constants/chain';
-import { managerFacetAbi } from '../generated';
+
+const managerFacetAbi = parseAbi([
+  'function manage(address target, bytes calldata data, uint256 value) external returns (bytes memory result)',
+  'function placeLimitOrder(uint32 asset, bool isBuy, uint64 limitPx, uint64 sz, bool reduceOnly, uint8 encodedTif, uint128 cloid) external',
+]);
 
 const contracts = {
   blockNumber: 14501677,
@@ -44,12 +52,49 @@ const main = async () => {
     throw new Error('Wallet account is not the deployer');
   }
 
-  const ASTER_perpIndex = 207n;
-  const limitPx = '';
-  const size = '';
-  const TIF = 3; // IOC
+  // move spot usdc to perp
+  {
+    const USD_CLASS_TRANSFER_ACTION = 7;
+    const target = '0x3333333333333333333333333333333333333333';
+    const data = encodeFunctionData({
+      abi: [
+        parseAbiItem('function sendRawAction(bytes calldata data) external'),
+      ],
+      functionName: 'sendRawAction',
+      args: [
+        // abi.encodePacked(
+        //   uint8(1),
+        //   HLConstants.USD_CLASS_TRANSFER_ACTION,
+        //   abi.encode(ntl, toPerp),
+        // ),
 
-  await walletClient.writeContract({
+        encodePacked(
+          ['uint8', 'uint24', 'bytes'],
+          [
+            1,
+            USD_CLASS_TRANSFER_ACTION,
+            encodePacked(['uint64', 'bool'], [parseUnits('4', 8), true]),
+          ],
+        ),
+      ],
+    });
+
+    const hash = await walletClient.writeContract({
+      address: contracts.diamond,
+      abi: managerFacetAbi,
+      functionName: 'manage',
+      args: [target, data, 0n],
+    });
+    console.log({ hash });
+
+    const receipt = await publicClient.waitForTransactionReceipt({ hash });
+    console.log(receipt);
+  }
+
+  const ASTER_perpIndex = 207;
+  const TIF = 1; // IOC
+
+  const hash = await walletClient.writeContract({
     address: contracts.diamond,
     abi: managerFacetAbi,
     functionName: 'placeLimitOrder',
@@ -64,14 +109,18 @@ const main = async () => {
       //     cloid
       // );
       ASTER_perpIndex,
-      false, // sell
-      limitPx,
-      size,
+      false, // sell (SHORT)
+      parseUnits('1.3724', 8), // limitPx,
+      parseUnits('10', 8), // size,
       false, // reduceOnly
       TIF,
-      1,
+      1n,
     ],
   });
+  console.log({ hash });
+
+  const receipt = await publicClient.waitForTransactionReceipt({ hash });
+  console.log(receipt);
 };
 
 main();

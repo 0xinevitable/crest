@@ -362,31 +362,32 @@ contract DiamondLocalTest is Test {
         console.log("Expected USDT0:", expectedAssets);
     }
 
-    function test_Deposit_MinimumAmount() public {
-        uint256 minDeposit = 1e6; // 1 USDT0 (minimum)
+    function test_Deposit_SmallAmounts() public {
+        // Test very small deposits work fine
+        uint256 smallDeposit = 1; // 0.000001 USDT0
 
         vm.startPrank(alice);
-        usdt0.approve(address(diamond), minDeposit);
+        usdt0.approve(address(diamond), smallDeposit);
 
-        // Should succeed with minimum
-        uint256 shares = IDiamondTeller(address(diamond)).deposit(minDeposit, alice);
-        assertEq(shares, minDeposit, "Minimum deposit should work");
+        // Should succeed even with tiny amount
+        uint256 shares = IDiamondTeller(address(diamond)).deposit(smallDeposit, alice);
+        assertEq(shares, smallDeposit, "Small deposit should work");
 
         vm.stopPrank();
 
-        // Try below minimum (0.99 USDT0)
-        uint256 belowMin = 999999; // 0.999999 USDT0
+        // Test regular small amount
+        uint256 regularSmall = 1e6; // 1 USDT0
 
         vm.startPrank(bob);
-        usdt0.approve(address(diamond), belowMin);
+        usdt0.approve(address(diamond), regularSmall);
 
-        vm.expectRevert("CrestTeller__MinimumDepositNotMet");
-        IDiamondTeller(address(diamond)).deposit(belowMin, bob);
+        uint256 bobShares = IDiamondTeller(address(diamond)).deposit(regularSmall, bob);
+        assertEq(bobShares, regularSmall, "1 USDT0 deposit should work");
 
         vm.stopPrank();
 
-        console.log("Minimum deposit (1 USDT0) succeeded");
-        console.log("Below minimum (0.999999 USDT0) reverted as expected");
+        console.log("Small deposit (0.000001 USDT0) succeeded");
+        console.log("Regular small deposit (1 USDT0) succeeded");
     }
 
     function testFuzz_Deposit(uint256 amount) public {

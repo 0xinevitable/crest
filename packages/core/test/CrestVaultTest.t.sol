@@ -231,16 +231,6 @@ contract CrestVaultTest is Test {
         );
     }
 
-    function test_Deposit_BelowMinimum_Reverts() public {
-        // Given: Minimum deposit is 1 USDT0
-        uint256 belowMinimum = ONE_USDT0 - 1;
-
-        // When/Then: Should revert
-        vm.prank(alice);
-        vm.expectRevert(CrestTeller.CrestTeller__MinimumDepositNotMet.selector);
-        teller.deposit(belowMinimum, alice);
-    }
-
     function test_Deposit_WhenPaused_Reverts() public {
         // Given: Teller is paused
         vm.prank(owner);

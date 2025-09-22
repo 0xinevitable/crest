@@ -23,8 +23,6 @@ contract TellerFacet is ReentrancyGuard {
     error CrestTeller__Paused();
     error CrestTeller__ZeroAssets();
     error CrestTeller__ZeroShares();
-    error CrestTeller__MinimumDepositNotMet();
-    error CrestTeller__MinimumSharesNotMet();
     error CrestTeller__SharesAreLocked();
     error CrestTeller__ShareLockPeriodTooLong();
     error CrestTeller__NoAccountant();
@@ -83,7 +81,6 @@ contract TellerFacet is ReentrancyGuard {
         address receiver
     ) external whenNotPaused returns (uint256 shares) {
         if (assets == 0) revert CrestTeller__ZeroAssets();
-        if (assets < MIN_DEPOSIT) revert CrestTeller__MinimumDepositNotMet();
 
         LibCrestStorage.CrestStorage storage cs = LibCrestStorage
             .crestStorage();
@@ -91,14 +88,6 @@ contract TellerFacet is ReentrancyGuard {
         // Calculate shares to mint using AccountantFacet
         shares = IAccountantFacet(address(this)).convertToShares(assets);
         if (shares == 0) revert CrestTeller__ZeroShares();
-
-        // For initial deposit, ensure minimum shares
-        if (
-            ERC20(address(this)).totalSupply() == 0 &&
-            shares < MIN_INITIAL_SHARES
-        ) {
-            revert CrestTeller__MinimumSharesNotMet();
-        }
 
         // Transfer USDT0 from user to diamond
         cs.usdt0.safeTransferFrom(msg.sender, address(this), assets);

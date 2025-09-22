@@ -1,10 +1,10 @@
 {
-  "blockNumber": 14500847,
+  "blockNumber": 14501677,
   "chainId": 999,
   "curator": "0x02fD526263E6D3843fdefD945511aA83c78CcF35",
   "deployer": "0x02fD526263E6D3843fdefD945511aA83c78CcF35",
-  "diamond": "0x631001Ec262E0d59Dc9b420e7f18aeB87349F128",
+  "diamond": "0x1A56836057e5c788C6d104f422Dc40100992EA0c",
   "feeRecipient": "0x02fD526263E6D3843fdefD945511aA83c78CcF35",
-  "timestamp": 1758515850,
+  "timestamp": 1758516666,
   "usdt0": "0xB8CE59FC3717ada4C02eaDF9682A9e934F625ebb"
 }

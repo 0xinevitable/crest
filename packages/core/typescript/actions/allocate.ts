@@ -60,16 +60,16 @@ const main = async () => {
   // }
 
   // transfer 22 USDT0 to vault
-  // {
-  //   const hash = await walletClient.writeContract({
-  //     address: contracts.usdt0,
-  //     abi: erc20Abi,
-  //     functionName: 'transfer',
-  //     args: [contracts.vault, parseUnits('4', 18)],
-  //   });
-  //   console.log({ hash });
-  //   await publicClient.waitForTransactionReceipt({ hash });
-  // }
+  {
+    const hash = await walletClient.writeContract({
+      address: contracts.usdt0,
+      abi: erc20Abi,
+      functionName: 'transfer',
+      args: [contracts.vault, parseUnits('4', 18)],
+    });
+    console.log({ hash });
+    await publicClient.waitForTransactionReceipt({ hash });
+  }
 
   // log usdt0 balance of vault and sender
   {
@@ -93,25 +93,25 @@ const main = async () => {
   }
 
   // allocate to market
-  // {
-  //   const hash = await walletClient.writeContract({
-  //     address: contracts.manager,
-  //     abi: crestManagerAbi,
-  //     functionName: 'allocate__bridgeToCore',
-  //     args: [],
-  //   });
-  //   const receipt = await publicClient.waitForTransactionReceipt({ hash });
-  //   console.log(receipt);
+  {
+    const hash = await walletClient.writeContract({
+      address: contracts.manager,
+      abi: crestManagerAbi,
+      functionName: 'allocate__bridgeToCore',
+      args: [],
+    });
+    const receipt = await publicClient.waitForTransactionReceipt({ hash });
+    console.log(receipt);
 
-  //   const logs = parseEventLogs({
-  //     logs: receipt.logs,
-  //     abi: [...crestManagerAbi, ...crestVaultAbi, ...erc20Abi],
-  //   });
+    const logs = parseEventLogs({
+      logs: receipt.logs,
+      abi: [...crestManagerAbi, ...crestVaultAbi, ...erc20Abi],
+    });
 
-  //   for (const log of logs) {
-  //     console.log(log);
-  //   }
-  // }
+    for (const log of logs) {
+      console.log(log);
+    }
+  }
 
   {
     const hash = await walletClient.writeContract({

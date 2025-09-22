@@ -29,7 +29,7 @@ export const toastTransaction = async (promise: Promise<TransactionReceipt>) =>
                   win?.focus();
                 }}
               >
-                View in Mitoscan
+                View in Hyperliquid Explorer
               </button>
             </div>
           );

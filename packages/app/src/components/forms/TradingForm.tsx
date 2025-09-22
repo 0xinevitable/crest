@@ -8,6 +8,7 @@ import { useAccount } from 'wagmi';
 
 import { OpticianSans } from '@/fonts';
 import { useDeposit, useExchangeRate, useFees, useWithdraw } from '@/hooks';
+import { Explorer } from '@/utils/explorer';
 
 import { AmountInputWithTokens } from '../ui/AmountInputWithTokens';
 import { FeeDisplay } from '../ui/FeeDisplay';
@@ -181,7 +182,7 @@ export const TradingForm: React.FC = () => {
           <TxHashDisplay>
             Transaction:{' '}
             <a
-              href={`https://explorer.hyperliquid-testnet.xyz/tx/${currentHook.txHash}`}
+              href={Explorer.getTxLink(currentHook.txHash)}
               target="_blank"
               rel="noopener noreferrer"
             >

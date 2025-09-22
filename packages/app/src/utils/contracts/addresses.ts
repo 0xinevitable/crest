@@ -1,5 +1,4 @@
 import { Address } from 'viem';
-import { Config } from '../config';
 
 type ContractAddresses = {
   Crest: {
@@ -47,6 +46,5 @@ const MainnetContracts: ContractAddresses = {
   },
 };
 
-export const Contracts = Config.ENVIRONMENT === 'production' 
-  ? MainnetContracts 
-  : TestnetContracts;
+// Force use mainnet contracts
+export const Contracts = MainnetContracts;

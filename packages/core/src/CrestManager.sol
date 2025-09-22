@@ -207,7 +207,7 @@ contract CrestManager is Auth, ReentrancyGuard {
             CoreWriterLib.placeLimitOrder(
                 uint32(usdt0SpotIndex() + 10000), // For spot, we have to add 10000 to get asset ID
                 false,
-                usdt0Bid * 2, // sell at bid - 100% slippage
+                usdt0Bid / 2, // sell at bid - 100% slippage
                 usdt0CoreAmount,
                 false, // not reduce only
                 3, // IOC

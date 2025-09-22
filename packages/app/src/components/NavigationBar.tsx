@@ -13,8 +13,6 @@ const NAVIGATION_ITEMS = [
 ];
 
 export const NavigationBar = () => {
-  const scrollToTop = () => window.scrollTo({ top: 0, behavior: 'smooth' });
-
   const [isScrolled, setIsScrolled] = useState<boolean>(false);
   const navRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
@@ -37,7 +35,7 @@ export const NavigationBar = () => {
   return (
     <Wrapper ref={navRef} scrolled={isScrolled}>
       <Container>
-        <Link href="/" onClick={() => scrollToTop()}>
+        <Link href="#top">
           <Logo src="/assets/logos/crest-logo.svg" />
         </Link>
 

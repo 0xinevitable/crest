@@ -7,6 +7,10 @@
   word-break: keep-all;
 }
 
+html {
+  scroll-behavior: smooth;
+}
+
 html,
 body {
   background-color: #141b1d;

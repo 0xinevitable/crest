@@ -1,6 +1,9 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.21;
 
+/// @notice DEPRECATED: This contract has been refactored into a diamond pattern.
+/// @dev See /src/diamond/ for the new implementation.
+
 import { ERC20 } from "@solmate/tokens/ERC20.sol";
 import { FixedPointMathLib } from "@solmate/utils/FixedPointMathLib.sol";
 import { Auth, Authority } from "@solmate/auth/Auth.sol";

@@ -3,47 +3,17 @@ import { Cell, Pie, PieChart, ResponsiveContainer } from 'recharts';
 
 import { BalanceItem } from '@/components/ui/BalanceItem';
 import { OpticianSans } from '@/fonts';
-
-interface BalanceData {
-  title: string;
-  subtitle: string;
-  value: number;
-  color: string;
-  [key: string]: string | number;
-}
-
-const BALANCE_DATA: BalanceData[] = [
-  {
-    title: 'HYPE (SPOT)',
-    subtitle: 'Hypercore',
-    value: 49.42,
-    color: '#18edeb',
-  },
-  {
-    title: 'HYPE (1x SHORT)',
-    subtitle: 'Hypercore',
-    value: 49.42,
-    color: '#e24e76',
-  },
-  {
-    title: 'USDC (EXTRA MARGIN)',
-    subtitle: 'Hypercore',
-    value: 1.15,
-    color: '#0085ff',
-  },
-  {
-    title: 'USDC (TO BE ALLOCATED)',
-    subtitle: 'HYPEREVM',
-    value: 1.01,
-    color: '#7f99ff',
-  },
-];
+import { useBalanceSheet } from '@/hooks';
 
 interface BalanceSheetSectionProps {
   id?: string;
 }
 
-export const BalanceSheetSection: React.FC<BalanceSheetSectionProps> = ({ id }) => {
+export const BalanceSheetSection: React.FC<BalanceSheetSectionProps> = ({
+  id,
+}) => {
+  const { balanceData } = useBalanceSheet();
+
   return (
     <Container id={id}>
       <Title>balance SHEET</Title>
@@ -52,7 +22,7 @@ export const BalanceSheetSection: React.FC<BalanceSheetSectionProps> = ({ id }) 
           <ResponsiveContainer width="100%" height={400}>
             <PieChart>
               <Pie
-                data={BALANCE_DATA}
+                data={balanceData}
                 cx="50%"
                 cy="50%"
                 outerRadius={180}
@@ -60,7 +30,7 @@ export const BalanceSheetSection: React.FC<BalanceSheetSectionProps> = ({ id }) 
                 dataKey="value"
                 stroke="none"
               >
-                {BALANCE_DATA.map((entry, index) => (
+                {balanceData.map((entry, index) => (
                   <Cell key={`cell-${index}`} fill={entry.color} />
                 ))}
               </Pie>
@@ -73,7 +43,7 @@ export const BalanceSheetSection: React.FC<BalanceSheetSectionProps> = ({ id }) 
           </CenterGraphic>
         </ChartContainer>
         <BalanceList>
-          {BALANCE_DATA.map((item, index) => (
+          {balanceData.map((item, index) => (
             <BalanceItem
               key={index}
               title={item.title}

@@ -30,14 +30,14 @@ contract CrestManager is Auth, ReentrancyGuard {
      * @notice USDT0 token ID on Hyperliquid Core (bridgeable)
      */
     function usdt0TokenId() internal view returns (uint64) {
-        return block.chainid == TESTNET_CHAINID ? 1204 : 268;
+        return block.chainid == TESTNET_CHAINID ? 1 : 268;
     }
 
     /**
      * @notice USDT0/USDC spot index for swapping
      */
     function usdt0SpotIndex() internal view returns (uint32) {
-        return block.chainid == TESTNET_CHAINID ? 1115 : 166;
+        return block.chainid == TESTNET_CHAINID ? 0 : 166;
     }
 
     /**

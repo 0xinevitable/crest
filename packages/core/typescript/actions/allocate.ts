@@ -59,44 +59,45 @@ const main = async () => {
   //   await publicClient.waitForTransactionReceipt({ hash });
   // }
 
-  // // transfer 22 USDT0 to vault
-  // {
-  //   const hash = await walletClient.writeContract({
-  //     address: contracts.usdt0,
-  //     abi: erc20Abi,
-  //     functionName: 'transfer',
-  //     args: [contracts.vault, parseUnits('22', 6)],
-  //   });
-  //   console.log({ hash });
-  //   await publicClient.waitForTransactionReceipt({ hash });
-  // }
+  // transfer 22 USDT0 to vault
+  {
+    const hash = await walletClient.writeContract({
+      address: contracts.usdt0,
+      abi: erc20Abi,
+      functionName: 'transfer',
+      args: [contracts.vault, parseUnits('4', 18)],
+    });
+    console.log({ hash });
+    await publicClient.waitForTransactionReceipt({ hash });
+  }
+
+  // log usdt0 balance of vault and sender
+  {
+    const usdt0Balance = await publicClient.readContract({
+      address: contracts.usdt0,
+      abi: erc20Abi,
+      functionName: 'balanceOf',
+      args: [contracts.vault],
+    });
+    console.log('VAULT', { usdt0Balance });
+  }
+
+  {
+    const usdt0Balance = await publicClient.readContract({
+      address: contracts.usdt0,
+      abi: erc20Abi,
+      functionName: 'balanceOf',
+      args: [walletClient.account.address],
+    });
+    console.log('SENDER', { usdt0Balance });
+  }
 
   // allocate to market
-  // {
-  //   const hash = await walletClient.writeContract({
-  //     address: contracts.manager,
-  //     abi: crestManagerAbi,
-  //     functionName: 'allocate__bridgeToCore',
-  //     args: [],
-  //   });
-  //   const receipt = await publicClient.waitForTransactionReceipt({ hash });
-  //   console.log(receipt);
-
-  //   const logs = parseEventLogs({
-  //     logs: receipt.logs,
-  //     abi: [...crestManagerAbi, ...crestVaultAbi, ...erc20Abi],
-  //   });
-
-  //   for (const log of logs) {
-  //     console.log(log);
-  //   }
-  // }
-
   {
     const hash = await walletClient.writeContract({
       address: contracts.manager,
       abi: crestManagerAbi,
-      functionName: 'allocate__swapToUSDC',
+      functionName: 'allocate__bridgeToCore',
       args: [],
     });
     const receipt = await publicClient.waitForTransactionReceipt({ hash });
@@ -111,6 +112,26 @@ const main = async () => {
       console.log(log);
     }
   }
+
+  // {
+  //   const hash = await walletClient.writeContract({
+  //     address: contracts.manager,
+  //     abi: crestManagerAbi,
+  //     functionName: 'allocate__swapToUSDC',
+  //     args: [],
+  //   });
+  //   const receipt = await publicClient.waitForTransactionReceipt({ hash });
+  //   console.log(receipt);
+
+  //   const logs = parseEventLogs({
+  //     logs: receipt.logs,
+  //     abi: [...crestManagerAbi, ...crestVaultAbi, ...erc20Abi],
+  //   });
+
+  //   for (const log of logs) {
+  //     console.log(log);
+  //   }
+  // }
 };
 
 main();

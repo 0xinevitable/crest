@@ -59,7 +59,9 @@ class HyperliquidAPI {
       tokenIndex: spot.tokenIndex,
       spotIndex: spot.spotIndex,
       perpIndex: perp.perpIndex,
-      spotMeta: spot.meta,
+
+      tokenMeta: spot.meta.token,
+      spotMeta: spot.meta.spot,
       perpMeta: perp.meta,
     };
   }

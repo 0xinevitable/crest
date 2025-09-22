@@ -64,6 +64,15 @@ const main = async () => {
   await bbo('HYPE-USD', HYPE.perpIndex);
   // { symbol: 'HYPE-USD', assetIndex: 135, bid: 645860n, ask: 905270n }
 
+  const PURR = {
+    symbol: 'PURR',
+    tokenIndex: 1,
+    spotIndex: 0,
+    perpIndex: 125,
+  };
+  await bbo('PURR', PURR.spotIndex + 10000);
+  // { symbol: 'USDT0', assetIndex: 11115, bid: 6925n, ask: 6946n }
+
   const USDT0 = {
     symbol: 'TZERO',
     tokenIndex: 1204,

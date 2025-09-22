@@ -33,7 +33,7 @@ contract DeployScript is Script {
     function usdt0Address() internal view returns (address) {
         return
             block.chainid == TESTNET_CHAINID
-                ? 0x779Ded0c9e1022225f8E0630b35a9b54bE713736 // Testnet USDT0
+                ? 0xa9056c15938f9aff34CD497c722Ce33dB0C2fD57 // Testnet USDT0 (PURR)
                 : 0xB8CE59FC3717ada4C02eaDF9682A9e934F625ebb; // Mainnet USDT0
     }
 

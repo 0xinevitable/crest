@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-import {Script, console2} from "forge-std/Script.sol";
-import {HypeTradingContract} from "@hyper-evm-lib/test/utils/HypeTradingContract.sol";
+import { Script, console2 } from "forge-std/Script.sol";
+import { HypeTradingContract } from "@hyper-evm-lib/test/utils/HypeTradingContract.sol";
 
 contract DeployHypeTradingContract is Script {
     function run() external {
@@ -15,11 +15,19 @@ contract DeployHypeTradingContract is Script {
         vm.startBroadcast(deployerPrivateKey);
 
         // Deploy HypeTradingContract with deployer as owner
-        HypeTradingContract hypeTradingContract = new HypeTradingContract(deployer);
+        HypeTradingContract hypeTradingContract = new HypeTradingContract(
+            deployer
+        );
 
-        console2.log("HypeTradingContract deployed at:", address(hypeTradingContract));
+        console2.log(
+            "HypeTradingContract deployed at:",
+            address(hypeTradingContract)
+        );
         console2.log("Owner:", hypeTradingContract.owner());
-        console2.log("HYPE token index:", hypeTradingContract.getHypeTokenIndex());
+        console2.log(
+            "HYPE token index:",
+            hypeTradingContract.getHypeTokenIndex()
+        );
 
         vm.stopBroadcast();
 

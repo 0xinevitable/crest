@@ -8,7 +8,11 @@ import { OpportunityCard } from '@/components/ui/OpportunityCard';
 import { VaultMetrics } from '@/components/ui/VaultMetrics';
 import { OpticianSans } from '@/fonts';
 
-export const VaultSection: React.FC = () => {
+interface VaultSectionProps {
+  id?: string;
+}
+
+export const VaultSection: React.FC<VaultSectionProps> = ({ id }) => {
   const [showOperationHistory, setShowOperationHistory] = useState(false);
 
   const handleViewHistory = () => {
@@ -28,7 +32,7 @@ export const VaultSection: React.FC = () => {
   };
 
   return (
-    <Container>
+    <Container id={id}>
       <LeftColumn>
         <VaultCard>
           <VaultHeader>

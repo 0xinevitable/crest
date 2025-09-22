@@ -2,10 +2,9 @@ import styled from '@emotion/styled';
 import React from 'react';
 
 import { OpticianSans } from '@/fonts';
+import { useOperationHistory } from '@/hooks/useOperationHistory';
 
 import { Modal, ModalProps } from './Modal';
-
-type OperationType = 'ALLOCATION' | 'REBALANCING' | 'EXIT';
 
 interface OperationItem {
   type: OperationType;
@@ -15,42 +14,30 @@ interface OperationItem {
   icon?: string;
 }
 
+type OperationType = 'ALLOCATION' | 'REBALANCING' | 'DEPOSIT' | 'WITHDRAW';
+
 interface OperationHistoryModalProps extends Omit<ModalProps, 'children'> {
-  operations?: OperationItem[];
+  onClose: () => void;
   onRefresh?: () => void;
   onViewAll?: () => void;
-  onClose: () => void;
 }
 
-const mockOperations: OperationItem[] = [
-  {
-    type: 'ALLOCATION',
-    label: '+1,334 USDC',
-    timestamp: '7h ago',
-    txId: 'tx123',
-  },
-  {
-    type: 'REBALANCING',
-    label: 'HYPE/USDC',
-    timestamp: '7h ago',
-    txId: 'tx456',
-    // icon: '/assets/hyperliquid.png',
-  },
-  {
-    type: 'REBALANCING',
-    label: 'Ai16Z/USDC',
-    timestamp: '7h ago',
-    txId: 'tx789',
-  },
-];
-
 export const OperationHistoryModal: React.FC<OperationHistoryModalProps> = ({
-  operations = mockOperations,
+  onClose,
   onRefresh,
   onViewAll,
-  onClose,
   ...modalProps
 }) => {
+  const { operations, refetch } = useOperationHistory();
+
+  const handleRefresh = () => {
+    refetch();
+    onRefresh?.();
+  };
+
+  const handleViewAll = () => {
+    onViewAll?.();
+  };
   return (
     <Modal {...modalProps} onDismiss={onClose}>
       <Container>
@@ -78,7 +65,10 @@ export const OperationHistoryModal: React.FC<OperationHistoryModalProps> = ({
                       <TokenPair>{operation.label}</TokenPair>
                     </RebalancingLabel>
                   )}
-                  {operation.type === 'EXIT' && (
+                  {operation.type === 'DEPOSIT' && (
+                    <AllocationLabel>{operation.label}</AllocationLabel>
+                  )}
+                  {operation.type === 'WITHDRAW' && (
                     <ExitLabel>{operation.label}</ExitLabel>
                   )}
                 </OperationLabelContainer>
@@ -99,10 +89,10 @@ export const OperationHistoryModal: React.FC<OperationHistoryModalProps> = ({
         </OperationsList>
 
         <Footer>
-          <RefreshButton onClick={onRefresh}>
+          <RefreshButton onClick={handleRefresh}>
             <ButtonText>REFRESH</ButtonText>
           </RefreshButton>
-          <ViewAllButton onClick={onViewAll}>
+          <ViewAllButton onClick={handleViewAll}>
             <ButtonText>VIEW ALL</ButtonText>
           </ViewAllButton>
         </Footer>

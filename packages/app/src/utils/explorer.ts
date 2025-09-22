@@ -1,8 +1,8 @@
 import { Address } from 'viem';
+import { hyperliquidMainnet } from '@/constants/chains';
 
-import { hyperliquidEvmTestnet } from '@/constants/chains';
-
-const EXPLORER_BASE_URL = hyperliquidEvmTestnet.blockExplorers?.default.url;
+// Force use mainnet explorer
+const EXPLORER_BASE_URL = hyperliquidMainnet.blockExplorers?.default.url;
 
 export const Explorer = {
   getTxLink: (hash: string) => `${EXPLORER_BASE_URL}/tx/${hash}`,

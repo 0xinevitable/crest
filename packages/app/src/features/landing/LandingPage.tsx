@@ -11,11 +11,11 @@ import { VaultSection } from './sections/VaultSection';
 
 const LandingPage: NextPage = () => {
   return (
-    <Container>
+    <Container id="top">
       <HeroSection />
       <PartnersSection />
-      <VaultSection />
-      <BalanceSheetSection />
+      <VaultSection id="interact" />
+      <BalanceSheetSection id="composition" />
       <Footer />
     </Container>
   );

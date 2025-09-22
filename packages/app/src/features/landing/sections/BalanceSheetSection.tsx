@@ -39,9 +39,13 @@ const BALANCE_DATA: BalanceData[] = [
   },
 ];
 
-export const BalanceSheetSection: React.FC = () => {
+interface BalanceSheetSectionProps {
+  id?: string;
+}
+
+export const BalanceSheetSection: React.FC<BalanceSheetSectionProps> = ({ id }) => {
   return (
-    <Container>
+    <Container id={id}>
       <Title>balance SHEET</Title>
       <Content>
         <ChartContainer>

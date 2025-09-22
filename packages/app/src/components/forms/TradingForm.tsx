@@ -7,14 +7,14 @@ import { useAccount } from 'wagmi';
 
 
 import { OpticianSans } from '@/fonts';
-import { useDeposit } from '@/hooks/useDeposit';
-import { useExchangeRate } from '@/hooks/useExchangeRate';
-import { useWithdraw } from '@/hooks/useWithdraw';
+import { useDeposit, useExchangeRate, useFees, useWithdraw } from '@/hooks';
+import { Explorer } from '@/utils/explorer';
 
 import { AmountInputWithTokens } from '../ui/AmountInputWithTokens';
 import { FeeDisplay } from '../ui/FeeDisplay';
 import { DepositWithdrawTabs } from './DepositWithdrawTabs';
 import { PriceDisplay } from './PriceDisplay';
+
 
 const TOKENS = {
   USDT0: {
@@ -29,11 +29,6 @@ const TOKENS = {
   },
 };
 
-const FEES = [
-  { label: 'Performance Fee', value: '5%', showInfo: true },
-  { label: 'Management Fee', value: '1%', showInfo: true },
-  { label: 'Withdrawal Period', value: '1 days', showInfo: false },
-];
 
 export const TradingForm: React.FC = () => {
   const { isConnected } = useAccount();
@@ -68,6 +63,7 @@ export const TradingForm: React.FC = () => {
   const currentHook = activeTab === 'deposit' ? depositHook : withdrawHook;
 
   const { exchangeRate } = useExchangeRate();
+  const { fees } = useFees();
 
   useEffect(() => {
     if (currentHook.status === 'success') {
@@ -186,7 +182,7 @@ export const TradingForm: React.FC = () => {
           <TxHashDisplay>
             Transaction:{' '}
             <a
-              href={`https://explorer.hyperliquid-testnet.xyz/tx/${currentHook.txHash}`}
+              href={Explorer.getTxLink(currentHook.txHash)}
               target="_blank"
               rel="noopener noreferrer"
             >
@@ -219,7 +215,7 @@ export const TradingForm: React.FC = () => {
             : `1 ${fromToken.symbol} ≈ ${(1 / Number(exchangeRate)).toFixed(6)} ${toToken.symbol}`
         }
       />
-      <FeeDisplay fees={FEES} />
+      <FeeDisplay fees={fees} />
     </Container>
   );
 };

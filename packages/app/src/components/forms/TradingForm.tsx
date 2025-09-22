@@ -4,13 +4,16 @@ import { toast } from 'react-toastify';
 import { formatUnits } from 'viem';
 import { useAccount } from 'wagmi';
 
+
+
 import { OpticianSans } from '@/fonts';
-import { useDeposit, useExchangeRate, useFees } from '@/hooks';
+import { useDeposit, useExchangeRate, useFees, useWithdraw } from '@/hooks';
 
 import { AmountInputWithTokens } from '../ui/AmountInputWithTokens';
 import { FeeDisplay } from '../ui/FeeDisplay';
 import { DepositWithdrawTabs } from './DepositWithdrawTabs';
 import { PriceDisplay } from './PriceDisplay';
+
 
 const TOKENS = {
   USDT0: {

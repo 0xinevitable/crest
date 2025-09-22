@@ -18,6 +18,7 @@ library LibCrestStorage {
     }
 
     struct CrestStorage {
+        //
         // Vault State
         BeforeTransferHook hook;
         uint32 currentSpotIndex;
@@ -25,11 +26,13 @@ library LibCrestStorage {
         IHyperdriveMarket hyperdriveMarket;
         uint256 hyperdriveShares;
         mapping(address => bool) authorized;
+        //
         // Teller State
         ERC20 usdt0;
         uint64 shareLockPeriod;
         mapping(address => uint256) shareUnlockTime;
         bool isTellerPaused;
+        //
         // Manager State
         Position currentSpotPosition;
         Position currentPerpPosition;
@@ -37,6 +40,7 @@ library LibCrestStorage {
         bool isManagerPaused;
         address curator;
         uint16 maxSlippageBps;
+        //
         // Accountant State
         uint256 lastTotalAssets;
         uint16 platformFeeBps;
@@ -46,6 +50,7 @@ library LibCrestStorage {
         uint256 accumulatedPerformanceFees;
         address feeRecipient;
         bool isAccountantPaused;
+        //
         // Shared initialization flag
         bool initialized;
     }

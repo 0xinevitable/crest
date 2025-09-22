@@ -1,0 +1,10 @@
+{
+  "blockNumber": 32960484,
+  "chainId": 998,
+  "curator": "0x02fD526263E6D3843fdefD945511aA83c78CcF35",
+  "deployer": "0x02fD526263E6D3843fdefD945511aA83c78CcF35",
+  "diamond": "0x36e139CaD3fF0E3a5B7Ebae7c12b85AFAd722f54",
+  "feeRecipient": "0x02fD526263E6D3843fdefD945511aA83c78CcF35",
+  "timestamp": 1758514135,
+  "usdt0": "0xa9056c15938f9aff34CD497c722Ce33dB0C2fD57"
+}

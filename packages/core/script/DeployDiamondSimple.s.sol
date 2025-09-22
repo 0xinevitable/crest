@@ -12,14 +12,56 @@ import { VaultFacet } from "../src/diamond/facets/VaultFacet.sol";
 import { TellerFacet } from "../src/diamond/facets/TellerFacet.sol";
 import { ManagerFacet } from "../src/diamond/facets/ManagerFacet.sol";
 import { AccountantFacet } from "../src/diamond/facets/AccountantFacet.sol";
+import { LibString } from "@solmate/utils/LibString.sol";
 
 contract DeployDiamondSimple is Script {
     uint256 constant TESTNET_CHAINID = 998;
 
     function usdt0Address() internal view returns (address) {
-        return block.chainid == TESTNET_CHAINID
-            ? 0xa9056c15938f9aff34CD497c722Ce33dB0C2fD57 // Testnet USDT0 (PURR)
-            : 0xB8CE59FC3717ada4C02eaDF9682A9e934F625ebb; // Mainnet USDT0
+        return
+            block.chainid == TESTNET_CHAINID
+                ? 0xa9056c15938f9aff34CD497c722Ce33dB0C2fD57 // Testnet USDT0 (PURR)
+                : 0xB8CE59FC3717ada4C02eaDF9682A9e934F625ebb; // Mainnet USDT0
+    }
+
+    function _writeDeploymentJson(
+        CrestDiamond diamond,
+        address deployer,
+        address curator,
+        address feeRecipient,
+        address usdt0
+    ) internal {
+        string memory obj = "deployment";
+
+        // Core addresses
+        vm.serializeAddress(obj, "diamond", address(diamond));
+        vm.serializeAddress(obj, "deployer", deployer);
+        vm.serializeAddress(obj, "curator", curator);
+        vm.serializeAddress(obj, "feeRecipient", feeRecipient);
+        vm.serializeAddress(obj, "usdt0", usdt0);
+
+        // Chain info
+        vm.serializeUint(obj, "chainId", block.chainid);
+        vm.serializeUint(obj, "blockNumber", block.number);
+        string memory output = vm.serializeUint(
+            obj,
+            "timestamp",
+            block.timestamp
+        );
+
+        // Create deployments directory if it doesn't exist
+        string memory dirPath = "./deployments/";
+
+        // Write to file
+        string memory path = string.concat(
+            dirPath,
+            LibString.toString(block.chainid),
+            "-diamond.json"
+        );
+
+        vm.writeJson(output, path);
+
+        console.log("\nDeployment info written to:", path);
     }
 
     function run() external {
@@ -50,7 +92,10 @@ contract DeployDiamondSimple is Script {
         // Step 2: Deploy DiamondCutFacet
         console.log("\n2. Deploying DiamondCutFacet...");
         DiamondCutFacet diamondCutFacet = new DiamondCutFacet();
-        console.log("   DiamondCutFacet deployed at:", address(diamondCutFacet));
+        console.log(
+            "   DiamondCutFacet deployed at:",
+            address(diamondCutFacet)
+        );
 
         // Step 3: Deploy Diamond
         console.log("\n3. Deploying Diamond...");
@@ -116,7 +161,9 @@ contract DeployDiamondSimple is Script {
         vaultSelectors[1] = VaultFacet.unauthorize.selector;
         vaultSelectors[2] = VaultFacet.authorized.selector;
         vaultSelectors[3] = bytes4(keccak256("manage(address,bytes,uint256)"));
-        vaultSelectors[4] = bytes4(keccak256("manage(address[],bytes[],uint256[])"));
+        vaultSelectors[4] = bytes4(
+            keccak256("manage(address[],bytes[],uint256[])")
+        );
         vaultSelectors[5] = VaultFacet.allocate.selector;
         vaultSelectors[6] = VaultFacet.rebalance.selector;
         vaultSelectors[7] = VaultFacet.enter.selector;
@@ -198,8 +245,12 @@ contract DeployDiamondSimple is Script {
         accountantSelectors[12] = AccountantFacet.platformFeeBps.selector;
         accountantSelectors[13] = AccountantFacet.performanceFeeBps.selector;
         accountantSelectors[14] = AccountantFacet.highWaterMark.selector;
-        accountantSelectors[15] = AccountantFacet.accumulatedPlatformFees.selector;
-        accountantSelectors[16] = AccountantFacet.accumulatedPerformanceFees.selector;
+        accountantSelectors[15] = AccountantFacet
+            .accumulatedPlatformFees
+            .selector;
+        accountantSelectors[16] = AccountantFacet
+            .accumulatedPerformanceFees
+            .selector;
         accountantSelectors[17] = AccountantFacet.feeRecipient.selector;
         accountantSelectors[18] = AccountantFacet.isAccountantPaused.selector;
         cuts[5] = IDiamondCut.FacetCut({
@@ -235,6 +286,9 @@ contract DeployDiamondSimple is Script {
 
         console.log("\nDiamond deployment complete!");
         console.log("Diamond address:", address(diamond));
+
+        // Write deployment info to JSON
+        _writeDeploymentJson(diamond, deployer, curator, feeRecipient, usdt0);
 
         vm.stopBroadcast();
     }

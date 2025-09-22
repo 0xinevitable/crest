@@ -18,6 +18,8 @@ Users deposit USDT0 and receive Crest shares representing their vault position. 
 
 ### (iii) The Diamond architecture separates concerns across specialized facets:
 
+\+ Unified balance sheet
+
 - **VaultFacet**: Core position management, Hyperdrive integration, and cross-facet authorization
 - **TellerFacet**: User deposits/withdrawals with anti-arbitrage share locks
 - **ManagerFacet**: Hyperliquid spot/perp position allocation and rebalancing logic

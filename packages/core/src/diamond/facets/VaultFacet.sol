@@ -43,9 +43,11 @@ contract VaultFacet {
     //============================== MODIFIERS ===============================
 
     modifier requiresAuth() {
-        LibCrestStorage.CrestStorage storage cs = LibCrestStorage.crestStorage();
+        LibCrestStorage.CrestStorage storage cs = LibCrestStorage
+            .crestStorage();
         require(
-            msg.sender == LibDiamond.contractOwner() || cs.authorized[msg.sender],
+            msg.sender == LibDiamond.contractOwner() ||
+                cs.authorized[msg.sender],
             "UNAUTHORIZED"
         );
         _;
@@ -54,17 +56,20 @@ contract VaultFacet {
     //============================== AUTHORIZATION ===============================
 
     function authorize(address target) external requiresAuth {
-        LibCrestStorage.CrestStorage storage cs = LibCrestStorage.crestStorage();
+        LibCrestStorage.CrestStorage storage cs = LibCrestStorage
+            .crestStorage();
         cs.authorized[target] = true;
     }
 
     function unauthorize(address target) external requiresAuth {
-        LibCrestStorage.CrestStorage storage cs = LibCrestStorage.crestStorage();
+        LibCrestStorage.CrestStorage storage cs = LibCrestStorage
+            .crestStorage();
         cs.authorized[target] = false;
     }
 
     function authorized(address target) external view returns (bool) {
-        LibCrestStorage.CrestStorage storage cs = LibCrestStorage.crestStorage();
+        LibCrestStorage.CrestStorage storage cs = LibCrestStorage
+            .crestStorage();
         return cs.authorized[target];
     }
 
@@ -92,16 +97,24 @@ contract VaultFacet {
 
     //============================== ALLOCATION ===============================
 
-    function allocate(uint32 spotIndex, uint32 perpIndex) external requiresAuth {
-        LibCrestStorage.CrestStorage storage cs = LibCrestStorage.crestStorage();
+    function allocate(
+        uint32 spotIndex,
+        uint32 perpIndex
+    ) external requiresAuth {
+        LibCrestStorage.CrestStorage storage cs = LibCrestStorage
+            .crestStorage();
         cs.currentSpotIndex = spotIndex;
         cs.currentPerpIndex = perpIndex;
 
         emit Allocation(spotIndex, perpIndex, 0);
     }
 
-    function rebalance(uint32 newSpotIndex, uint32 newPerpIndex) external requiresAuth {
-        LibCrestStorage.CrestStorage storage cs = LibCrestStorage.crestStorage();
+    function rebalance(
+        uint32 newSpotIndex,
+        uint32 newPerpIndex
+    ) external requiresAuth {
+        LibCrestStorage.CrestStorage storage cs = LibCrestStorage
+            .crestStorage();
         uint32 oldSpotIndex = cs.currentSpotIndex;
         uint32 oldPerpIndex = cs.currentPerpIndex;
 
@@ -149,9 +162,13 @@ contract VaultFacet {
     //============================== HYPERDRIVE INTEGRATION ===============================
 
     function setHyperdriveMarket(address _market) external requiresAuth {
-        LibCrestStorage.CrestStorage storage cs = LibCrestStorage.crestStorage();
+        LibCrestStorage.CrestStorage storage cs = LibCrestStorage
+            .crestStorage();
 
-        if (address(cs.hyperdriveMarket) != address(0) && cs.hyperdriveShares > 0) {
+        if (
+            address(cs.hyperdriveMarket) != address(0) &&
+            cs.hyperdriveShares > 0
+        ) {
             _withdrawFromHyperdrive(type(uint256).max);
         }
 
@@ -159,8 +176,10 @@ contract VaultFacet {
         emit HyperdriveMarketUpdated(_market);
     }
 
-    function depositToHyperdrive(ERC20 usdt0, uint256 amount) external requiresAuth {
-        LibCrestStorage.CrestStorage storage cs = LibCrestStorage.crestStorage();
+    // TODO: todo auth check
+    function depositToHyperdrive(ERC20 usdt0, uint256 amount) external {
+        LibCrestStorage.CrestStorage storage cs = LibCrestStorage
+            .crestStorage();
 
         if (address(cs.hyperdriveMarket) == address(0)) return;
 
@@ -172,15 +191,21 @@ contract VaultFacet {
         emit HyperdriveDeposit(amount, shares);
     }
 
-    function withdrawFromHyperdrive(uint256 amount) external requiresAuth returns (uint256) {
+    // TODO: check
+    function withdrawFromHyperdrive(uint256 amount) external returns (uint256) {
         return _withdrawFromHyperdrive(amount);
     }
 
-    function _withdrawFromHyperdrive(uint256 amount) internal returns (uint256 withdrawn) {
-        LibCrestStorage.CrestStorage storage cs = LibCrestStorage.crestStorage();
+    function _withdrawFromHyperdrive(
+        uint256 amount
+    ) internal returns (uint256 withdrawn) {
+        LibCrestStorage.CrestStorage storage cs = LibCrestStorage
+            .crestStorage();
 
-        if (address(cs.hyperdriveMarket) == address(0) || cs.hyperdriveShares == 0)
-            return 0;
+        if (
+            address(cs.hyperdriveMarket) == address(0) ||
+            cs.hyperdriveShares == 0
+        ) return 0;
 
         uint256 sharesToBurn;
 
@@ -205,9 +230,13 @@ contract VaultFacet {
     }
 
     function getHyperdriveValue() external view returns (uint256) {
-        LibCrestStorage.CrestStorage storage cs = LibCrestStorage.crestStorage();
+        LibCrestStorage.CrestStorage storage cs = LibCrestStorage
+            .crestStorage();
 
-        if (address(cs.hyperdriveMarket) == address(0) || cs.hyperdriveShares == 0) {
+        if (
+            address(cs.hyperdriveMarket) == address(0) ||
+            cs.hyperdriveShares == 0
+        ) {
             return 0;
         }
         return cs.hyperdriveMarket.previewRedeem(cs.hyperdriveShares);
@@ -216,12 +245,14 @@ contract VaultFacet {
     //============================== BEFORE TRANSFER HOOK ===============================
 
     function setBeforeTransferHook(address _hook) external requiresAuth {
-        LibCrestStorage.CrestStorage storage cs = LibCrestStorage.crestStorage();
+        LibCrestStorage.CrestStorage storage cs = LibCrestStorage
+            .crestStorage();
         cs.hook = BeforeTransferHook(_hook);
     }
 
     function beforeTransferHook(address from, address to) external view {
-        LibCrestStorage.CrestStorage storage cs = LibCrestStorage.crestStorage();
+        LibCrestStorage.CrestStorage storage cs = LibCrestStorage
+            .crestStorage();
         if (address(cs.hook) != address(0))
             cs.hook.beforeTransfer(from, to, msg.sender);
     }

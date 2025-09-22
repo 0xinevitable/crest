@@ -5,9 +5,12 @@ import { AppProps } from 'next/app';
 import React from 'react';
 import { WagmiProvider } from 'wagmi';
 
+
+
 import { NavigationBar } from '@/components/NavigationBar';
 import { wagmiConfig } from '@/constants/config';
 import { InstrumentSans } from '@/fonts';
+import { StyledToastContainer } from '@/utils/toast';
 import '@/styles/global.css';
 
 const queryClient = new QueryClient();
@@ -30,6 +33,8 @@ const MyApp: React.FC<AppProps> = ({ Component, pageProps }) => {
             <NavigationBar />
 
             <Component {...pageProps} />
+
+            <StyledToastContainer position="bottom-right" />
           </RainbowKitProvider>
         </QueryClientProvider>
       </WagmiProvider>

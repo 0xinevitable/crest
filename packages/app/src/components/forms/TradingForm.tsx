@@ -1,32 +1,33 @@
 import styled from '@emotion/styled';
 import { useEffect, useState } from 'react';
+import { toast } from 'react-toastify';
 import { formatUnits } from 'viem';
 import { useAccount } from 'wagmi';
+
+
 
 import { OpticianSans } from '@/fonts';
 import { useDeposit } from '@/hooks/useDeposit';
 import { useExchangeRate } from '@/hooks/useExchangeRate';
+import { useWithdraw } from '@/hooks/useWithdraw';
 
 import { AmountInputWithTokens } from '../ui/AmountInputWithTokens';
 import { FeeDisplay } from '../ui/FeeDisplay';
 import { DepositWithdrawTabs } from './DepositWithdrawTabs';
 import { PriceDisplay } from './PriceDisplay';
 
-const INPUT_TOKENS = [
-  {
+const TOKENS = {
+  USDT0: {
     symbol: 'USDT0',
     name: 'USDT0',
     icon: '/assets/tokens/usdc-icon-primary.svg',
   },
-];
-
-const OUTPUT_TOKENS = [
-  {
+  CREST: {
     symbol: 'CREST',
     name: 'CREST',
     icon: '/assets/tokens/crest-icon.png',
   },
-];
+};
 
 const FEES = [
   { label: 'Performance Fee', value: '5%', showInfo: true },
@@ -39,133 +40,162 @@ export const TradingForm: React.FC = () => {
   const [mounted, setMounted] = useState(false);
 
   const [activeTab, setActiveTab] = useState<'deposit' | 'withdraw'>('deposit');
-  const [inputAmount, setInputAmount] = useState('0');
+  const [inputAmount, setInputAmount] = useState('');
+
+  // Programmable token configuration
+  const [fromToken, setFromToken] = useState(TOKENS.USDT0);
+  const [toToken, setToToken] = useState(TOKENS.CREST);
 
   useEffect(() => {
     setMounted(true);
   }, []);
 
-  const {
-    status,
-    isLoading,
-    isCalculatingShares,
-    needsApproval,
-    error,
-    balance,
-    shares,
-    txHash,
-    submit,
-    reset,
-  } = useDeposit(inputAmount);
+  // Update tokens when activeTab changes
+  useEffect(() => {
+    if (activeTab === 'deposit') {
+      setFromToken(TOKENS.USDT0);
+      setToToken(TOKENS.CREST);
+    } else {
+      setFromToken(TOKENS.CREST);
+      setToToken(TOKENS.USDT0);
+    }
+  }, [activeTab]);
+
+  const depositHook = useDeposit(inputAmount);
+  const withdrawHook = useWithdraw(inputAmount);
+
+  // Use the appropriate hook based on activeTab
+  const currentHook = activeTab === 'deposit' ? depositHook : withdrawHook;
 
   const { exchangeRate } = useExchangeRate();
 
   useEffect(() => {
-    if (status === 'success') {
-      setInputAmount('0');
-      setTimeout(() => reset(), 2000);
+    if (currentHook.status === 'success') {
+      setInputAmount('');
+      setTimeout(() => currentHook.reset(), 2000);
     }
-  }, [status, reset]);
+  }, [currentHook.status, currentHook.reset]);
 
-  const handleDeposit = async () => {
+  const handleSubmit = async () => {
     if (!isConnected) {
-      alert('Please connect your wallet');
+      toast.error('Please connect your wallet');
       return;
     }
 
     if (!inputAmount || Number(inputAmount) <= 0) {
-      alert('Please enter a valid amount');
+      toast.error('Please enter a valid amount');
       return;
     }
 
-    await submit();
+    await currentHook.submit();
   };
 
   const getButtonText = () => {
-    // Prevent hydration mismatch by showing loading state until mounted
     if (!mounted) return 'Loading...';
 
     if (!isConnected) return 'Connect Wallet';
 
-    switch (status) {
+    switch (currentHook.status) {
       case 'approving':
         return 'Approving USDT0...';
       case 'depositing':
         return 'Depositing...';
+      case 'withdrawing':
+        return 'Withdrawing...';
       case 'success':
         return 'Success!';
       case 'error':
         return 'Try Again';
       default:
-        if (needsApproval) return 'Approve USDT0';
+        if (activeTab === 'deposit' && depositHook.needsApproval)
+          return 'Approve USDT0';
         return activeTab === 'deposit' ? 'Deposit' : 'Withdraw';
     }
   };
 
   const isButtonDisabled = () => {
+    const isCalculating =
+      activeTab === 'deposit'
+        ? depositHook.isCalculatingShares
+        : withdrawHook.isCalculatingAssets;
+
     return (
       !mounted ||
       !isConnected ||
       !inputAmount ||
       Number(inputAmount) <= 0 ||
-      isLoading ||
-      isCalculatingShares ||
-      status === 'success'
+      currentHook.isLoading ||
+      isCalculating ||
+      currentHook.status === 'success'
     );
   };
 
   return (
     <Container>
       <FormContent>
-        <DepositWithdrawTabs activeTab={activeTab} onTabChange={setActiveTab} />
-
-        {/* Balance Display */}
-        {balance && (
-          <BalanceInfo>
-            Available:{' '}
-            {Number(formatUnits(balance.value, balance.decimals)).toFixed(6)}{' '}
-            {balance.symbol}
-          </BalanceInfo>
-        )}
+        <TabsAndBalanceRow>
+          <DepositWithdrawTabs activeTab={activeTab} onTabChange={setActiveTab} />
+          
+          {/* Balance Display */}
+          {currentHook.balance && (
+            <BalanceInfo>
+              Available:{' '}
+              {Number(
+                formatUnits(
+                  currentHook.balance.value,
+                  currentHook.balance.decimals,
+                ),
+              ).toFixed(6)}{' '}
+              {fromToken.symbol}
+            </BalanceInfo>
+          )}
+        </TabsAndBalanceRow>
 
         <AmountInputWithTokens
-          label="You deposit"
+          label={activeTab === 'deposit' ? 'You deposit' : 'You withdraw'}
           value={inputAmount}
           onChange={setInputAmount}
-          tokens={INPUT_TOKENS}
+          tokens={[fromToken]}
           onTokenSelect={(token) => console.log('Selected input token:', token)}
           variant="input"
         />
 
         <AmountInputWithTokens
-          label={`You Receive${isCalculatingShares ? ' (calculating...)' : ''}`}
-          value={shares}
+          label={`You Receive${
+            (
+              activeTab === 'deposit'
+                ? depositHook.isCalculatingShares
+                : withdrawHook.isCalculatingAssets
+            )
+              ? ' (calculating...)'
+              : ''
+          }`}
+          value={
+            activeTab === 'deposit' ? depositHook.shares : withdrawHook.assets
+          }
           onChange={() => {}}
-          tokens={OUTPUT_TOKENS}
+          tokens={[toToken]}
           onTokenSelect={(token) =>
             console.log('Selected output token:', token)
           }
           variant="output"
         />
 
-        {/* Error Display */}
-        {error && <ErrorMessage>{error}</ErrorMessage>}
-
         {/* Transaction Hash */}
-        {txHash && (
+        {currentHook.txHash && (
           <TxHashDisplay>
             Transaction:{' '}
             <a
-              href={`https://explorer.hyperliquid-testnet.xyz/tx/${txHash}`}
+              href={`https://explorer.hyperliquid-testnet.xyz/tx/${currentHook.txHash}`}
               target="_blank"
               rel="noopener noreferrer"
             >
-              {txHash.slice(0, 10)}...{txHash.slice(-8)}
+              {currentHook.txHash.slice(0, 10)}...{currentHook.txHash.slice(-8)}
             </a>
           </TxHashDisplay>
         )}
 
-        <ActionButton onClick={handleDeposit} disabled={isButtonDisabled()}>
+        <ActionButton onClick={handleSubmit} disabled={isButtonDisabled()}>
           <ButtonText>{getButtonText()}</ButtonText>
         </ActionButton>
       </FormContent>
@@ -173,14 +203,21 @@ export const TradingForm: React.FC = () => {
       <PriceDisplay
         label="Price per share"
         fromToken={{
-          symbol: 'USDT0',
-          icon: '/assets/tokens/usdc-icon-secondary.svg',
+          symbol: fromToken.symbol,
+          icon:
+            fromToken.symbol === 'USDT0'
+              ? '/assets/tokens/usdc-icon-secondary.svg'
+              : fromToken.icon,
         }}
         toToken={{
-          symbol: 'CREST',
-          icon: '/assets/tokens/crest-icon.png',
+          symbol: toToken.symbol,
+          icon: toToken.icon,
         }}
-        rate={`1 USDT0 ≈ ${exchangeRate} CREST`}
+        rate={
+          activeTab === 'deposit'
+            ? `1 ${fromToken.symbol} ≈ ${exchangeRate} ${toToken.symbol}`
+            : `1 ${fromToken.symbol} ≈ ${(1 / Number(exchangeRate)).toFixed(6)} ${toToken.symbol}`
+        }
       />
       <FeeDisplay fees={FEES} />
     </Container>
@@ -236,21 +273,19 @@ const ButtonText = styled.span`
   color: #fff;
 `;
 
+const TabsAndBalanceRow = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+`;
+
 const BalanceInfo = styled.div`
   font-size: 0.875rem;
   color: #8b949e;
   text-align: right;
-  margin-bottom: -0.5rem;
 `;
 
-const ErrorMessage = styled.div`
-  padding: 0.75rem;
-  background: rgba(248, 81, 73, 0.1);
-  border: 1px solid rgba(248, 81, 73, 0.3);
-  border-radius: 0.375rem;
-  color: #f85149;
-  font-size: 0.875rem;
-`;
 
 const TxHashDisplay = styled.div`
   padding: 0.75rem;

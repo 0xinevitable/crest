@@ -16,7 +16,6 @@ import { privateKeyToAccount } from 'viem/accounts';
 
 import _contracts from '../../deployments/998.json';
 import { hyperliquidEvmTestnet } from '../constants/chain';
-import { bboTesterAbi } from '../generated';
 
 const contracts = _contracts as Record<keyof typeof _contracts, Address>;
 

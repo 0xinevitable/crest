@@ -9,6 +9,7 @@ import {
   erc20Abi,
   http,
   parseEventLogs,
+  parseUnits,
 } from 'viem';
 import { privateKeyToAccount } from 'viem/accounts';
 import { hyperliquidEvmTestnet } from 'viem/chains';
@@ -44,13 +45,59 @@ const main = async () => {
     perpIndex: 135,
   };
 
+  // {
+  //   // fix nonce
+  //   const hash = await walletClient.sendTransaction({
+  //     address: walletClient.account.address,
+  //     value: 0n,
+  //     nonce: await publicClient.getTransactionCount({
+  //       address: walletClient.account.address,
+  //     }),
+  //     gas: 1000000n,
+  //   });
+  //   console.log({ hash });
+  //   await publicClient.waitForTransactionReceipt({ hash });
+  // }
+
+  // // transfer 22 USDT0 to vault
+  // {
+  //   const hash = await walletClient.writeContract({
+  //     address: contracts.usdt0,
+  //     abi: erc20Abi,
+  //     functionName: 'transfer',
+  //     args: [contracts.vault, parseUnits('22', 6)],
+  //   });
+  //   console.log({ hash });
+  //   await publicClient.waitForTransactionReceipt({ hash });
+  // }
+
   // allocate to market
+  // {
+  //   const hash = await walletClient.writeContract({
+  //     address: contracts.manager,
+  //     abi: crestManagerAbi,
+  //     functionName: 'allocate__bridgeToCore',
+  //     args: [],
+  //   });
+  //   const receipt = await publicClient.waitForTransactionReceipt({ hash });
+  //   console.log(receipt);
+
+  //   const logs = parseEventLogs({
+  //     logs: receipt.logs,
+  //     abi: [...crestManagerAbi, ...crestVaultAbi, ...erc20Abi],
+  //   });
+
+  //   for (const log of logs) {
+  //     console.log(log);
+  //   }
+  // }
+
   {
     const hash = await walletClient.writeContract({
       address: contracts.manager,
       abi: crestManagerAbi,
-      functionName: 'allocate',
-      args: [market.spotIndex, market.perpIndex],
+      functionName: 'allocate__swapToUSDC',
+      args: [],
     });
     const receipt = await publicClient.waitForTransactionReceipt({ hash });
     console.log(receipt);

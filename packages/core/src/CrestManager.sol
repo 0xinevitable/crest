@@ -152,21 +152,15 @@ contract CrestManager is Auth, ReentrancyGuard {
     }
 
     //============================== ALLOCATION FUNCTIONS ===============================
+    event DebugLogAmount(uint256 balance);
 
-    /**
-     * @notice Allocates vault funds to Hyperliquid positions
-     * @param spotIndex The spot market index to buy
-     * @param perpIndex The perp market index to short
-     */
-    function allocate(
-        uint32 spotIndex,
-        uint32 perpIndex
-    ) external onlyCurator whenNotPaused nonReentrant {
-        // Check if positions are already open
-        if (currentSpotPosition.size > 0 || currentPerpPosition.size > 0) {
-            revert CrestManager__PositionAlreadyOpen();
-        }
-
+    // This transfers vault USDT0 to this contract (manager) and bridge to Core (TODO: make the vault manage the actual bridged tokens/balances/positions)
+    function allocate__bridgeToCore()
+        public
+        onlyCurator
+        whenNotPaused
+        nonReentrant
+    {
         // Get available USDT0 balance (check vault balance -> IDLE is deposited to vault)
         uint256 availableUsdt0 = usdt0.balanceOf(address(vault));
 
@@ -179,117 +173,59 @@ contract CrestManager is Auth, ReentrancyGuard {
             availableUsdt0 = usdt0.balanceOf(address(vault));
         }
 
-        // Minimum 22 USDT0 needed to meet Core's minimum order requirements
-        // if (availableUsdt0 < 22e6) revert CrestManager__InsufficientBalance();
-
-        // Calculate allocations
-        uint256 marginAmount = (availableUsdt0 * MARGIN_ALLOCATION_BPS) / 10000;
-        uint256 spotAmount = (availableUsdt0 * SPOT_ALLOCATION_BPS) / 10000;
-        uint256 perpAmount = (availableUsdt0 * PERP_ALLOCATION_BPS) / 10000;
-
-        // Get prices for calculations
-        (uint64 spotPrice, uint64 perpPrice) = _getMarketPrices(
-            spotIndex,
-            perpIndex
-        );
-
         // Transfer USDT0 from vault to this contract first
         bytes memory transferData = abi.encodeWithSelector(
             IERC20.transfer.selector,
             address(this),
-            marginAmount + spotAmount + perpAmount
+            availableUsdt0
         );
         vault.manage(address(usdt0), transferData, 0);
 
         // Bridge USDT0 to Hyperliquid core
-        CoreWriterLib.bridgeToCore(
-            address(usdt0),
-            marginAmount + spotAmount + perpAmount
-        );
+        CoreWriterLib.bridgeToCore(address(usdt0), availableUsdt0);
 
-        // // Swap USDT0 to USDC on Hyperliquid
-        // uint64 usdt0CoreAmount = HLConversions.evmToWei(
-        //     usdt0TokenId(),
-        //     marginAmount + spotAmount + perpAmount
-        // );
+        uint64 usdt0CoreAmount = PrecompileLib
+            .spotBalance(address(this), usdt0TokenId())
+            .total;
+        emit DebugLogAmount(usdt0CoreAmount);
+    }
 
-        // // Place market order to sell USDT0 for USDC
-        // {
-        //     uint64 usdt0Bid = _getUsdt0BidPrice();
-        //     CoreWriterLib.placeLimitOrder(
-        //         usdt0SpotIndex(),
-        //         false, // sell USDT0
-        //         usdt0Bid - ((usdt0Bid * 100) / 10000), // sell at bid - 1% slippage
-        //         usdt0CoreAmount,
-        //         false, // not reduce only
-        //         3, // IOC
-        //         uint128(block.timestamp << 32) // unique cloid
-        //     );
-        // }
+    // This swaps manager's Core USDT0 to USDC
+    function allocate__swapToUSDC()
+        public
+        onlyCurator
+        whenNotPaused
+        nonReentrant
+    {
+        uint64 usdt0CoreAmount = PrecompileLib
+            .spotBalance(address(this), usdt0TokenId())
+            .total;
+        emit DebugLogAmount(usdt0CoreAmount);
 
-        // // After swap, we have USDC in spot balance
-        // // Transfer margin to perp account
-        // // USDC: 6 decimals on EVM, 8 decimals in Core
-        // uint64 marginCoreAmount = uint64(marginAmount) * 100; // Convert 6 decimals to 8 decimals
-        // CoreWriterLib.transferUsdClass(
-        //     marginCoreAmount, // In Core's 8 decimal format
-        //     true // to perp
-        // );
+        {
+            uint64 usdt0Bid = _getUsdt0BidPrice();
+            CoreWriterLib.placeLimitOrder(
+                uint32(usdt0SpotIndex() + 10000), // For spot, we have to add 10000 to get asset ID
+                false,
+                usdt0Bid * 2, // sell at bid - 100% slippage
+                usdt0CoreAmount,
+                false, // not reduce only
+                3, // IOC
+                uint128(block.timestamp << 32) // unique cloid
+            );
+        }
+    }
 
-        // // Place spot buy order
-        // {
-        //     // Place spot buy order at ask price (for immediate fill)
-        //     CoreWriterLib.placeLimitOrder(
-        //         spotIndex,
-        //         true, // isBuy
-        //         spotPrice, // Already includes slippage
-        //         uint64((uint256(uint64(spotAmount) * 100) * 1e8) / spotPrice), // size calculation inline
-        //         false, // reduceOnly
-        //         3, // IOC (Immediate or Cancel)
-        //         uint128(block.timestamp) // cloid
-        //     );
-
-        //     // Update spot position
-        //     currentSpotPosition.index = spotIndex;
-        //     currentSpotPosition.isLong = true;
-        //     currentSpotPosition.timestamp = block.timestamp;
-        // }
-
-        // // Place perp short order
-        // {
-        //     // Place perp short order at bid price (for immediate fill)
-        //     CoreWriterLib.placeLimitOrder(
-        //         perpIndex,
-        //         false, // isBuy (short)
-        //         perpPrice, // Already includes slippage
-        //         uint64((uint256(uint64(perpAmount) * 100) * 1e6) / perpPrice), // size calculation inline
-        //         false, // reduceOnly
-        //         3, // IOC (Immediate or Cancel)
-        //         uint128(block.timestamp + 1) // cloid
-        //     );
-
-        //     // Update perp position
-        //     currentPerpPosition.index = perpIndex;
-        //     currentPerpPosition.isLong = false;
-        //     currentPerpPosition.timestamp = block.timestamp;
-        // }
-
-        // totalAllocated = marginAmount + spotAmount + perpAmount;
-
-        // // Query and update actual positions after orders are filled
-        // _updatePositionsFromChain(spotIndex, perpIndex);
-
-        // // Update vault indexes
-        // vault.allocate(spotIndex, perpIndex);
-
-        // emit Allocated(
-        //     spotIndex,
-        //     perpIndex,
-        //     totalAllocated,
-        //     marginAmount,
-        //     spotAmount,
-        //     perpAmount
-        // );
+    /**
+     * @notice Allocates vault funds to Hyperliquid positions
+     * @param spotIndex The spot market index to buy
+     * @param perpIndex The perp market index to short
+     */
+    function allocate(
+        uint32 spotIndex,
+        uint32 perpIndex
+    ) external onlyCurator whenNotPaused nonReentrant {
+        _openPositions(spotIndex, perpIndex);
     }
 
     /**
@@ -490,9 +426,9 @@ contract CrestManager is Auth, ReentrancyGuard {
         );
 
         CoreWriterLib.placeLimitOrder(
-            spotIndex,
+            spotIndex + 10000, // For spot, we have to add 10000 to get asset ID
             true, // isBuy
-            spotPrice, // Already includes slippage
+            spotPrice * 2, // 100% slippage
             spotSizeInAsset,
             false, // reduceOnly
             3, // IOC
@@ -517,7 +453,7 @@ contract CrestManager is Auth, ReentrancyGuard {
         CoreWriterLib.placeLimitOrder(
             perpIndex,
             false, // isBuy (short)
-            perpPrice, // Already includes slippage
+            perpPrice * 2, // 100% slippage
             perpSizeInAsset,
             false, // reduceOnly
             3, // IOC
@@ -834,7 +770,6 @@ contract CrestManager is Auth, ReentrancyGuard {
         uint32 spotIndex,
         uint32 perpIndex
     ) internal view virtual returns (uint64 spotPrice, uint64 perpPrice) {
-        // For production, use BBO. Tests can override if needed.
         PrecompileLib.Bbo memory spotBbo = PrecompileLib.bbo(
             uint64(spotIndex) + 10000
         );
@@ -848,14 +783,14 @@ contract CrestManager is Auth, ReentrancyGuard {
         PrecompileLib.Bbo memory usdt0Bbo = PrecompileLib.bbo(
             uint64(usdt0SpotIndex()) + 10000
         );
-        return usdt0Bbo.bid;
+        return usdt0Bbo.bid * 100;
     }
 
     function _getUsdt0AskPrice() internal view virtual returns (uint64) {
         PrecompileLib.Bbo memory usdt0Bbo = PrecompileLib.bbo(
             uint64(usdt0SpotIndex()) + 10000
         );
-        return usdt0Bbo.ask;
+        return usdt0Bbo.ask * 100;
     }
 
     function _getSpotBidPrice(
@@ -864,14 +799,14 @@ contract CrestManager is Auth, ReentrancyGuard {
         PrecompileLib.Bbo memory spotBbo = PrecompileLib.bbo(
             uint64(spotIndex) + 10000
         );
-        return spotBbo.bid;
+        return spotBbo.bid * 100;
     }
 
     function _getPerpAskPrice(
         uint32 perpIndex
     ) internal view virtual returns (uint64) {
         PrecompileLib.Bbo memory perpBbo = PrecompileLib.bbo(uint64(perpIndex));
-        return perpBbo.ask;
+        return perpBbo.ask * 100;
     }
 
     function _getSpotMidPrice(
@@ -880,13 +815,13 @@ contract CrestManager is Auth, ReentrancyGuard {
         PrecompileLib.Bbo memory spotBbo = PrecompileLib.bbo(
             uint64(spotIndex) + 10000
         );
-        return (spotBbo.bid + spotBbo.ask) / 2;
+        return ((spotBbo.bid + spotBbo.ask) / 2) * 100;
     }
 
     function _getPerpMidPrice(
         uint32 perpIndex
     ) internal view virtual returns (uint64) {
         PrecompileLib.Bbo memory perpBbo = PrecompileLib.bbo(uint64(perpIndex));
-        return (perpBbo.bid + perpBbo.ask) / 2;
+        return ((perpBbo.bid + perpBbo.ask) / 2) * 100;
     }
 }

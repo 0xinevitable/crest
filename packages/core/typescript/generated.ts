@@ -1741,6 +1741,20 @@ export const crestManagerAbi = [
   {
     type: 'function',
     inputs: [],
+    name: 'allocate__bridgeToCore',
+    outputs: [],
+    stateMutability: 'nonpayable',
+  },
+  {
+    type: 'function',
+    inputs: [],
+    name: 'allocate__swapToUSDC',
+    outputs: [],
+    stateMutability: 'nonpayable',
+  },
+  {
+    type: 'function',
+    inputs: [],
     name: 'authority',
     outputs: [
       { name: '', internalType: 'contract Authority', type: 'address' },
@@ -2006,6 +2020,19 @@ export const crestManagerAbi = [
       },
     ],
     name: 'CuratorUpdated',
+  },
+  {
+    type: 'event',
+    anonymous: false,
+    inputs: [
+      {
+        name: 'balance',
+        internalType: 'uint256',
+        type: 'uint256',
+        indexed: false,
+      },
+    ],
+    name: 'DebugLogAmount',
   },
   {
     type: 'event',

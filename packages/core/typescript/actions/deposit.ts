@@ -35,7 +35,7 @@ const main = async () => {
     throw new Error('Wallet account is not the deployer');
   }
 
-  const depositAmount = parseUnits('22', 6);
+  const depositAmount = parseUnits('1', 6);
   console.log({ depositAmount });
 
   const usdt0Balance = await publicClient.readContract({
@@ -75,6 +75,17 @@ const main = async () => {
       args: [walletClient.account.address, contracts.teller],
     });
     console.log({ usdt0Allowance });
+  }
+
+  // transfer depositAmount of USDT0 to vault
+  {
+    const hash = await walletClient.writeContract({
+      address: contracts.usdt0,
+      abi: erc20Abi,
+      functionName: 'transfer',
+      args: [contracts.vault, depositAmount],
+    });
+    await publicClient.waitForTransactionReceipt({ hash });
   }
 
   const receiver = walletClient.account.address;

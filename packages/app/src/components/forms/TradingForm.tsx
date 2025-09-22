@@ -7,8 +7,7 @@ import { useAccount } from 'wagmi';
 
 
 import { OpticianSans } from '@/fonts';
-import { useDeposit } from '@/hooks/useDeposit';
-import { useExchangeRate } from '@/hooks/useExchangeRate';
+import { useDeposit, useExchangeRate, useFees } from '@/hooks';
 
 
 
@@ -36,11 +35,6 @@ const OUTPUT_TOKENS = [
   },
 ];
 
-const FEES = [
-  { label: 'Performance Fee', value: '5%', showInfo: true },
-  { label: 'Management Fee', value: '1%', showInfo: true },
-  { label: 'Withdrawal Period', value: '1 days', showInfo: false },
-];
 
 export const TradingForm: React.FC = () => {
   const { isConnected } = useAccount();
@@ -66,6 +60,7 @@ export const TradingForm: React.FC = () => {
   } = useDeposit(inputAmount);
 
   const { exchangeRate } = useExchangeRate();
+  const { fees } = useFees();
 
   useEffect(() => {
     if (status === 'success') {
@@ -185,7 +180,7 @@ export const TradingForm: React.FC = () => {
         }}
         rate={`1 USDT0 ≈ ${exchangeRate} CREST`}
       />
-      <FeeDisplay fees={FEES} />
+      <FeeDisplay fees={fees} />
     </Container>
   );
 };

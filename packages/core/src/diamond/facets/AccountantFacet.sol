@@ -5,6 +5,7 @@ import { ERC20 } from "@solmate/tokens/ERC20.sol";
 import { FixedPointMathLib } from "@solmate/utils/FixedPointMathLib.sol";
 import { LibDiamond } from "../libraries/LibDiamond.sol";
 import { LibCrestStorage } from "../libraries/LibCrestStorage.sol";
+import { IVaultFacet } from "../interfaces/IVaultFacet.sol";
 
 contract AccountantFacet {
     using FixedPointMathLib for uint256;
@@ -36,7 +37,8 @@ contract AccountantFacet {
     //============================== MODIFIERS ===============================
 
     modifier whenNotPaused() {
-        LibCrestStorage.CrestStorage storage cs = LibCrestStorage.crestStorage();
+        LibCrestStorage.CrestStorage storage cs = LibCrestStorage
+            .crestStorage();
         if (cs.isAccountantPaused) revert CrestAccountant__Paused();
         _;
     }
@@ -49,7 +51,8 @@ contract AccountantFacet {
     //============================== ADMIN FUNCTIONS ===============================
 
     function _updateFees() internal {
-        LibCrestStorage.CrestStorage storage cs = LibCrestStorage.crestStorage();
+        LibCrestStorage.CrestStorage storage cs = LibCrestStorage
+            .crestStorage();
 
         uint256 totalSupply = ERC20(address(this)).totalSupply();
         if (totalSupply == 0) return;
@@ -93,7 +96,8 @@ contract AccountantFacet {
     }
 
     function collectFees() external requiresAuth {
-        LibCrestStorage.CrestStorage storage cs = LibCrestStorage.crestStorage();
+        LibCrestStorage.CrestStorage storage cs = LibCrestStorage
+            .crestStorage();
 
         if (cs.feeRecipient == address(0))
             revert CrestAccountant__NoFeeRecipient();
@@ -127,7 +131,8 @@ contract AccountantFacet {
         if (_platformFeeBps > 500) revert CrestAccountant__InvalidFee(); // Max 5%
         if (_performanceFeeBps > 3000) revert CrestAccountant__InvalidFee(); // Max 30%
 
-        LibCrestStorage.CrestStorage storage cs = LibCrestStorage.crestStorage();
+        LibCrestStorage.CrestStorage storage cs = LibCrestStorage
+            .crestStorage();
         cs.platformFeeBps = _platformFeeBps;
         cs.performanceFeeBps = _performanceFeeBps;
 
@@ -135,19 +140,22 @@ contract AccountantFacet {
     }
 
     function updateFeeRecipient(address _feeRecipient) external requiresAuth {
-        LibCrestStorage.CrestStorage storage cs = LibCrestStorage.crestStorage();
+        LibCrestStorage.CrestStorage storage cs = LibCrestStorage
+            .crestStorage();
         cs.feeRecipient = _feeRecipient;
         emit FeeRecipientUpdated(_feeRecipient);
     }
 
     function pauseAccountant() external requiresAuth {
-        LibCrestStorage.CrestStorage storage cs = LibCrestStorage.crestStorage();
+        LibCrestStorage.CrestStorage storage cs = LibCrestStorage
+            .crestStorage();
         cs.isAccountantPaused = true;
         emit Paused();
     }
 
     function unpauseAccountant() external requiresAuth {
-        LibCrestStorage.CrestStorage storage cs = LibCrestStorage.crestStorage();
+        LibCrestStorage.CrestStorage storage cs = LibCrestStorage
+            .crestStorage();
         cs.isAccountantPaused = false;
         emit Unpaused();
     }
@@ -155,22 +163,26 @@ contract AccountantFacet {
     //============================== VIEW FUNCTIONS ===============================
 
     function getTotalAssets() public view returns (uint256) {
-        LibCrestStorage.CrestStorage storage cs = LibCrestStorage.crestStorage();
+        LibCrestStorage.CrestStorage storage cs = LibCrestStorage
+            .crestStorage();
 
         // Get USDT0 balance in diamond
         uint256 vaultBalance = cs.usdt0.balanceOf(address(this));
 
         // Add Hyperdrive value
-        uint256 hyperdriveValue = IVaultFacet(address(this)).getHyperdriveValue();
+        uint256 hyperdriveValue = IVaultFacet(address(this))
+            .getHyperdriveValue();
 
         // Add Core position values from Manager
-        uint256 corePositionValue = IManagerFacet(address(this)).estimatePositionValue();
+        uint256 corePositionValue = IManagerFacet(address(this))
+            .estimatePositionValue();
 
         return vaultBalance + hyperdriveValue + corePositionValue;
     }
 
     function getRate() public view returns (uint256) {
-        LibCrestStorage.CrestStorage storage cs = LibCrestStorage.crestStorage();
+        LibCrestStorage.CrestStorage storage cs = LibCrestStorage
+            .crestStorage();
 
         uint256 totalSupply = ERC20(address(this)).totalSupply();
         if (totalSupply == 0) return 1e6;
@@ -178,7 +190,8 @@ contract AccountantFacet {
         uint256 totalAssets = getTotalAssets();
 
         // Deduct accumulated fees from assets
-        uint256 totalFees = cs.accumulatedPlatformFees + cs.accumulatedPerformanceFees;
+        uint256 totalFees = cs.accumulatedPlatformFees +
+            cs.accumulatedPerformanceFees;
         if (totalAssets > totalFees) {
             totalAssets -= totalFees;
         }
@@ -236,12 +249,6 @@ contract AccountantFacet {
     function isAccountantPaused() external view returns (bool) {
         return LibCrestStorage.crestStorage().isAccountantPaused;
     }
-}
-
-// Interfaces for cross-facet calls
-interface IVaultFacet {
-    function enter(address from, ERC20 asset, uint256 assetAmount, address to, uint256 shareAmount) external;
-    function getHyperdriveValue() external view returns (uint256);
 }
 
 interface IManagerFacet {

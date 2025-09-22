@@ -6,8 +6,18 @@ import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 interface IDiamondTeller {
     function previewDeposit(uint256 assets) external view returns (uint256);
-    function deposit(uint256 assets, address receiver) external returns (uint256 shares);
+    function deposit(
+        uint256 assets,
+        address receiver
+    ) external returns (uint256 shares);
+    function withdraw(
+        uint256 shares,
+        address receiver
+    ) external returns (uint256 assets);
+    function previewWithdraw(uint256 shares) external view returns (uint256);
     function shareLockPeriod() external view returns (uint64);
+    function areSharesLocked(address user) external view returns (bool);
+
     function usdt0() external view returns (address);
 }
 
@@ -53,7 +63,9 @@ contract DiamondDepositTest is Test {
         uint256 depositAmount = 100e6; // 100 USDT0
 
         // Preview deposit - should be 1:1 initially
-        uint256 expectedShares = IDiamondTeller(DIAMOND).previewDeposit(depositAmount);
+        uint256 expectedShares = IDiamondTeller(DIAMOND).previewDeposit(
+            depositAmount
+        );
 
         console.log("Deposit amount:", depositAmount);
         console.log("Expected shares:", expectedShares);
@@ -75,22 +87,43 @@ contract DiamondDepositTest is Test {
         IERC20(USDT0).approve(DIAMOND, depositAmount);
 
         // Get expected shares
-        uint256 expectedShares = IDiamondTeller(DIAMOND).previewDeposit(depositAmount);
+        uint256 expectedShares = IDiamondTeller(DIAMOND).previewDeposit(
+            depositAmount
+        );
 
         // Deposit
         uint256 sharesBefore = IERC20(DIAMOND).balanceOf(user);
-        uint256 receivedShares = IDiamondTeller(DIAMOND).deposit(depositAmount, user);
+        uint256 receivedShares = IDiamondTeller(DIAMOND).deposit(
+            depositAmount,
+            user
+        );
         uint256 sharesAfter = IERC20(DIAMOND).balanceOf(user);
 
         vm.stopPrank();
 
         // Verify results
-        assertEq(receivedShares, expectedShares, "Received shares should match preview");
-        assertEq(sharesAfter - sharesBefore, receivedShares, "Share balance increase mismatch");
-        assertEq(IERC20(USDT0).balanceOf(user), initialBalance - depositAmount, "USDT0 not deducted");
+        assertEq(
+            receivedShares,
+            expectedShares,
+            "Received shares should match preview"
+        );
+        assertEq(
+            sharesAfter - sharesBefore,
+            receivedShares,
+            "Share balance increase mismatch"
+        );
+        assertEq(
+            IERC20(USDT0).balanceOf(user),
+            initialBalance - depositAmount,
+            "USDT0 not deducted"
+        );
 
         // For initial deposit, should be 1:1
-        assertEq(receivedShares, depositAmount, "Initial deposit should be 1:1");
+        assertEq(
+            receivedShares,
+            depositAmount,
+            "Initial deposit should be 1:1"
+        );
 
         console.log("Deposited:", depositAmount);
         console.log("Received shares:", receivedShares);
@@ -105,20 +138,34 @@ contract DiamondDepositTest is Test {
         vm.startPrank(user);
         IERC20(USDT0).approve(DIAMOND, type(uint256).max);
 
-        uint256 firstShares = IDiamondTeller(DIAMOND).deposit(firstDeposit, user);
+        uint256 firstShares = IDiamondTeller(DIAMOND).deposit(
+            firstDeposit,
+            user
+        );
         assertEq(firstShares, firstDeposit, "First deposit should be 1:1");
 
         // Second deposit (should still be 1:1 if no yield generated)
         uint256 secondDeposit = 50e6;
-        uint256 secondShares = IDiamondTeller(DIAMOND).deposit(secondDeposit, user);
+        uint256 secondShares = IDiamondTeller(DIAMOND).deposit(
+            secondDeposit,
+            user
+        );
 
         // Without yield generation, should still be 1:1
-        assertEq(secondShares, secondDeposit, "Second deposit should also be 1:1");
+        assertEq(
+            secondShares,
+            secondDeposit,
+            "Second deposit should also be 1:1"
+        );
 
         vm.stopPrank();
 
         uint256 totalShares = IERC20(DIAMOND).balanceOf(user);
-        assertEq(totalShares, firstShares + secondShares, "Total shares mismatch");
+        assertEq(
+            totalShares,
+            firstShares + secondShares,
+            "Total shares mismatch"
+        );
 
         console.log("First deposit shares:", firstShares);
         console.log("Second deposit shares:", secondShares);

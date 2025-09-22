@@ -7,6 +7,7 @@ import { FixedPointMathLib } from "@solmate/utils/FixedPointMathLib.sol";
 import { ReentrancyGuard } from "@solmate/utils/ReentrancyGuard.sol";
 import { LibDiamond } from "../libraries/LibDiamond.sol";
 import { LibCrestStorage } from "../libraries/LibCrestStorage.sol";
+import { IVaultFacet } from "../interfaces/IVaultFacet.sol";
 
 contract TellerFacet is ReentrancyGuard {
     using SafeTransferLib for ERC20;
@@ -179,26 +180,6 @@ contract TellerFacet is ReentrancyGuard {
     function usdt0() external view returns (address) {
         return address(LibCrestStorage.crestStorage().usdt0);
     }
-}
-
-// Interfaces for cross-facet calls
-interface IVaultFacet {
-    function enter(
-        address from,
-        ERC20 asset,
-        uint256 assetAmount,
-        address to,
-        uint256 shareAmount
-    ) external;
-    function exit(
-        address to,
-        ERC20 asset,
-        uint256 assetAmount,
-        address from,
-        uint256 shareAmount
-    ) external;
-    function depositToHyperdrive(ERC20 usdt0, uint256 amount) external;
-    function withdrawFromHyperdrive(uint256 amount) external returns (uint256);
 }
 
 interface IAccountantFacet {

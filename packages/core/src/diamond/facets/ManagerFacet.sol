@@ -12,6 +12,7 @@ import { PrecompileLib } from "@hyper-evm-lib/src/PrecompileLib.sol";
 import { HLConstants } from "@hyper-evm-lib/src/common/HLConstants.sol";
 import { HLConversions } from "@hyper-evm-lib/src/common/HLConversions.sol";
 import { CoreWriterLib } from "@hyper-evm-lib/src/CoreWriterLib.sol";
+import { IVaultFacet } from "../interfaces/IVaultFacet.sol";
 
 contract ManagerFacet is ReentrancyGuard {
     using SafeTransferLib for ERC20;
@@ -691,11 +692,4 @@ contract ManagerFacet is ReentrancyGuard {
     function isManagerPaused() external view returns (bool) {
         return LibCrestStorage.crestStorage().isManagerPaused;
     }
-}
-
-// Interface for cross-facet calls
-interface IVaultFacet {
-    function rebalance(uint32 newSpotIndex, uint32 newPerpIndex) external;
-    function getHyperdriveValue() external view returns (uint256);
-    function withdrawFromHyperdrive(uint256 amount) external returns (uint256);
 }

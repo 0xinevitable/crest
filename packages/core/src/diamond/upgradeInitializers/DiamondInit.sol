@@ -6,7 +6,7 @@ import { LibCrestStorage } from "../libraries/LibCrestStorage.sol";
 import { ERC20 } from "@solmate/tokens/ERC20.sol";
 import { IDiamondLoupe } from "../interfaces/IDiamondLoupe.sol";
 import { IDiamondCut } from "../interfaces/IDiamondCut.sol";
-import { IERC165 } from "../interfaces/IERC165.sol";
+import { _IERC165 } from "../interfaces/IERC165.sol";
 
 contract DiamondInit {
     struct InitArgs {
@@ -22,12 +22,13 @@ contract DiamondInit {
     function init(InitArgs memory _args) external {
         // Add ERC165 data
         LibDiamond.DiamondStorage storage ds = LibDiamond.diamondStorage();
-        ds.supportedInterfaces[type(IERC165).interfaceId] = true;
+        ds.supportedInterfaces[type(_IERC165).interfaceId] = true;
         ds.supportedInterfaces[type(IDiamondCut).interfaceId] = true;
         ds.supportedInterfaces[type(IDiamondLoupe).interfaceId] = true;
 
         // Initialize Crest storage
-        LibCrestStorage.CrestStorage storage cs = LibCrestStorage.crestStorage();
+        LibCrestStorage.CrestStorage storage cs = LibCrestStorage
+            .crestStorage();
 
         require(!cs.initialized, "DiamondInit: Already initialized");
         cs.initialized = true;

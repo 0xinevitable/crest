@@ -52,16 +52,16 @@ class HyperliquidAPI {
   }
 
   async getIndexesBySymbol(symbol: string) {
-    const spot = await this._getSpotIndex(symbol);
+    const spot = await this._getSpotIndex(symbol).catch(() => null);
     const perp = await this._getPerpIndex(symbol);
     return {
       symbol,
-      tokenIndex: spot.tokenIndex,
-      spotIndex: spot.spotIndex,
+      tokenIndex: spot?.tokenIndex,
+      spotIndex: spot?.spotIndex,
       perpIndex: perp.perpIndex,
 
-      tokenMeta: spot.meta.token,
-      spotMeta: spot.meta.spot,
+      tokenMeta: spot?.meta.token,
+      spotMeta: spot?.meta.spot,
       perpMeta: perp.meta,
     };
   }
@@ -80,6 +80,10 @@ const main = async () => {
   }
   {
     const indexes = await hl.getIndexesBySymbol('USDT0');
+    console.log(indexes);
+  }
+  {
+    const indexes = await hl.getIndexesBySymbol('ASTER');
     console.log(indexes);
   }
 

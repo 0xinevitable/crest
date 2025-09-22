@@ -13,6 +13,7 @@ import { VaultFacet } from "../src/diamond/facets/VaultFacet.sol";
 import { TellerFacet } from "../src/diamond/facets/TellerFacet.sol";
 import { ManagerFacet } from "../src/diamond/facets/ManagerFacet.sol";
 import { AccountantFacet } from "../src/diamond/facets/AccountantFacet.sol";
+import { IDiamondTeller } from "./DiamondDeposit.t.sol";
 
 // Mock USDT0 token for testing
 contract MockUSDT0 is ERC20 {
@@ -21,16 +22,6 @@ contract MockUSDT0 is ERC20 {
     function mint(address to, uint256 amount) external {
         _mint(to, amount);
     }
-}
-
-// Interfaces for calling diamond functions
-interface IDiamondTeller {
-    function previewDeposit(uint256 assets) external view returns (uint256);
-    function deposit(uint256 assets, address receiver) external returns (uint256 shares);
-    function withdraw(uint256 shares, address receiver) external returns (uint256 assets);
-    function previewWithdraw(uint256 shares) external view returns (uint256);
-    function shareLockPeriod() external view returns (uint64);
-    function areSharesLocked(address user) external view returns (bool);
 }
 
 contract DiamondLocalTest is Test {
@@ -119,7 +110,9 @@ contract DiamondLocalTest is Test {
         vaultSelectors[1] = VaultFacet.unauthorize.selector;
         vaultSelectors[2] = VaultFacet.authorized.selector;
         vaultSelectors[3] = bytes4(keccak256("manage(address,bytes,uint256)"));
-        vaultSelectors[4] = bytes4(keccak256("manage(address[],bytes[],uint256[])"));
+        vaultSelectors[4] = bytes4(
+            keccak256("manage(address[],bytes[],uint256[])")
+        );
         vaultSelectors[5] = VaultFacet.allocate.selector;
         vaultSelectors[6] = VaultFacet.rebalance.selector;
         vaultSelectors[7] = VaultFacet.enter.selector;
@@ -201,8 +194,12 @@ contract DiamondLocalTest is Test {
         accountantSelectors[12] = AccountantFacet.platformFeeBps.selector;
         accountantSelectors[13] = AccountantFacet.performanceFeeBps.selector;
         accountantSelectors[14] = AccountantFacet.highWaterMark.selector;
-        accountantSelectors[15] = AccountantFacet.accumulatedPlatformFees.selector;
-        accountantSelectors[16] = AccountantFacet.accumulatedPerformanceFees.selector;
+        accountantSelectors[15] = AccountantFacet
+            .accumulatedPlatformFees
+            .selector;
+        accountantSelectors[16] = AccountantFacet
+            .accumulatedPerformanceFees
+            .selector;
         accountantSelectors[17] = AccountantFacet.feeRecipient.selector;
         accountantSelectors[18] = AccountantFacet.isAccountantPaused.selector;
         cuts[5] = IDiamondCut.FacetCut({
@@ -222,10 +219,17 @@ contract DiamondLocalTest is Test {
             maxSlippageBps: 100 // 1%
         });
 
-        bytes memory initData = abi.encodeWithSelector(DiamondInit.init.selector, initArgs);
+        bytes memory initData = abi.encodeWithSelector(
+            DiamondInit.init.selector,
+            initArgs
+        );
 
         // Execute diamond cut
-        IDiamondCut(address(_diamond)).diamondCut(cuts, address(diamondInit), initData);
+        IDiamondCut(address(_diamond)).diamondCut(
+            cuts,
+            address(diamondInit),
+            initData
+        );
 
         // Authorize the diamond itself so facets can call each other
         VaultFacet(address(_diamond)).authorize(address(_diamond));
@@ -237,7 +241,8 @@ contract DiamondLocalTest is Test {
         uint256 depositAmount = 100e6; // 100 USDT0
 
         // Preview deposit - should be 1:1 initially
-        uint256 expectedShares = IDiamondTeller(address(diamond)).previewDeposit(depositAmount);
+        uint256 expectedShares = IDiamondTeller(address(diamond))
+            .previewDeposit(depositAmount);
 
         assertEq(expectedShares, depositAmount, "Initial rate should be 1:1");
 
@@ -247,11 +252,23 @@ contract DiamondLocalTest is Test {
     }
 
     function test_PreviewDeposit_VariousAmounts() public {
-        uint256[5] memory amounts = [uint256(1e6), 10e6, 100e6, 1000e6, 10000e6];
+        uint256[5] memory amounts = [
+            uint256(1e6),
+            10e6,
+            100e6,
+            1000e6,
+            10000e6
+        ];
 
         for (uint i = 0; i < amounts.length; i++) {
-            uint256 shares = IDiamondTeller(address(diamond)).previewDeposit(amounts[i]);
-            assertEq(shares, amounts[i], "Should be 1:1 for all amounts initially");
+            uint256 shares = IDiamondTeller(address(diamond)).previewDeposit(
+                amounts[i]
+            );
+            assertEq(
+                shares,
+                amounts[i],
+                "Should be 1:1 for all amounts initially"
+            );
             console.log("Amount:", amounts[i], "-> Shares:", shares);
         }
     }
@@ -265,7 +282,8 @@ contract DiamondLocalTest is Test {
         usdt0.approve(address(diamond), depositAmount);
 
         // Get expected shares
-        uint256 expectedShares = IDiamondTeller(address(diamond)).previewDeposit(depositAmount);
+        uint256 expectedShares = IDiamondTeller(address(diamond))
+            .previewDeposit(depositAmount);
 
         // Check initial balances
         uint256 aliceUsdt0Before = usdt0.balanceOf(alice);
@@ -276,20 +294,42 @@ contract DiamondLocalTest is Test {
         vm.expectEmit(true, false, false, true, address(diamond));
         emit Deposit(alice, depositAmount, expectedShares);
 
-        uint256 receivedShares = IDiamondTeller(address(diamond)).deposit(depositAmount, alice);
+        uint256 receivedShares = IDiamondTeller(address(diamond)).deposit(
+            depositAmount,
+            alice
+        );
 
         vm.stopPrank();
 
         // Verify balances
-        assertEq(receivedShares, expectedShares, "Received shares should match preview");
+        assertEq(
+            receivedShares,
+            expectedShares,
+            "Received shares should match preview"
+        );
         assertEq(receivedShares, depositAmount, "Should be 1:1 initially");
-        assertEq(diamond.balanceOf(alice), aliceSharesBefore + receivedShares, "Alice shares incorrect");
-        assertEq(usdt0.balanceOf(alice), aliceUsdt0Before - depositAmount, "Alice USDT0 not deducted");
-        assertEq(usdt0.balanceOf(address(diamond)), vaultUsdt0Before + depositAmount, "Vault USDT0 incorrect");
+        assertEq(
+            diamond.balanceOf(alice),
+            aliceSharesBefore + receivedShares,
+            "Alice shares incorrect"
+        );
+        assertEq(
+            usdt0.balanceOf(alice),
+            aliceUsdt0Before - depositAmount,
+            "Alice USDT0 not deducted"
+        );
+        assertEq(
+            usdt0.balanceOf(address(diamond)),
+            vaultUsdt0Before + depositAmount,
+            "Vault USDT0 incorrect"
+        );
 
         console.log("Alice deposited:", depositAmount);
         console.log("Alice received shares:", receivedShares);
-        console.log("Diamond USDT0 balance:", usdt0.balanceOf(address(diamond)));
+        console.log(
+            "Diamond USDT0 balance:",
+            usdt0.balanceOf(address(diamond))
+        );
     }
 
     function test_Deposit_MultipleUsers() public {
@@ -299,20 +339,34 @@ contract DiamondLocalTest is Test {
         // Alice deposits first
         vm.startPrank(alice);
         usdt0.approve(address(diamond), aliceDeposit);
-        uint256 aliceShares = IDiamondTeller(address(diamond)).deposit(aliceDeposit, alice);
+        uint256 aliceShares = IDiamondTeller(address(diamond)).deposit(
+            aliceDeposit,
+            alice
+        );
         vm.stopPrank();
 
         assertEq(aliceShares, aliceDeposit, "Alice should get 1:1");
-        assertEq(diamond.totalSupply(), aliceShares, "Total supply should equal Alice shares");
+        assertEq(
+            diamond.totalSupply(),
+            aliceShares,
+            "Total supply should equal Alice shares"
+        );
 
         // Bob deposits second (still 1:1 if no yield)
         vm.startPrank(bob);
         usdt0.approve(address(diamond), bobDeposit);
-        uint256 bobShares = IDiamondTeller(address(diamond)).deposit(bobDeposit, bob);
+        uint256 bobShares = IDiamondTeller(address(diamond)).deposit(
+            bobDeposit,
+            bob
+        );
         vm.stopPrank();
 
         assertEq(bobShares, bobDeposit, "Bob should also get 1:1");
-        assertEq(diamond.totalSupply(), aliceShares + bobShares, "Total supply incorrect");
+        assertEq(
+            diamond.totalSupply(),
+            aliceShares + bobShares,
+            "Total supply incorrect"
+        );
 
         console.log("Alice shares:", aliceShares);
         console.log("Bob shares:", bobShares);
@@ -349,11 +403,15 @@ contract DiamondLocalTest is Test {
         // Setup: Alice deposits first
         vm.startPrank(alice);
         usdt0.approve(address(diamond), depositAmount);
-        uint256 shares = IDiamondTeller(address(diamond)).deposit(depositAmount, alice);
+        uint256 shares = IDiamondTeller(address(diamond)).deposit(
+            depositAmount,
+            alice
+        );
         vm.stopPrank();
 
         // Preview withdrawal
-        uint256 expectedAssets = IDiamondTeller(address(diamond)).previewWithdraw(shares);
+        uint256 expectedAssets = IDiamondTeller(address(diamond))
+            .previewWithdraw(shares);
 
         // Should be 1:1 if no yield/loss
         assertEq(expectedAssets, depositAmount, "Withdrawal should be 1:1");
@@ -370,7 +428,10 @@ contract DiamondLocalTest is Test {
         usdt0.approve(address(diamond), smallDeposit);
 
         // Should succeed even with tiny amount
-        uint256 shares = IDiamondTeller(address(diamond)).deposit(smallDeposit, alice);
+        uint256 shares = IDiamondTeller(address(diamond)).deposit(
+            smallDeposit,
+            alice
+        );
         assertEq(shares, smallDeposit, "Small deposit should work");
 
         vm.stopPrank();
@@ -381,7 +442,10 @@ contract DiamondLocalTest is Test {
         vm.startPrank(bob);
         usdt0.approve(address(diamond), regularSmall);
 
-        uint256 bobShares = IDiamondTeller(address(diamond)).deposit(regularSmall, bob);
+        uint256 bobShares = IDiamondTeller(address(diamond)).deposit(
+            regularSmall,
+            bob
+        );
         assertEq(bobShares, regularSmall, "1 USDT0 deposit should work");
 
         vm.stopPrank();
@@ -400,8 +464,13 @@ contract DiamondLocalTest is Test {
         vm.startPrank(alice);
         usdt0.approve(address(diamond), amount);
 
-        uint256 preview = IDiamondTeller(address(diamond)).previewDeposit(amount);
-        uint256 shares = IDiamondTeller(address(diamond)).deposit(amount, alice);
+        uint256 preview = IDiamondTeller(address(diamond)).previewDeposit(
+            amount
+        );
+        uint256 shares = IDiamondTeller(address(diamond)).deposit(
+            amount,
+            alice
+        );
 
         vm.stopPrank();
 
@@ -409,6 +478,10 @@ contract DiamondLocalTest is Test {
         assertEq(shares, amount, "Should always be 1:1 initially");
         assertEq(shares, preview, "Preview should match actual");
         assertEq(diamond.balanceOf(alice), shares, "Share balance incorrect");
-        assertEq(usdt0.balanceOf(address(diamond)), amount, "Vault balance incorrect");
+        assertEq(
+            usdt0.balanceOf(address(diamond)),
+            amount,
+            "Vault balance incorrect"
+        );
     }
 }

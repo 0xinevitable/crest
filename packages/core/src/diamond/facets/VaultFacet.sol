@@ -124,7 +124,7 @@ contract VaultFacet {
             asset.safeTransferFrom(from, address(this), assetAmount);
 
         // Mint shares through Diamond's ERC20
-        CrestDiamond(payable(address(this)))._mint(to, shareAmount);
+        ICrestDiamond(address(this)).mint(to, shareAmount);
 
         emit Enter(from, address(asset), assetAmount, to, shareAmount);
     }
@@ -139,7 +139,7 @@ contract VaultFacet {
         uint256 shareAmount
     ) external requiresAuth {
         // Burn shares through Diamond's ERC20
-        CrestDiamond(payable(address(this)))._burn(from, shareAmount);
+        ICrestDiamond(address(this)).burn(from, shareAmount);
 
         if (assetAmount > 0) asset.safeTransfer(to, assetAmount);
 
@@ -250,7 +250,7 @@ contract VaultFacet {
 }
 
 // Helper contract interface to access Diamond's ERC20 functions
-interface CrestDiamond {
-    function _mint(address to, uint256 amount) external;
-    function _burn(address from, uint256 amount) external;
+interface ICrestDiamond {
+    function mint(address to, uint256 amount) external;
+    function burn(address from, uint256 amount) external;
 }

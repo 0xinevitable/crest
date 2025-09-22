@@ -9,13 +9,23 @@ import { CrestDiamond } from "../src/diamond/CrestDiamond.sol";
 contract DeployDiamondWithFFI is Script {
     IDiamondCut.FacetCut[] private _facetCuts;
 
+    uint256 constant TESTNET_CHAINID = 998;
+
+    // Get USDT0 address based on chain
+    function usdt0Address() internal view returns (address) {
+        return
+            block.chainid == TESTNET_CHAINID
+                ? 0xa9056c15938f9aff34CD497c722Ce33dB0C2fD57 // Testnet USDT0 (PURR)
+                : 0xB8CE59FC3717ada4C02eaDF9682A9e934F625ebb; // Mainnet USDT0
+    }
+
     function run() external {
         uint256 privateKey = vm.envUint("PRIVATE_KEY");
         address deployer = vm.addr(privateKey);
 
         // Load addresses from env
         address owner = vm.envOr("OWNER_ADDRESS", deployer);
-        address usdt0 = vm.envAddress("USDT0_ADDRESS");
+        address usdt0 = usdt0Address();
         address curator = vm.envAddress("CURATOR_ADDRESS");
         address feeRecipient = vm.envAddress("FEE_RECIPIENT_ADDRESS");
 
@@ -57,7 +67,9 @@ contract DeployDiamondWithFFI is Script {
             }
 
             // Store DiamondCutFacet address for diamond deployment
-            if (keccak256(bytes(facet)) == keccak256(bytes("DiamondCutFacet"))) {
+            if (
+                keccak256(bytes(facet)) == keccak256(bytes("DiamondCutFacet"))
+            ) {
                 diamondCutFacet = facetAddress;
                 continue; // Don't add to cuts, it's added in diamond constructor
             }
@@ -76,7 +88,10 @@ contract DeployDiamondWithFFI is Script {
                 })
             );
 
-            console.log(string.concat("Deployed ", facet, " at:"), facetAddress);
+            console.log(
+                string.concat("Deployed ", facet, " at:"),
+                facetAddress
+            );
             console.log("  Selectors count:", selectors.length);
         }
 

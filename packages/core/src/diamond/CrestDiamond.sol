@@ -61,6 +61,17 @@ contract CrestDiamond is ERC20, ERC721Holder, ERC1155Holder {
 
     receive() external payable {}
 
+    // Expose mint and burn for VaultFacet
+    function mint(address to, uint256 amount) external {
+        require(msg.sender == address(this), "Only facets can mint");
+        _mint(to, amount);
+    }
+
+    function burn(address from, uint256 amount) external {
+        require(msg.sender == address(this), "Only facets can burn");
+        _burn(from, amount);
+    }
+
     // Override ERC20 functions to use beforeTransferHook from storage
     function transfer(address to, uint256 amount) public override returns (bool) {
         _callBeforeTransfer(msg.sender, to);

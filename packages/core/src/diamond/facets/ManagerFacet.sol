@@ -141,14 +141,14 @@ contract ManagerFacet is ReentrancyGuard {
         );
     }
 
-    function allocate(
+    function allocatePositions(
         uint32 spotIndex,
         uint32 perpIndex
     ) external onlyCurator whenNotPaused nonReentrant {
         _openPositions(spotIndex, perpIndex);
     }
 
-    function rebalance(
+    function rebalancePositions(
         uint32 newSpotIndex,
         uint32 newPerpIndex
     ) external onlyCurator whenNotPaused nonReentrant {

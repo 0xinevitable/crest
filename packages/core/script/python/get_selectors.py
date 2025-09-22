@@ -4,6 +4,7 @@ import argparse
 import json
 from eth_abi import encode
 
+
 def get_selectors(contract_name):
     """Get function selectors for a contract using forge inspect."""
     try:
@@ -12,7 +13,7 @@ def get_selectors(contract_name):
             ["forge", "inspect", contract_name, "methodIdentifiers"],
             capture_output=True,
             text=True,
-            check=True
+            check=True,
         )
 
         # Parse JSON output
@@ -37,14 +38,21 @@ def get_selectors(contract_name):
         print(f"Error parsing JSON: {e}")
         raise
 
+
 def parse_args():
-    parser = argparse.ArgumentParser(description="Get function selectors for a Solidity contract")
-    parser.add_argument("contract", type=str, help="Contract name (e.g., DiamondLoupeFacet)")
+    parser = argparse.ArgumentParser(
+        description="Get function selectors for a Solidity contract"
+    )
+    parser.add_argument(
+        "contract", type=str, help="Contract name (e.g., DiamondLoupeFacet)"
+    )
     return parser.parse_args()
+
 
 def main():
     args = parse_args()
     get_selectors(args.contract)
+
 
 if __name__ == "__main__":
     main()

@@ -9,6 +9,7 @@ import { Auth, Authority } from "@solmate/auth/Auth.sol";
 import { ReentrancyGuard } from "@solmate/utils/ReentrancyGuard.sol";
 import { CrestVault } from "./CrestVault.sol";
 import { PrecompileLib } from "@hyper-evm-lib/src/PrecompileLib.sol";
+import { HLConstants } from "@hyper-evm-lib/src/common/HLConstants.sol";
 import { HLConversions } from "@hyper-evm-lib/src/common/HLConversions.sol";
 import { CoreWriterLib } from "@hyper-evm-lib/src/CoreWriterLib.sol";
 
@@ -202,15 +203,29 @@ contract CrestManager is Auth, ReentrancyGuard {
             .total;
         emit DebugLogAmount(usdt0CoreAmount);
 
+        // uint64 sz = HLConversions.weiToSz(usdt0TokenId(), usdt0CoreAmount);
+        // emit DebugLogAmount(sz);
+
+        // szDecimals: 0,
+        // weiDecimals: 5,
+
+        // holding 4 HURR
+        // usdt0CoreAmount = 400000n (10**5)
+
+        // sz = 8 decimals (400000000)
+        // uint64 sz = 400_000_000;
+
+        uint64 sz = usdt0CoreAmount * 10 ** 3;
+
         {
             uint64 usdt0Bid = _getUsdt0BidPrice();
             CoreWriterLib.placeLimitOrder(
                 uint32(usdt0SpotIndex() + 10000), // For spot, we have to add 10000 to get asset ID
                 false,
                 usdt0Bid / 2, // sell at bid - 100% slippage
-                usdt0CoreAmount,
+                sz,
                 false, // not reduce only
-                3, // IOC
+                HLConstants.LIMIT_ORDER_TIF_IOC,
                 uint128(block.timestamp << 32) // unique cloid
             );
         }
@@ -288,7 +303,7 @@ contract CrestManager is Auth, ReentrancyGuard {
                 spotBid - ((spotBid * 100) / 10000), // Sell at bid - 1% slippage
                 currentSpotPosition.size,
                 true, // reduceOnly
-                3, // IOC
+                HLConstants.LIMIT_ORDER_TIF_IOC,
                 uint128(block.timestamp + 2) // cloid
             );
 
@@ -335,7 +350,7 @@ contract CrestManager is Auth, ReentrancyGuard {
                 perpAsk + ((perpAsk * 100) / 10000), // Buy at ask + 1% slippage
                 currentPerpPosition.size,
                 true, // reduceOnly
-                3, // IOC
+                HLConstants.LIMIT_ORDER_TIF_IOC,
                 uint128(block.timestamp + 3) // cloid
             );
 
@@ -431,7 +446,7 @@ contract CrestManager is Auth, ReentrancyGuard {
             spotPrice * 2, // 100% slippage
             spotSizeInAsset,
             false, // reduceOnly
-            3, // IOC
+            HLConstants.LIMIT_ORDER_TIF_IOC,
             uint128(block.timestamp << 32) + 10
         );
 
@@ -456,7 +471,7 @@ contract CrestManager is Auth, ReentrancyGuard {
             perpPrice * 2, // 100% slippage
             perpSizeInAsset,
             false, // reduceOnly
-            3, // IOC
+            HLConstants.LIMIT_ORDER_TIF_IOC,
             uint128(block.timestamp << 32) + 11
         );
 
@@ -491,7 +506,7 @@ contract CrestManager is Auth, ReentrancyGuard {
                 usdt0Ask + ((usdt0Ask * 100) / 10000), // buy at ask + 1% slippage
                 spotBalance.total,
                 false,
-                3, // IOC
+                HLConstants.LIMIT_ORDER_TIF_IOC,
                 uint128(block.timestamp << 32) + 100
             );
 
@@ -783,14 +798,14 @@ contract CrestManager is Auth, ReentrancyGuard {
         PrecompileLib.Bbo memory usdt0Bbo = PrecompileLib.bbo(
             uint64(usdt0SpotIndex()) + 10000
         );
-        return usdt0Bbo.bid * 100;
+        return HLConversions.weiToSz(uint64(usdt0SpotIndex()), usdt0Bbo.bid);
     }
 
     function _getUsdt0AskPrice() internal view virtual returns (uint64) {
         PrecompileLib.Bbo memory usdt0Bbo = PrecompileLib.bbo(
             uint64(usdt0SpotIndex()) + 10000
         );
-        return usdt0Bbo.ask * 100;
+        return HLConversions.weiToSz(uint64(usdt0SpotIndex()), usdt0Bbo.ask);
     }
 
     function _getSpotBidPrice(

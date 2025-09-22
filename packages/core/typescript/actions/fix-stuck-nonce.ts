@@ -9,9 +9,9 @@ import {
   http,
 } from 'viem';
 import { privateKeyToAccount } from 'viem/accounts';
-import { hyperliquidEvmTestnet } from 'viem/chains';
 
 import _contracts from '../../deployments/998.json';
+import { hyperliquidEvmMainnet } from '../constants/chain';
 
 const contracts = _contracts as Record<keyof typeof _contracts, Address>;
 
@@ -20,11 +20,11 @@ const main = async () => {
 
   const privateKeyHex = process.env.PRIVATE_KEY! as Hex;
   const publicClient = createPublicClient({
-    chain: hyperliquidEvmTestnet,
+    chain: hyperliquidEvmMainnet,
     transport: http(),
   });
   const walletClient = createWalletClient({
-    chain: hyperliquidEvmTestnet,
+    chain: hyperliquidEvmMainnet,
     transport: http(),
     account: privateKeyToAccount(privateKeyHex),
   });

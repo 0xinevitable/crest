@@ -51,17 +51,17 @@ const main = async () => {
   // console.log({ hyperdriveMarket });
   // return;
 
-  {
-    const hash = await walletClient.writeContract({
-      address: contracts.diamond,
-      abi: crestVaultAbi,
-      functionName: 'setHyperdriveMarket',
-      args: ['0x260F5f56aD7D14789D43Fd538429d42Ff5b82B56'],
-    });
-    console.log({ hash });
-    await publicClient.waitForTransactionReceipt({ hash });
-    console.log('Hyperdrive market set');
-  }
+  // {
+  //   const hash = await walletClient.writeContract({
+  //     address: contracts.diamond,
+  //     abi: crestVaultAbi,
+  //     functionName: 'setHyperdriveMarket',
+  //     args: ['0x260F5f56aD7D14789D43Fd538429d42Ff5b82B56'],
+  //   });
+  //   console.log({ hash });
+  //   await publicClient.waitForTransactionReceipt({ hash });
+  //   console.log('Hyperdrive market set');
+  // }
 
   const depositAmount = parseUnits('1', 6);
   console.log({ depositAmount });
@@ -114,6 +114,7 @@ const main = async () => {
       functionName: 'deposit',
       args: [depositAmount, receiver],
     });
+    console.log({ hash });
     const receipt = await publicClient.waitForTransactionReceipt({ hash });
     console.log(receipt);
   }

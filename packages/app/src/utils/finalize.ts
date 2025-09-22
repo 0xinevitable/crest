@@ -5,19 +5,29 @@ import { wagmiConfig } from '@/constants/config';
 
 import { toastTransaction } from './toast';
 
-export const finalizedTX = async (promise: Promise<Hash>) => {
+export const finalizedTX = async (
+  promise: Promise<Hash>,
+  onHashReceived?: (hash: Hash) => void,
+) => {
   return await toastTransaction(
     new Promise<TransactionReceipt>(async (resolve, reject) => {
       try {
         const hash = await promise;
         console.log(`[*] Submitted tx: ${hash}`);
+
         if (!hash) {
           reject(new Error('No hash returned'));
           return;
         }
+
+        if (onHashReceived) {
+          onHashReceived(hash);
+        }
+
         const receipt = await waitForTransactionReceipt(wagmiConfig, {
           hash: hash,
         });
+
         console.log(`[*] Tx receipt for ${hash}:`, receipt);
         resolve(receipt);
       } catch (error) {

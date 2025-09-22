@@ -1,13 +1,16 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.21;
 
-import { ERC20 } from '@solmate/tokens/ERC20.sol';
-import { SafeTransferLib } from '@solmate/utils/SafeTransferLib.sol';
-import { FixedPointMathLib } from '@solmate/utils/FixedPointMathLib.sol';
-import { Auth, Authority } from '@solmate/auth/Auth.sol';
-import { ReentrancyGuard } from '@solmate/utils/ReentrancyGuard.sol';
-import { CrestVault } from './CrestVault.sol';
-import { CrestAccountant } from './CrestAccountant.sol';
+/// @notice DEPRECATED: This contract has been refactored into a diamond pattern.
+/// @dev See /src/diamond/ for the new implementation.
+
+import { ERC20 } from "@solmate/tokens/ERC20.sol";
+import { SafeTransferLib } from "@solmate/utils/SafeTransferLib.sol";
+import { FixedPointMathLib } from "@solmate/utils/FixedPointMathLib.sol";
+import { Auth, Authority } from "@solmate/auth/Auth.sol";
+import { ReentrancyGuard } from "@solmate/utils/ReentrancyGuard.sol";
+import { CrestVault } from "./CrestVault.sol";
+import { CrestAccountant } from "./CrestAccountant.sol";
 
 contract CrestTeller is Auth, ReentrancyGuard {
     using SafeTransferLib for ERC20;
@@ -67,8 +70,6 @@ contract CrestTeller is Auth, ReentrancyGuard {
     error CrestTeller__Paused();
     error CrestTeller__ZeroAssets();
     error CrestTeller__ZeroShares();
-    error CrestTeller__MinimumDepositNotMet();
-    error CrestTeller__MinimumSharesNotMet();
     error CrestTeller__SharesAreLocked();
     error CrestTeller__ShareLockPeriodTooLong();
     error CrestTeller__NoAccountant();
@@ -149,18 +150,12 @@ contract CrestTeller is Auth, ReentrancyGuard {
         address receiver
     ) external nonReentrant whenNotPaused returns (uint256 shares) {
         if (assets == 0) revert CrestTeller__ZeroAssets();
-        if (assets < MIN_DEPOSIT) revert CrestTeller__MinimumDepositNotMet();
         if (address(accountant) == address(0))
             revert CrestTeller__NoAccountant();
 
         // Calculate shares to mint
         shares = accountant.convertToShares(assets);
         if (shares == 0) revert CrestTeller__ZeroShares();
-
-        // For initial deposit, ensure minimum shares
-        if (vault.totalSupply() == 0 && shares < MIN_INITIAL_SHARES) {
-            revert CrestTeller__MinimumSharesNotMet();
-        }
 
         // Transfer USDT0 from user to vault
         usdt0.safeTransferFrom(msg.sender, address(vault), assets);

@@ -4,8 +4,6 @@ import { toast } from 'react-toastify';
 import { formatUnits } from 'viem';
 import { useAccount } from 'wagmi';
 
-
-
 import { OpticianSans } from '@/fonts';
 import { useDeposit, useExchangeRate, useFees, useWithdraw } from '@/hooks';
 import { Explorer } from '@/utils/explorer';
@@ -15,12 +13,11 @@ import { FeeDisplay } from '../ui/FeeDisplay';
 import { DepositWithdrawTabs } from './DepositWithdrawTabs';
 import { PriceDisplay } from './PriceDisplay';
 
-
 const TOKENS = {
   USDT0: {
     symbol: 'USDT0',
     name: 'USDT0',
-    icon: '/assets/tokens/usdc-icon-primary.svg',
+    icon: '/assets/tokens/usdt0-icon.svg',
   },
   CREST: {
     symbol: 'CREST',
@@ -28,7 +25,6 @@ const TOKENS = {
     icon: '/assets/tokens/crest-icon.png',
   },
 };
-
 
 export const TradingForm: React.FC = () => {
   const { isConnected } = useAccount();
@@ -130,8 +126,11 @@ export const TradingForm: React.FC = () => {
     <Container>
       <FormContent>
         <TabsAndBalanceRow>
-          <DepositWithdrawTabs activeTab={activeTab} onTabChange={setActiveTab} />
-          
+          <DepositWithdrawTabs
+            activeTab={activeTab}
+            onTabChange={setActiveTab}
+          />
+
           {/* Balance Display */}
           {currentHook.balance && (
             <BalanceInfo>
@@ -202,7 +201,7 @@ export const TradingForm: React.FC = () => {
           symbol: fromToken.symbol,
           icon:
             fromToken.symbol === 'USDT0'
-              ? '/assets/tokens/usdc-icon-secondary.svg'
+              ? '/assets/tokens/usdt0-icon.svg'
               : fromToken.icon,
         }}
         toToken={{
@@ -281,7 +280,6 @@ const BalanceInfo = styled.div`
   color: #8b949e;
   text-align: right;
 `;
-
 
 const TxHashDisplay = styled.div`
   padding: 0.75rem;

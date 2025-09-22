@@ -1,11 +1,11 @@
 import styled from '@emotion/styled';
 import { useState } from 'react';
 
+import { TradingForm } from '@/components/forms/TradingForm';
 import { OperationHistory } from '@/components/ui/OperationHistory';
 import { OperationHistoryModal } from '@/components/ui/OperationHistoryModal';
 import { OpportunityCard } from '@/components/ui/OpportunityCard';
 import { VaultMetrics } from '@/components/ui/VaultMetrics';
-import { TradingForm } from '@/components/forms/TradingForm';
 import { OpticianSans } from '@/fonts';
 
 interface VaultSectionProps {
@@ -46,20 +46,24 @@ export const VaultSection: React.FC<VaultSectionProps> = ({ id }) => {
           <VaultMetrics apy="98.02%" tvl="$10.2M" />
         </VaultCard>
 
-        <VaultActions>
-          <SectionTitle>OPPORTUNITIES</SectionTitle>
-          <OpportunityCard
-            apy="142.39%"
-            title="7d LP APY"
-            tags={['Provide Liquidity', 'Quick Exit']}
-          />
+        <VaultActionList>
+          <VaultActionSection>
+            <SectionTitle>OPPORTUNITIES</SectionTitle>
+            <OpportunityCard
+              apy="142.39%"
+              title="7d LP APY"
+              tags={['Provide Liquidity', 'Quick Exit']}
+            />
+          </VaultActionSection>
 
-          <SectionTitle>OPERATIONS</SectionTitle>
-          <OperationHistory 
-            lastOperation="7h ago" 
-            onViewHistory={handleViewHistory}
-          />
-        </VaultActions>
+          <VaultActionSection>
+            <SectionTitle>OPERATIONS</SectionTitle>
+            <OperationHistory
+              lastOperation="7h ago"
+              onViewHistory={handleViewHistory}
+            />
+          </VaultActionSection>
+        </VaultActionList>
       </LeftColumn>
 
       <RightColumn>
@@ -144,10 +148,17 @@ const VaultTitle = styled.h2`
   text-align: center;
 `;
 
-const VaultActions = styled.div`
+const VaultActionList = styled.ul`
+  width: 100%;
   display: flex;
   flex-direction: column;
-  gap: 2rem;
+  gap: 32px;
+`;
+const VaultActionSection = styled.li`
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
 `;
 
 const SectionTitle = styled.h3`

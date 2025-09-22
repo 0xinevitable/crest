@@ -1,7 +1,5 @@
 import styled from '@emotion/styled';
 
-
-
 import { InstrumentSans, OpticianSans } from '@/fonts';
 
 interface FeeItem {
@@ -23,8 +21,8 @@ export const FeeDisplay: React.FC<FeeDisplayProps> = ({ fees }) => {
           <FeeValueContainer>
             <FeeValue>{fee.value}</FeeValue>
             {fee.showInfo && (
-              <InfoIcon 
-                src="/assets/icons/info-icon.svg" 
+              <InfoIcon
+                src="/assets/icons/info-icon.svg"
                 onClick={() => console.log('Info clicked for:', fee.label)}
               />
             )}
@@ -52,7 +50,7 @@ const FeeItem = styled.div`
   justify-content: space-between;
 `;
 
-const FeeLabel = styled.div`
+const FeeLabel = styled.span`
   font-family: ${OpticianSans.style.fontFamily};
   font-size: 18px;
   font-weight: 400;
@@ -67,7 +65,7 @@ const FeeValueContainer = styled.div`
   align-items: center;
 `;
 
-const FeeValue = styled.div`
+const FeeValue = styled.span`
   font-family: ${InstrumentSans.style.fontFamily};
   font-size: 18px;
   font-weight: 500;

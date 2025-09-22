@@ -1,12 +1,6 @@
 import styled from '@emotion/styled';
 
-
-
 import { OpticianSans } from '@/fonts';
-
-
-
-
 
 interface OperationHistoryProps {
   lastOperation: string;
@@ -48,7 +42,7 @@ const InfoContainer = styled.div`
   flex: 1;
 `;
 
-const Label = styled.div`
+const Label = styled.span`
   color: #879a98;
   font-family: ${OpticianSans.style.fontFamily};
   font-size: 24px;
@@ -56,7 +50,7 @@ const Label = styled.div`
   line-height: 1;
 `;
 
-const Value = styled.div`
+const Value = styled.span`
   color: #fff;
   font-family: ${OpticianSans.style.fontFamily};
   font-size: 24px;

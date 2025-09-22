@@ -203,3 +203,13 @@ forge script script/Deploy.s.sol --rpc-url https://rpc.hyperliquid-testnet.xyz/e
 # broadcast
 forge script script/Deploy.s.sol --rpc-url https://rpc.hyperliquid-testnet.xyz/evm --broadcast
 ```
+
+## wip
+
+```bash
+# facet update
+ forge script script/UpgradeVaultFacet.s.sol --rpc-url https://rpc.hyperliquid.xyz/evm --broadcast
+
+# self auth
+forge script script/AuthorizeDiamond.s.sol --rpc-url https://rpc.hyperliquid.xyz/evm --broadcast -vvv
+```

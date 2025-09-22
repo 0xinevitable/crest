@@ -1,14 +1,14 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.21;
 
-import { Script, console } from 'forge-std/Script.sol';
-import { stdJson } from 'forge-std/StdJson.sol';
-import { CrestVault } from '../src/CrestVault.sol';
-import { CrestTeller } from '../src/CrestTeller.sol';
-import { CrestAccountant } from '../src/CrestAccountant.sol';
-import { CrestManager } from '../src/CrestManager.sol';
-import { LibString } from '@solady/utils/LibString.sol';
-import { Empty } from './Empty.sol';
+import { Script, console } from "forge-std/Script.sol";
+import { stdJson } from "forge-std/StdJson.sol";
+import { CrestVault } from "../src/CrestVault.sol";
+import { CrestTeller } from "../src/CrestTeller.sol";
+import { CrestAccountant } from "../src/CrestAccountant.sol";
+import { CrestManager } from "../src/CrestManager.sol";
+import { LibString } from "@solady/utils/LibString.sol";
+import { Empty } from "./Empty.sol";
 
 struct Output {
     // params
@@ -33,7 +33,7 @@ contract DeployScript is Script {
     function usdt0Address() internal view returns (address) {
         return
             block.chainid == TESTNET_CHAINID
-                ? 0x779Ded0c9e1022225f8E0630b35a9b54bE713736 // Testnet USDT0
+                ? 0xa9056c15938f9aff34CD497c722Ce33dB0C2fD57 // Testnet USDT0 (PURR)
                 : 0xB8CE59FC3717ada4C02eaDF9682A9e934F625ebb; // Mainnet USDT0
     }
 
@@ -57,14 +57,14 @@ contract DeployScript is Script {
     }
 
     function run() external {
-        uint256 deployerPrivateKey = vm.envUint('PRIVATE_KEY');
+        uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
         address deployer = vm.addr(deployerPrivateKey);
-        address curator = vm.envAddress('CURATOR_ADDRESS');
-        address feeRecipient = vm.envAddress('FEE_RECIPIENT_ADDRESS');
+        address curator = vm.envAddress("CURATOR_ADDRESS");
+        address feeRecipient = vm.envAddress("FEE_RECIPIENT_ADDRESS");
 
         // Deploy vault
         vm.startBroadcast(deployerPrivateKey);
-        CrestVault vault = new CrestVault(deployer, 'Crest Vault', 'CREST');
+        CrestVault vault = new CrestVault(deployer, "Crest Vault", "CREST");
 
         // Deploy manager first (before accountant)
         CrestManager manager = new CrestManager(
@@ -97,7 +97,7 @@ contract DeployScript is Script {
         if (block.chainid != TESTNET_CHAINID) {
             address hyperdriveMarket = 0x260F5f56aD7D14789D43Fd538429d42Ff5b82B56;
             vault.setHyperdriveMarket(hyperdriveMarket);
-            console.log('Hyperdrive Market configured:', hyperdriveMarket);
+            console.log("Hyperdrive Market configured:", hyperdriveMarket);
         }
 
         // Setup vault permissions
@@ -108,7 +108,7 @@ contract DeployScript is Script {
         vm.stopBroadcast();
 
         // DEPLOYMENT COMPLETE
-        console.log('Deployment complete!');
+        console.log("Deployment complete!");
 
         {
             Output memory output;
@@ -126,25 +126,25 @@ contract DeployScript is Script {
             output.manager = address(manager);
 
             string memory key = makeStr();
-            string memory out = '';
+            string memory out = "";
 
-            out = key.serialize('deployer', output.deployer);
-            out = key.serialize('curator', output.curator);
-            out = key.serialize('feeRecipient', output.feeRecipient);
-            out = key.serialize('usdt0', output.usdt0);
+            out = key.serialize("deployer", output.deployer);
+            out = key.serialize("curator", output.curator);
+            out = key.serialize("feeRecipient", output.feeRecipient);
+            out = key.serialize("usdt0", output.usdt0);
 
-            out = key.serialize('vault', output.vault);
-            out = key.serialize('accountant', output.accountant);
-            out = key.serialize('teller', output.teller);
-            out = key.serialize('manager', output.manager);
+            out = key.serialize("vault", output.vault);
+            out = key.serialize("accountant", output.accountant);
+            out = key.serialize("teller", output.teller);
+            out = key.serialize("manager", output.manager);
 
             string memory path = string.concat(
-                './deployments/',
+                "./deployments/",
                 LibString.toString(block.chainid),
-                '.json'
+                ".json"
             );
             vm.writeJson(out, path);
-            vm.writeLine(path, '');
+            vm.writeLine(path, "");
         }
     }
 }

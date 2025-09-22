@@ -1,11 +1,14 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.21;
 
-import { ERC20 } from '@solmate/tokens/ERC20.sol';
-import { FixedPointMathLib } from '@solmate/utils/FixedPointMathLib.sol';
-import { Auth, Authority } from '@solmate/auth/Auth.sol';
-import { CrestVault } from './CrestVault.sol';
-import { CrestManager } from './CrestManager.sol';
+/// @notice DEPRECATED: This contract has been refactored into a diamond pattern.
+/// @dev See /src/diamond/ for the new implementation.
+
+import { ERC20 } from "@solmate/tokens/ERC20.sol";
+import { FixedPointMathLib } from "@solmate/utils/FixedPointMathLib.sol";
+import { Auth, Authority } from "@solmate/auth/Auth.sol";
+import { CrestVault } from "./CrestVault.sol";
+import { CrestManager } from "./CrestManager.sol";
 
 contract CrestAccountant is Auth {
     using FixedPointMathLib for uint256;
@@ -61,7 +64,6 @@ contract CrestAccountant is Auth {
      * @notice Fee recipient address
      */
     address public feeRecipient;
-
 
     /**
      * @notice Pauses exchange rate updates
@@ -150,7 +152,8 @@ contract CrestAccountant is Auth {
         // Performance fee only on profit above high water mark
         uint256 performanceFee = 0;
         if (currentRate > highWaterMark) {
-            uint256 outperformance = currentAssets - ((uint256(highWaterMark) * totalSupply) / 1e6);
+            uint256 outperformance = currentAssets -
+                ((uint256(highWaterMark) * totalSupply) / 1e6);
             performanceFee = (outperformance * performanceFeeBps) / 10000;
             highWaterMark = currentRate;
         }
@@ -215,7 +218,6 @@ contract CrestAccountant is Auth {
         emit FeeRecipientUpdated(_feeRecipient);
     }
 
-
     /**
      * @notice Pauses exchange rate updates
      */
@@ -264,7 +266,8 @@ contract CrestAccountant is Auth {
         uint256 totalAssets = getTotalAssets();
 
         // Deduct accumulated fees from assets
-        uint256 totalFees = accumulatedPlatformFees + accumulatedPerformanceFees;
+        uint256 totalFees = accumulatedPlatformFees +
+            accumulatedPerformanceFees;
         if (totalAssets > totalFees) {
             totalAssets -= totalFees;
         }
@@ -302,5 +305,4 @@ contract CrestAccountant is Auth {
     function convertToAssets(uint256 shares) public view returns (uint256) {
         return (shares * getRate()) / 1e6;
     }
-
 }

@@ -8,22 +8,22 @@ const PARTNERS = [
     height: '30px',
   },
   {
+    name: 'Hyperdrive',
+    logo: '/assets/logos/hyperdrive-logo.svg',
+    width: '142.38px',
+    height: '34px',
+  },
+  {
     name: 'Inevitable',
-    logo: '/assets/logos/inevitable-pfp-icon.svg',
-    width: '42px',
+    logo: '/assets/logos/inevitable-logo.svg',
+    width: '193.19px',
     height: '42px',
   },
   {
-    name: 'Inevitable Text',
-    logo: '/assets/logos/inevitable-text-logo.svg',
-    width: '134.39px',
-    height: '20.16px',
-  },
-  {
-    name: 'Partner Frame',
-    logo: '/assets/logos/partner-frame-logo.svg',
-    width: '206.55px',
-    height: '34px',
+    name: 'deBridge',
+    logo: '/assets/logos/debridge-logo.svg',
+    width: '189px',
+    height: '31px',
   },
 ];
 
@@ -31,38 +31,16 @@ export const PartnersStrip: React.FC = () => {
   return (
     <Container>
       <Content>
-        <PartnerItem>
-          <PartnerLogo
-            src={PARTNERS[0].logo}
-            alt={PARTNERS[0].name}
-            $width={PARTNERS[0].width}
-            $height={PARTNERS[0].height}
-          />
-        </PartnerItem>
-
-        <PartnerGroup>
-          <PartnerLogo
-            src={PARTNERS[1].logo}
-            alt={PARTNERS[1].name}
-            $width={PARTNERS[1].width}
-            $height={PARTNERS[1].height}
-          />
-          <PartnerLogo
-            src={PARTNERS[2].logo}
-            alt={PARTNERS[2].name}
-            $width={PARTNERS[2].width}
-            $height={PARTNERS[2].height}
-          />
-        </PartnerGroup>
-
-        <PartnerItem>
-          <PartnerLogo
-            src={PARTNERS[3].logo}
-            alt={PARTNERS[3].name}
-            $width={PARTNERS[3].width}
-            $height={PARTNERS[3].height}
-          />
-        </PartnerItem>
+        {PARTNERS.map((partner) => (
+          <PartnerItem key={partner.name}>
+            <PartnerLogo
+              src={partner.logo}
+              alt={partner.name}
+              $width={partner.width}
+              $height={partner.height}
+            />
+          </PartnerItem>
+        ))}
       </Content>
     </Container>
   );
@@ -92,12 +70,6 @@ const PartnerItem = styled.div`
   display: flex;
   align-items: center;
   justify-content: center;
-`;
-
-const PartnerGroup = styled.div`
-  display: flex;
-  gap: 16.8px;
-  align-items: center;
 `;
 
 const PartnerLogo = styled.img<{ $width: string; $height: string }>`

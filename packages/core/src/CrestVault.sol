@@ -1,15 +1,18 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.21;
 
-import { Address } from '@openzeppelin/contracts/utils/Address.sol';
-import { ERC721Holder } from '@openzeppelin/contracts/token/ERC721/utils/ERC721Holder.sol';
-import { ERC1155Holder } from '@openzeppelin/contracts/token/ERC1155/utils/ERC1155Holder.sol';
-import { FixedPointMathLib } from '@solmate/utils/FixedPointMathLib.sol';
-import { SafeTransferLib } from '@solmate/utils/SafeTransferLib.sol';
-import { ERC20 } from '@solmate/tokens/ERC20.sol';
-import { Auth, Authority } from '@solmate/auth/Auth.sol';
-import { BeforeTransferHook } from './interfaces/BeforeTransferHook.sol';
-import { IHyperdriveMarket } from './interfaces/IHyperdriveMarket.sol';
+/// @notice DEPRECATED: This contract has been refactored into a diamond pattern.
+/// @dev See /src/diamond/ for the new implementation.
+
+import { Address } from "@openzeppelin/contracts/utils/Address.sol";
+import { ERC721Holder } from "@openzeppelin/contracts/token/ERC721/utils/ERC721Holder.sol";
+import { ERC1155Holder } from "@openzeppelin/contracts/token/ERC1155/utils/ERC1155Holder.sol";
+import { FixedPointMathLib } from "@solmate/utils/FixedPointMathLib.sol";
+import { SafeTransferLib } from "@solmate/utils/SafeTransferLib.sol";
+import { ERC20 } from "@solmate/tokens/ERC20.sol";
+import { Auth, Authority } from "@solmate/auth/Auth.sol";
+import { BeforeTransferHook } from "./interfaces/BeforeTransferHook.sol";
+import { IHyperdriveMarket } from "./interfaces/IHyperdriveMarket.sol";
 
 contract CrestVault is ERC20, Auth, ERC721Holder, ERC1155Holder {
     using Address for address;
@@ -94,7 +97,7 @@ contract CrestVault is ERC20, Auth, ERC721Holder, ERC1155Holder {
     mapping(address => bool) public authorized;
 
     modifier requiresAuth() override {
-        require(msg.sender == owner || authorized[msg.sender], 'UNAUTHORIZED');
+        require(msg.sender == owner || authorized[msg.sender], "UNAUTHORIZED");
         _;
     }
 
@@ -234,7 +237,10 @@ contract CrestVault is ERC20, Auth, ERC721Holder, ERC1155Holder {
     /**
      * @notice Deposits idle USDT0 to Hyperdrive
      */
-    function depositToHyperdrive(ERC20 usdt0, uint256 amount) external requiresAuth {
+    function depositToHyperdrive(
+        ERC20 usdt0,
+        uint256 amount
+    ) external requiresAuth {
         if (address(hyperdriveMarket) == address(0)) return;
 
         // Approve Hyperdrive to spend USDT0
@@ -250,15 +256,20 @@ contract CrestVault is ERC20, Auth, ERC721Holder, ERC1155Holder {
     /**
      * @notice Withdraws USDT0 from Hyperdrive
      */
-    function withdrawFromHyperdrive(uint256 amount) external requiresAuth returns (uint256) {
+    function withdrawFromHyperdrive(
+        uint256 amount
+    ) external requiresAuth returns (uint256) {
         return _withdrawFromHyperdrive(amount);
     }
 
     /**
      * @notice Internal function to withdraw from Hyperdrive
      */
-    function _withdrawFromHyperdrive(uint256 amount) internal returns (uint256 withdrawn) {
-        if (address(hyperdriveMarket) == address(0) || hyperdriveShares == 0) return 0;
+    function _withdrawFromHyperdrive(
+        uint256 amount
+    ) internal returns (uint256 withdrawn) {
+        if (address(hyperdriveMarket) == address(0) || hyperdriveShares == 0)
+            return 0;
 
         uint256 sharesToBurn;
 
@@ -274,7 +285,11 @@ contract CrestVault is ERC20, Auth, ERC721Holder, ERC1155Holder {
         }
 
         // Withdraw from Hyperdrive
-        withdrawn = hyperdriveMarket.redeem(sharesToBurn, address(this), address(this));
+        withdrawn = hyperdriveMarket.redeem(
+            sharesToBurn,
+            address(this),
+            address(this)
+        );
         hyperdriveShares -= sharesToBurn;
 
         emit HyperdriveWithdraw(withdrawn, sharesToBurn);

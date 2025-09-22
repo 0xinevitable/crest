@@ -92,16 +92,17 @@ const APYContainer = styled.div`
   color: #113a0d;
 `;
 
-const APYLabel = styled.div`
+const APYLabel = styled.span`
   font-family: ${OpticianSans.style.fontFamily};
+  color: #113a0d;
   font-size: 24px;
   font-weight: 400;
-  line-height: 1;
+  line-height: 100%; /* 24px */
 `;
 
-const APYValue = styled.div`
-  font-family: ${InstrumentSans.style.fontFamily};
+const APYValue = styled.span`
+  color: #113a0d;
   font-size: 28px;
   font-weight: 500;
-  line-height: 1.3;
+  line-height: 130%; /* 36.4px */
 `;

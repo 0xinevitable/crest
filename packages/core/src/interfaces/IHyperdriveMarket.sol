@@ -7,7 +7,9 @@ interface IHyperdriveMarket {
      * @param assets Amount of assets to deposit
      * @return shares Amount of shares that would be minted
      */
-    function previewDeposit(uint256 assets) external view returns (uint256 shares);
+    function previewDeposit(
+        uint256 assets
+    ) external view returns (uint256 shares);
 
     /**
      * @notice Deposit assets and mint shares to receiver
@@ -15,14 +17,19 @@ interface IHyperdriveMarket {
      * @param receiver Address to receive the shares
      * @return shares Amount of shares minted
      */
-    function deposit(uint256 assets, address receiver) external returns (uint256 shares);
+    function deposit(
+        uint256 assets,
+        address receiver
+    ) external returns (uint256 shares);
 
     /**
      * @notice Preview how many shares would be burned for withdrawing assets
      * @param assets Amount of assets to withdraw
      * @return shares Amount of shares that would be burned
      */
-    function previewWithdraw(uint256 assets) external view returns (uint256 shares);
+    function previewWithdraw(
+        uint256 assets
+    ) external view returns (uint256 shares);
 
     /**
      * @notice Withdraw assets by burning shares from owner
@@ -42,7 +49,9 @@ interface IHyperdriveMarket {
      * @param shares Amount of shares to redeem
      * @return assets Amount of assets that would be received
      */
-    function previewRedeem(uint256 shares) external view returns (uint256 assets);
+    function previewRedeem(
+        uint256 shares
+    ) external view returns (uint256 assets);
 
     /**
      * @notice Redeem shares for assets

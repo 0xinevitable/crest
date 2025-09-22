@@ -3,7 +3,10 @@ import '@rainbow-me/rainbowkit/styles.css';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { AppProps } from 'next/app';
 import React from 'react';
+import { ToastContainer } from 'react-toastify';
 import { WagmiProvider } from 'wagmi';
+
+
 
 import { NavigationBar } from '@/components/NavigationBar';
 import { wagmiConfig } from '@/constants/config';
@@ -30,6 +33,8 @@ const MyApp: React.FC<AppProps> = ({ Component, pageProps }) => {
             <NavigationBar />
 
             <Component {...pageProps} />
+
+            <ToastContainer />
           </RainbowKitProvider>
         </QueryClientProvider>
       </WagmiProvider>

@@ -205,7 +205,7 @@ contract DeployDiamondSimple is Script {
         });
 
         // ManagerFacet
-        bytes4[] memory managerSelectors = new bytes4[](16);
+        bytes4[] memory managerSelectors = new bytes4[](18);
         managerSelectors[0] = ManagerFacet.allocate__bridgeToCore.selector;
         managerSelectors[1] = ManagerFacet.allocate__swapToUSDC.selector;
         managerSelectors[2] = ManagerFacet.allocatePositions.selector;
@@ -222,6 +222,10 @@ contract DeployDiamondSimple is Script {
         managerSelectors[13] = ManagerFacet.maxSlippageBps.selector;
         managerSelectors[14] = ManagerFacet.totalAllocated.selector;
         managerSelectors[15] = ManagerFacet.isManagerPaused.selector;
+
+        managerSelectors[16] = ManagerFacet.transferUsdClass.selector;
+        managerSelectors[17] = ManagerFacet.placeLimitOrder.selector;
+
         cuts[4] = IDiamondCut.FacetCut({
             facetAddress: address(managerFacet),
             action: IDiamondCut.FacetCutAction.Add,

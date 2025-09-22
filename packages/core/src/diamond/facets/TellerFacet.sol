@@ -81,7 +81,7 @@ contract TellerFacet is ReentrancyGuard {
     function deposit(
         uint256 assets,
         address receiver
-    ) externalwhenNotPaused returns (uint256 shares) {
+    ) external whenNotPaused returns (uint256 shares) {
         if (assets == 0) revert CrestTeller__ZeroAssets();
         if (assets < MIN_DEPOSIT) revert CrestTeller__MinimumDepositNotMet();
 
@@ -126,7 +126,7 @@ contract TellerFacet is ReentrancyGuard {
     function withdraw(
         uint256 shares,
         address receiver
-    ) externalwhenNotPaused returns (uint256 assets) {
+    ) external whenNotPaused returns (uint256 assets) {
         if (shares == 0) revert CrestTeller__ZeroShares();
 
         LibCrestStorage.CrestStorage storage cs = LibCrestStorage

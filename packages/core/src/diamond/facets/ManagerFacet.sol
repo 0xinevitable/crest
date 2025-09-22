@@ -148,6 +148,30 @@ contract ManagerFacet is ReentrancyGuard {
         );
     }
 
+    function transferUsdClass(uint64 ntl, bool toPerp) external {
+        CoreWriterLib.transferUsdClass(ntl, toPerp);
+    }
+
+    function placeLimitOrder(
+        uint32 asset,
+        bool isBuy,
+        uint64 limitPx,
+        uint64 sz,
+        bool reduceOnly,
+        uint8 encodedTif,
+        uint128 cloid
+    ) external {
+        CoreWriterLib.placeLimitOrder(
+            asset,
+            isBuy,
+            limitPx,
+            sz,
+            reduceOnly,
+            encodedTif,
+            cloid
+        );
+    }
+
     function allocatePositions(
         uint32 spotIndex,
         uint32 perpIndex

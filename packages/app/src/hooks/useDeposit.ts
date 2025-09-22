@@ -59,9 +59,12 @@ export const useDeposit = (amount: string) => {
     },
   });
 
+  console.log({ allowance, parsedAmount });
+
   // Calculate needsApproval before using it in gas estimation
   const needsApproval = useMemo(() => {
-    if (!allowance || parsedAmount === BigInt(0)) return false;
+    if (typeof allowance === 'undefined' || parsedAmount === BigInt(0))
+      return false;
     return allowance < parsedAmount;
   }, [allowance, parsedAmount]);
 

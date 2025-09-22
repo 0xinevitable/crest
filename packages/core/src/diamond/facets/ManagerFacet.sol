@@ -61,15 +61,18 @@ contract ManagerFacet is ReentrancyGuard {
     //============================== MODIFIERS ===============================
 
     modifier whenNotPaused() {
-        LibCrestStorage.CrestStorage storage cs = LibCrestStorage.crestStorage();
+        LibCrestStorage.CrestStorage storage cs = LibCrestStorage
+            .crestStorage();
         if (cs.isManagerPaused) revert CrestManager__Paused();
         _;
     }
 
     modifier onlyCurator() {
-        LibCrestStorage.CrestStorage storage cs = LibCrestStorage.crestStorage();
-        if (msg.sender != cs.curator && msg.sender != LibDiamond.contractOwner())
-            revert CrestManager__Unauthorized();
+        LibCrestStorage.CrestStorage storage cs = LibCrestStorage
+            .crestStorage();
+        if (
+            msg.sender != cs.curator && msg.sender != LibDiamond.contractOwner()
+        ) revert CrestManager__Unauthorized();
         _;
     }
 
@@ -96,15 +99,19 @@ contract ManagerFacet is ReentrancyGuard {
         whenNotPaused
         nonReentrant
     {
-        LibCrestStorage.CrestStorage storage cs = LibCrestStorage.crestStorage();
+        LibCrestStorage.CrestStorage storage cs = LibCrestStorage
+            .crestStorage();
 
         // Get available USDT0 balance
         uint256 availableUsdt0 = cs.usdt0.balanceOf(address(this));
 
         // Check if we need to withdraw from Hyperdrive
-        uint256 hyperdriveValue = IVaultFacet(address(this)).getHyperdriveValue();
+        uint256 hyperdriveValue = IVaultFacet(address(this))
+            .getHyperdriveValue();
         if (hyperdriveValue > 0) {
-            IVaultFacet(address(this)).withdrawFromHyperdrive(type(uint256).max);
+            IVaultFacet(address(this)).withdrawFromHyperdrive(
+                type(uint256).max
+            );
             availableUsdt0 = cs.usdt0.balanceOf(address(this));
         }
 
@@ -144,24 +151,30 @@ contract ManagerFacet is ReentrancyGuard {
     function allocatePositions(
         uint32 spotIndex,
         uint32 perpIndex
-    ) external onlyCurator whenNotPaused nonReentrant {
+    ) external onlyCurator whenNotPaused {
         _openPositions(spotIndex, perpIndex);
     }
 
     function rebalancePositions(
         uint32 newSpotIndex,
         uint32 newPerpIndex
-    ) external onlyCurator whenNotPaused nonReentrant {
-        LibCrestStorage.CrestStorage storage cs = LibCrestStorage.crestStorage();
+    ) external onlyCurator whenNotPaused {
+        LibCrestStorage.CrestStorage storage cs = LibCrestStorage
+            .crestStorage();
 
-        if (cs.currentSpotPosition.index == 0 && cs.currentPerpPosition.index == 0) {
+        if (
+            cs.currentSpotPosition.index == 0 &&
+            cs.currentPerpPosition.index == 0
+        ) {
             revert CrestManager__NoPositionToClose();
         }
 
         uint32 oldSpotIndex = cs.currentSpotPosition.index;
         uint32 oldPerpIndex = cs.currentPerpPosition.index;
 
-        if (cs.currentSpotPosition.size > 0 || cs.currentPerpPosition.size > 0) {
+        if (
+            cs.currentSpotPosition.size > 0 || cs.currentPerpPosition.size > 0
+        ) {
             _closePositionsOnly();
         }
 
@@ -173,16 +186,18 @@ contract ManagerFacet is ReentrancyGuard {
         emit Rebalanced(oldSpotIndex, oldPerpIndex, newSpotIndex, newPerpIndex);
     }
 
-    function exit() external onlyCurator whenNotPaused nonReentrant {
+    function exit() external onlyCurator whenNotPaused {
         _closePositionsOnly();
         _bridgeBackToVault();
 
-        LibCrestStorage.CrestStorage storage cs = LibCrestStorage.crestStorage();
+        LibCrestStorage.CrestStorage storage cs = LibCrestStorage
+            .crestStorage();
         cs.totalAllocated = 0;
     }
 
     function _closePositionsOnly() internal {
-        LibCrestStorage.CrestStorage storage cs = LibCrestStorage.crestStorage();
+        LibCrestStorage.CrestStorage storage cs = LibCrestStorage
+            .crestStorage();
 
         // Close spot position
         if (cs.currentSpotPosition.size > 0) {
@@ -204,12 +219,18 @@ contract ManagerFacet is ReentrancyGuard {
             int256 spotPnL;
             if (currentSpotPrice >= cs.currentSpotPosition.entryPrice) {
                 spotPnL =
-                    (int256(uint256(currentSpotPrice - cs.currentSpotPosition.entryPrice)) *
-                     int256(uint256(cs.currentSpotPosition.size))) / 1e8;
+                    (int256(
+                        uint256(
+                            currentSpotPrice - cs.currentSpotPosition.entryPrice
+                        )
+                    ) * int256(uint256(cs.currentSpotPosition.size))) / 1e8;
             } else {
                 spotPnL =
-                    (-int256(uint256(cs.currentSpotPosition.entryPrice - currentSpotPrice)) *
-                     int256(uint256(cs.currentSpotPosition.size))) / 1e8;
+                    (-int256(
+                        uint256(
+                            cs.currentSpotPosition.entryPrice - currentSpotPrice
+                        )
+                    ) * int256(uint256(cs.currentSpotPosition.size))) / 1e8;
             }
 
             emit PositionClosed(
@@ -236,16 +257,20 @@ contract ManagerFacet is ReentrancyGuard {
                 uint128(block.timestamp + 3)
             );
 
-            uint64 markPrice = PrecompileLib.markPx(cs.currentPerpPosition.index);
+            uint64 markPrice = PrecompileLib.markPx(
+                cs.currentPerpPosition.index
+            );
             int256 perpPnL;
             if (cs.currentPerpPosition.entryPrice >= markPrice) {
                 perpPnL =
-                    (int256(uint256(cs.currentPerpPosition.entryPrice - markPrice)) *
-                     int256(uint256(cs.currentPerpPosition.size))) / 1e6;
+                    (int256(
+                        uint256(cs.currentPerpPosition.entryPrice - markPrice)
+                    ) * int256(uint256(cs.currentPerpPosition.size))) / 1e6;
             } else {
                 perpPnL =
-                    (-int256(uint256(markPrice - cs.currentPerpPosition.entryPrice)) *
-                     int256(uint256(cs.currentPerpPosition.size))) / 1e6;
+                    (-int256(
+                        uint256(markPrice - cs.currentPerpPosition.entryPrice)
+                    ) * int256(uint256(cs.currentPerpPosition.size))) / 1e6;
             }
 
             emit PositionClosed(
@@ -269,7 +294,8 @@ contract ManagerFacet is ReentrancyGuard {
     }
 
     function _openPositions(uint32 spotIndex, uint32 perpIndex) internal {
-        LibCrestStorage.CrestStorage storage cs = LibCrestStorage.crestStorage();
+        LibCrestStorage.CrestStorage storage cs = LibCrestStorage
+            .crestStorage();
 
         cs.currentSpotPosition.index = spotIndex;
         cs.currentPerpPosition.index = perpIndex;
@@ -289,15 +315,26 @@ contract ManagerFacet is ReentrancyGuard {
         uint256 spotAmount = (totalUsdc * SPOT_ALLOCATION_BPS) / 10000;
         uint256 perpAmount = (totalUsdc * PERP_ALLOCATION_BPS) / 10000;
 
-        (uint64 spotPrice, uint64 perpPrice) = _getMarketPrices(spotIndex, perpIndex);
+        (uint64 spotPrice, uint64 perpPrice) = _getMarketPrices(
+            spotIndex,
+            perpIndex
+        );
 
         // Transfer margin to perp account
-        uint64 marginCoreAmount = HLConversions.evmToWei(USDC_TOKEN_ID, marginAmount);
+        uint64 marginCoreAmount = HLConversions.evmToWei(
+            USDC_TOKEN_ID,
+            marginAmount
+        );
         CoreWriterLib.transferUsdClass(marginCoreAmount, true);
 
         // Place spot buy order
-        uint64 spotSizeCoreAmount = HLConversions.evmToWei(USDC_TOKEN_ID, spotAmount);
-        uint64 spotSizeInAsset = uint64((uint256(spotSizeCoreAmount) * 1e8) / spotPrice);
+        uint64 spotSizeCoreAmount = HLConversions.evmToWei(
+            USDC_TOKEN_ID,
+            spotAmount
+        );
+        uint64 spotSizeInAsset = uint64(
+            (uint256(spotSizeCoreAmount) * 1e8) / spotPrice
+        );
 
         CoreWriterLib.placeLimitOrder(
             spotIndex + 10000,
@@ -314,8 +351,13 @@ contract ManagerFacet is ReentrancyGuard {
         cs.currentSpotPosition.entryPrice = spotPrice;
 
         // Place perp short order
-        uint64 perpSizeCoreAmount = HLConversions.evmToWei(USDC_TOKEN_ID, perpAmount);
-        uint64 perpSizeInAsset = uint64((uint256(perpSizeCoreAmount) * 1e8) / perpPrice);
+        uint64 perpSizeCoreAmount = HLConversions.evmToWei(
+            USDC_TOKEN_ID,
+            perpAmount
+        );
+        uint64 perpSizeInAsset = uint64(
+            (uint256(perpSizeCoreAmount) * 1e8) / perpPrice
+        );
 
         CoreWriterLib.placeLimitOrder(
             perpIndex,
@@ -333,7 +375,8 @@ contract ManagerFacet is ReentrancyGuard {
     }
 
     function _bridgeBackToVault() internal {
-        LibCrestStorage.CrestStorage storage cs = LibCrestStorage.crestStorage();
+        LibCrestStorage.CrestStorage storage cs = LibCrestStorage
+            .crestStorage();
 
         PrecompileLib.AccountMarginSummary memory marginSummary = PrecompileLib
             .accountMarginSummary(0, address(this));
@@ -360,7 +403,11 @@ contract ManagerFacet is ReentrancyGuard {
             PrecompileLib.SpotBalance memory usdt0Balance = PrecompileLib
                 .spotBalance(address(this), usdt0TokenId());
             if (usdt0Balance.total > 0) {
-                CoreWriterLib.bridgeToEvm(usdt0TokenId(), usdt0Balance.total, false);
+                CoreWriterLib.bridgeToEvm(
+                    usdt0TokenId(),
+                    usdt0Balance.total,
+                    false
+                );
             }
         }
 
@@ -374,25 +421,29 @@ contract ManagerFacet is ReentrancyGuard {
     //============================== ADMIN FUNCTIONS ===============================
 
     function updateCurator(address _curator) external requiresAuth {
-        LibCrestStorage.CrestStorage storage cs = LibCrestStorage.crestStorage();
+        LibCrestStorage.CrestStorage storage cs = LibCrestStorage
+            .crestStorage();
         cs.curator = _curator;
         emit CuratorUpdated(_curator);
     }
 
     function updateMaxSlippage(uint16 _maxSlippageBps) external requiresAuth {
-        LibCrestStorage.CrestStorage storage cs = LibCrestStorage.crestStorage();
+        LibCrestStorage.CrestStorage storage cs = LibCrestStorage
+            .crestStorage();
         cs.maxSlippageBps = _maxSlippageBps;
         emit MaxSlippageUpdated(_maxSlippageBps);
     }
 
     function pauseManager() external requiresAuth {
-        LibCrestStorage.CrestStorage storage cs = LibCrestStorage.crestStorage();
+        LibCrestStorage.CrestStorage storage cs = LibCrestStorage
+            .crestStorage();
         cs.isManagerPaused = true;
         emit Paused();
     }
 
     function unpauseManager() external requiresAuth {
-        LibCrestStorage.CrestStorage storage cs = LibCrestStorage.crestStorage();
+        LibCrestStorage.CrestStorage storage cs = LibCrestStorage
+            .crestStorage();
         cs.isManagerPaused = false;
         emit Unpaused();
     }
@@ -402,23 +453,32 @@ contract ManagerFacet is ReentrancyGuard {
     function getPositions()
         external
         view
-        returns (LibCrestStorage.Position memory spot, LibCrestStorage.Position memory perp)
+        returns (
+            LibCrestStorage.Position memory spot,
+            LibCrestStorage.Position memory perp
+        )
     {
-        LibCrestStorage.CrestStorage storage cs = LibCrestStorage.crestStorage();
+        LibCrestStorage.CrestStorage storage cs = LibCrestStorage
+            .crestStorage();
         spot = cs.currentSpotPosition;
         perp = cs.currentPerpPosition;
 
         if (spot.index > 0) {
-            PrecompileLib.SpotInfo memory spotInfo = PrecompileLib.spotInfo(spot.index);
+            PrecompileLib.SpotInfo memory spotInfo = PrecompileLib.spotInfo(
+                spot.index
+            );
             uint64 tokenId = spotInfo.tokens[0];
             PrecompileLib.SpotBalance memory actualBalance = PrecompileLib
                 .spotBalance(address(this), tokenId);
             spot.size = actualBalance.total;
 
             if (actualBalance.total > 0 && cs.totalAllocated > 0) {
-                uint256 spotAmount = (cs.totalAllocated * SPOT_ALLOCATION_BPS) / 10000;
+                uint256 spotAmount = (cs.totalAllocated * SPOT_ALLOCATION_BPS) /
+                    10000;
                 uint64 spotAmountCore = uint64(spotAmount) * 100;
-                spot.entryPrice = uint64((uint256(spotAmountCore) * 1e8) / actualBalance.total);
+                spot.entryPrice = uint64(
+                    (uint256(spotAmountCore) * 1e8) / actualBalance.total
+                );
             }
         }
 
@@ -430,7 +490,9 @@ contract ManagerFacet is ReentrancyGuard {
             if (perpPos.szi != 0) {
                 uint64 absSize = uint64(-perpPos.szi);
                 perp.size = absSize;
-                perp.entryPrice = uint64((perpPos.entryNtl * 1e6) / uint256(absSize));
+                perp.entryPrice = uint64(
+                    (perpPos.entryNtl * 1e6) / uint256(absSize)
+                );
             }
         }
 
@@ -438,12 +500,15 @@ contract ManagerFacet is ReentrancyGuard {
     }
 
     function hasOpenPositions() external view returns (bool) {
-        LibCrestStorage.CrestStorage storage cs = LibCrestStorage.crestStorage();
-        return cs.currentSpotPosition.size > 0 || cs.currentPerpPosition.size > 0;
+        LibCrestStorage.CrestStorage storage cs = LibCrestStorage
+            .crestStorage();
+        return
+            cs.currentSpotPosition.size > 0 || cs.currentPerpPosition.size > 0;
     }
 
     function estimatePositionValue() external view returns (uint256) {
-        LibCrestStorage.CrestStorage storage cs = LibCrestStorage.crestStorage();
+        LibCrestStorage.CrestStorage storage cs = LibCrestStorage
+            .crestStorage();
 
         if (cs.totalAllocated == 0) {
             return 0;
@@ -461,11 +526,16 @@ contract ManagerFacet is ReentrancyGuard {
                 .spotBalance(address(this), tokenId);
 
             if (spotBal.total > 0) {
-                uint64 currentSpotPrice = _getSpotMidPrice(cs.currentSpotPosition.index);
+                uint64 currentSpotPrice = _getSpotMidPrice(
+                    cs.currentSpotPosition.index
+                );
                 uint64 spotValueCore = uint64(
                     (uint256(spotBal.total) * uint256(currentSpotPrice)) / 1e8
                 );
-                totalValue += HLConversions.weiToEvm(USDC_TOKEN_ID, spotValueCore);
+                totalValue += HLConversions.weiToEvm(
+                    USDC_TOKEN_ID,
+                    spotValueCore
+                );
             }
         }
 
@@ -476,7 +546,9 @@ contract ManagerFacet is ReentrancyGuard {
             );
 
             if (perpPos.szi != 0) {
-                uint64 currentPerpPrice = _getPerpMidPrice(cs.currentPerpPosition.index);
+                uint64 currentPerpPrice = _getPerpMidPrice(
+                    cs.currentPerpPosition.index
+                );
 
                 uint256 absSize = perpPos.szi < 0
                     ? uint256(uint64(-perpPos.szi))
@@ -486,10 +558,16 @@ contract ManagerFacet is ReentrancyGuard {
                     uint256 currentNtl = (absSize * currentPerpPrice) / 1e8;
                     if (perpPos.entryNtl > currentNtl) {
                         uint256 profit = perpPos.entryNtl - currentNtl;
-                        totalValue += HLConversions.weiToEvm(USDC_TOKEN_ID, uint64(profit));
+                        totalValue += HLConversions.weiToEvm(
+                            USDC_TOKEN_ID,
+                            uint64(profit)
+                        );
                     } else {
                         uint256 loss = currentNtl - perpPos.entryNtl;
-                        uint256 lossEvm = HLConversions.weiToEvm(USDC_TOKEN_ID, uint64(loss));
+                        uint256 lossEvm = HLConversions.weiToEvm(
+                            USDC_TOKEN_ID,
+                            uint64(loss)
+                        );
                         if (lossEvm < totalValue) {
                             totalValue -= lossEvm;
                         } else {
@@ -526,33 +604,49 @@ contract ManagerFacet is ReentrancyGuard {
         uint32 spotIndex,
         uint32 perpIndex
     ) internal view virtual returns (uint64 spotPrice, uint64 perpPrice) {
-        PrecompileLib.Bbo memory spotBbo = PrecompileLib.bbo(uint64(spotIndex) + 10000);
+        PrecompileLib.Bbo memory spotBbo = PrecompileLib.bbo(
+            uint64(spotIndex) + 10000
+        );
         PrecompileLib.Bbo memory perpBbo = PrecompileLib.bbo(uint64(perpIndex));
         spotPrice = spotBbo.ask;
         perpPrice = perpBbo.bid;
     }
 
     function _getUsdt0AskPrice() internal view virtual returns (uint64) {
-        PrecompileLib.Bbo memory usdt0Bbo = PrecompileLib.bbo(uint64(usdt0SpotIndex()) + 10000);
+        PrecompileLib.Bbo memory usdt0Bbo = PrecompileLib.bbo(
+            uint64(usdt0SpotIndex()) + 10000
+        );
         return HLConversions.weiToSz(uint64(usdt0SpotIndex()), usdt0Bbo.ask);
     }
 
-    function _getSpotBidPrice(uint32 spotIndex) internal view virtual returns (uint64) {
-        PrecompileLib.Bbo memory spotBbo = PrecompileLib.bbo(uint64(spotIndex) + 10000);
+    function _getSpotBidPrice(
+        uint32 spotIndex
+    ) internal view virtual returns (uint64) {
+        PrecompileLib.Bbo memory spotBbo = PrecompileLib.bbo(
+            uint64(spotIndex) + 10000
+        );
         return spotBbo.bid * 100;
     }
 
-    function _getPerpAskPrice(uint32 perpIndex) internal view virtual returns (uint64) {
+    function _getPerpAskPrice(
+        uint32 perpIndex
+    ) internal view virtual returns (uint64) {
         PrecompileLib.Bbo memory perpBbo = PrecompileLib.bbo(uint64(perpIndex));
         return perpBbo.ask * 100;
     }
 
-    function _getSpotMidPrice(uint32 spotIndex) internal view virtual returns (uint64) {
-        PrecompileLib.Bbo memory spotBbo = PrecompileLib.bbo(uint64(spotIndex) + 10000);
+    function _getSpotMidPrice(
+        uint32 spotIndex
+    ) internal view virtual returns (uint64) {
+        PrecompileLib.Bbo memory spotBbo = PrecompileLib.bbo(
+            uint64(spotIndex) + 10000
+        );
         return ((spotBbo.bid + spotBbo.ask) / 2) * 100;
     }
 
-    function _getPerpMidPrice(uint32 perpIndex) internal view virtual returns (uint64) {
+    function _getPerpMidPrice(
+        uint32 perpIndex
+    ) internal view virtual returns (uint64) {
         PrecompileLib.Bbo memory perpBbo = PrecompileLib.bbo(uint64(perpIndex));
         return ((perpBbo.bid + perpBbo.ask) / 2) * 100;
     }

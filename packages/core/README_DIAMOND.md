@@ -28,17 +28,20 @@ src/diamond/
 ### Using Forge with FFI (Recommended)
 
 1. Install Python dependencies:
+
 ```bash
 pip install eth-abi
 ```
 
 2. Set up environment variables:
+
 ```bash
 cp .env.example .env
 # Edit .env with your values
 ```
 
 3. Deploy using Forge:
+
 ```bash
 forge script script/DeployDiamondWithFFI.s.sol --rpc-url $RPC_URL --broadcast
 ```
@@ -46,11 +49,13 @@ forge script script/DeployDiamondWithFFI.s.sol --rpc-url $RPC_URL --broadcast
 ### Using TypeScript/Viem
 
 1. Install dependencies:
+
 ```bash
 npm install viem dotenv
 ```
 
 2. Run deployment:
+
 ```bash
 npx ts-node typescript/deploy/deployDiamond.ts
 ```
@@ -58,22 +63,32 @@ npx ts-node typescript/deploy/deployDiamond.ts
 ### Using Hardhat-style Forge Script
 
 ```bash
-forge script script/DeployCrestDiamondV2.s.sol --rpc-url $RPC_URL --broadcast
+# forge script script/DeployCrestDiamondV2.s.sol --rpc-url $RPC_URL --broadcast
+
+# testnet
+forge script script/DeployDiamondSimple.s.sol --rpc-url  https://evmrpc-jp.hyperpc.app/2a850a8987744037bc1fce0b59f22e1b --broadcast  --via-ir -vvvv
+
+# mainnet
+forge script script/DeployDiamondSimple.s.sol --rpc-url  https://rpc.hyperliquid.xyz/evm --broadcast  --via-ir -vvvv
 ```
 
 ## Key Features
 
 ### Diamond Benefits
+
 - **Modularity**: Each facet handles specific functionality
 - **Upgradability**: Add/replace/remove functions without redeploying
 - **Gas Efficiency**: Shared storage reduces redundancy
 - **No Contract Size Limit**: Split logic across multiple facets
 
 ### Shared Storage Pattern
+
 All facets share the same storage layout defined in `LibCrestStorage.sol`, enabling seamless data sharing between facets.
 
 ### Cross-Facet Communication
+
 Facets can call each other's functions through the diamond proxy:
+
 - TellerFacet calls VaultFacet for minting/burning shares
 - AccountantFacet calls ManagerFacet for position values
 - All facets access shared storage directly
@@ -96,13 +111,15 @@ forge test --match-contract VaultFacetTest
 To add new functionality:
 
 1. Create a new facet:
+
 ```solidity
 contract NewFeatureFacet {
-    // Implementation
+  // Implementation
 }
 ```
 
 2. Deploy and add to diamond:
+
 ```solidity
 IDiamondCut.FacetCut[] memory cut = new IDiamondCut.FacetCut[](1);
 cut[0] = IDiamondCut.FacetCut({
@@ -125,6 +142,7 @@ IDiamondCut(diamond).diamondCut(cut, address(0), "");
 ## Gas Optimization
 
 The diamond pattern adds a small overhead (~2.3k gas) for the delegatecall, but saves gas through:
+
 - Shared storage (no duplicate state variables)
 - Efficient upgrade path (no migration needed)
 - Optimized function routing
@@ -132,6 +150,7 @@ The diamond pattern adds a small overhead (~2.3k gas) for the delegatecall, but 
 ## Migration from Old Contracts
 
 The old contracts are marked as deprecated but retained for reference:
+
 - `CrestVault.sol` → `VaultFacet.sol`
 - `CrestTeller.sol` → `TellerFacet.sol`
 - `CrestManager.sol` → `ManagerFacet.sol`

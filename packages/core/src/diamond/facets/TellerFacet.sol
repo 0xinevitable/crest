@@ -40,16 +40,14 @@ contract TellerFacet is ReentrancyGuard {
     //============================== MODIFIERS ===============================
 
     modifier whenNotPaused() {
-        LibCrestStorage.CrestStorage storage cs = LibCrestStorage.crestStorage();
+        LibCrestStorage.CrestStorage storage cs = LibCrestStorage
+            .crestStorage();
         if (cs.isTellerPaused) revert CrestTeller__Paused();
         _;
     }
 
     modifier requiresAuth() {
-        require(
-            msg.sender == LibDiamond.contractOwner(),
-            "UNAUTHORIZED"
-        );
+        require(msg.sender == LibDiamond.contractOwner(), "UNAUTHORIZED");
         _;
     }
 
@@ -58,19 +56,22 @@ contract TellerFacet is ReentrancyGuard {
     function setShareLockPeriod(uint64 _period) external requiresAuth {
         if (_period > MAX_SHARE_LOCK_PERIOD)
             revert CrestTeller__ShareLockPeriodTooLong();
-        LibCrestStorage.CrestStorage storage cs = LibCrestStorage.crestStorage();
+        LibCrestStorage.CrestStorage storage cs = LibCrestStorage
+            .crestStorage();
         cs.shareLockPeriod = _period;
         emit ShareLockPeriodUpdated(_period);
     }
 
     function pauseTeller() external requiresAuth {
-        LibCrestStorage.CrestStorage storage cs = LibCrestStorage.crestStorage();
+        LibCrestStorage.CrestStorage storage cs = LibCrestStorage
+            .crestStorage();
         cs.isTellerPaused = true;
         emit Paused();
     }
 
     function unpauseTeller() external requiresAuth {
-        LibCrestStorage.CrestStorage storage cs = LibCrestStorage.crestStorage();
+        LibCrestStorage.CrestStorage storage cs = LibCrestStorage
+            .crestStorage();
         cs.isTellerPaused = false;
         emit Unpaused();
     }
@@ -80,18 +81,22 @@ contract TellerFacet is ReentrancyGuard {
     function deposit(
         uint256 assets,
         address receiver
-    ) external nonReentrant whenNotPaused returns (uint256 shares) {
+    ) externalwhenNotPaused returns (uint256 shares) {
         if (assets == 0) revert CrestTeller__ZeroAssets();
         if (assets < MIN_DEPOSIT) revert CrestTeller__MinimumDepositNotMet();
 
-        LibCrestStorage.CrestStorage storage cs = LibCrestStorage.crestStorage();
+        LibCrestStorage.CrestStorage storage cs = LibCrestStorage
+            .crestStorage();
 
         // Calculate shares to mint using AccountantFacet
         shares = IAccountantFacet(address(this)).convertToShares(assets);
         if (shares == 0) revert CrestTeller__ZeroShares();
 
         // For initial deposit, ensure minimum shares
-        if (ERC20(address(this)).totalSupply() == 0 && shares < MIN_INITIAL_SHARES) {
+        if (
+            ERC20(address(this)).totalSupply() == 0 &&
+            shares < MIN_INITIAL_SHARES
+        ) {
             revert CrestTeller__MinimumSharesNotMet();
         }
 
@@ -99,7 +104,13 @@ contract TellerFacet is ReentrancyGuard {
         cs.usdt0.safeTransferFrom(msg.sender, address(this), assets);
 
         // Mint shares through vault facet
-        IVaultFacet(address(this)).enter(address(this), cs.usdt0, 0, receiver, shares);
+        IVaultFacet(address(this)).enter(
+            address(this),
+            cs.usdt0,
+            0,
+            receiver,
+            shares
+        );
 
         // Deposit to Hyperdrive through vault facet
         IVaultFacet(address(this)).depositToHyperdrive(cs.usdt0, assets);
@@ -115,10 +126,11 @@ contract TellerFacet is ReentrancyGuard {
     function withdraw(
         uint256 shares,
         address receiver
-    ) external nonReentrant whenNotPaused returns (uint256 assets) {
+    ) externalwhenNotPaused returns (uint256 assets) {
         if (shares == 0) revert CrestTeller__ZeroShares();
 
-        LibCrestStorage.CrestStorage storage cs = LibCrestStorage.crestStorage();
+        LibCrestStorage.CrestStorage storage cs = LibCrestStorage
+            .crestStorage();
 
         if (block.timestamp < cs.shareUnlockTime[msg.sender])
             revert CrestTeller__SharesAreLocked();
@@ -130,11 +142,19 @@ contract TellerFacet is ReentrancyGuard {
         // Check if vault needs to withdraw from Hyperdrive
         uint256 vaultBalance = cs.usdt0.balanceOf(address(this));
         if (vaultBalance < assets) {
-            IVaultFacet(address(this)).withdrawFromHyperdrive(assets - vaultBalance);
+            IVaultFacet(address(this)).withdrawFromHyperdrive(
+                assets - vaultBalance
+            );
         }
 
         // Burn shares and transfer assets through vault facet
-        IVaultFacet(address(this)).exit(receiver, cs.usdt0, assets, msg.sender, shares);
+        IVaultFacet(address(this)).exit(
+            receiver,
+            cs.usdt0,
+            assets,
+            msg.sender,
+            shares
+        );
 
         emit Withdraw(msg.sender, assets, shares);
     }
@@ -150,7 +170,8 @@ contract TellerFacet is ReentrancyGuard {
     }
 
     function areSharesLocked(address user) external view returns (bool) {
-        LibCrestStorage.CrestStorage storage cs = LibCrestStorage.crestStorage();
+        LibCrestStorage.CrestStorage storage cs = LibCrestStorage
+            .crestStorage();
         return block.timestamp < cs.shareUnlockTime[user];
     }
 
@@ -173,8 +194,20 @@ contract TellerFacet is ReentrancyGuard {
 
 // Interfaces for cross-facet calls
 interface IVaultFacet {
-    function enter(address from, ERC20 asset, uint256 assetAmount, address to, uint256 shareAmount) external;
-    function exit(address to, ERC20 asset, uint256 assetAmount, address from, uint256 shareAmount) external;
+    function enter(
+        address from,
+        ERC20 asset,
+        uint256 assetAmount,
+        address to,
+        uint256 shareAmount
+    ) external;
+    function exit(
+        address to,
+        ERC20 asset,
+        uint256 assetAmount,
+        address from,
+        uint256 shareAmount
+    ) external;
     function depositToHyperdrive(ERC20 usdt0, uint256 amount) external;
     function withdrawFromHyperdrive(uint256 amount) external returns (uint256);
 }
